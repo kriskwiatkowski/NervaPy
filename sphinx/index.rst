@@ -6,7 +6,7 @@ Contents:
 .. toctree::
    :maxdepth: 4
 
-   peachpy
+   nervapy
 
 
 Indices and tables
