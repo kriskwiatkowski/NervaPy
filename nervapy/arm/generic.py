@@ -7,6 +7,7 @@ import nervapy.stream
 import nervapy.arm.function
 from nervapy.arm.instructions import QuasiInstruction, Instruction, Operand
 from nervapy.arm.isa import Extension
+from nervapy.arm.registers import GeneralPurposeRegisterWriteback
 
 
 class ArithmeticInstruction(Instruction):
@@ -327,6 +328,59 @@ class BranchExchangeInstruction(Instruction):
 
     def get_output_registers_list(self):
         return list()
+
+
+class DualRegisterLoadStoreInstruction(Instruction):
+    """Load/Store Dual Register instructions (LDRD, STRD)"""
+    dual_load_instructions = ['LDRD']
+    dual_store_instructions = ['STRD']
+
+    def __init__(self, name, register_low, register_high, address, origin=None):
+        allowed_instructions = self.dual_load_instructions + self.dual_store_instructions
+        if name not in allowed_instructions:
+            raise ValueError('Instruction {0} is not one of the allowed instructions ({1})'.format(name, ", ".join(
+                allowed_instructions)))
+
+        # Validate that both registers are general-purpose registers
+        if not (register_low.is_general_purpose_register() and register_high.is_general_purpose_register()):
+            raise ValueError('Both registers must be general-purpose registers in instruction {0}'.format(name))
+
+        # Validate that the registers are consecutive (low register must be even-numbered)
+        # For ARMv5E and later, STRD/LDRD require even/odd register pairs
+        # We'll check this by register ID if available
+        low_reg_id = getattr(register_low.register, 'register_id', None)
+        high_reg_id = getattr(register_high.register, 'register_id', None)
+
+        if low_reg_id is not None and high_reg_id is not None:
+            if low_reg_id % 2 != 0 or high_reg_id != low_reg_id + 1:
+                raise ValueError('STRD/LDRD requires consecutive even/odd register pair: got r{0}, r{1}'.format(
+                    low_reg_id, high_reg_id))
+
+        # Validate memory address (STRD/LDRD supports 8-bit offset, must be word-aligned)
+        if not address.is_memory_address(offset_bits=8):
+            raise ValueError('Invalid memory address in instruction {0}'.format(name))
+
+        super(DualRegisterLoadStoreInstruction, self).__init__(name, [register_low, register_high, address],
+                                                             origin=origin)
+
+    def get_input_registers_list(self):
+        input_registers_list = []
+        # For store instructions, both source registers are inputs
+        if self.name in self.dual_store_instructions:
+            input_registers_list = self.operands[0].get_registers_list() + self.operands[1].get_registers_list()
+        # For all dual register instructions, the address register(s) are inputs
+        input_registers_list += self.operands[2].get_registers_list()
+        return input_registers_list
+
+    def get_output_registers_list(self):
+        output_registers_list = []
+        # For load instructions, both destination registers are outputs
+        if self.name in self.dual_load_instructions:
+            output_registers_list = self.operands[0].get_registers_list() + self.operands[1].get_registers_list()
+        # Handle writeback if present (pre-indexed or post-indexed)
+        if self.operands[2].is_writeback_memory_address() or self.operands[2].is_preindexed_memory_address():
+            output_registers_list += self.operands[2].get_writeback_registers_list()
+        return output_registers_list
 
 
 class BreakInstruction(Instruction):
@@ -5099,6 +5153,98 @@ def LDRSB(register, address, increment=None):
 def STRB(register, address, increment=None):
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
     instruction = LoadStoreInstruction('STRB', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def _create_writeback_address(address, writeback):
+    """Helper function to create writeback address if needed"""
+    if not writeback:
+        return address
+
+    from nervapy.arm.registers import GeneralPurposeRegister, GeneralPurposeRegisterWriteback
+
+    # Address should be a list with base register and optional offset
+    if not isinstance(address, list) or len(address) == 0:
+        return address
+
+    base_register = address[0]
+
+    # If already a writeback register, return as-is
+    if isinstance(base_register, GeneralPurposeRegisterWriteback):
+        return address
+
+    # If it's a regular register, wrap it with GeneralPurposeRegisterWriteback
+    if isinstance(base_register, GeneralPurposeRegister):
+        writeback_register = GeneralPurposeRegisterWriteback(base_register)
+        if len(address) == 1:
+            return [writeback_register]
+        else:
+            return [writeback_register] + address[1:]
+
+    return address
+
+
+def STRD(register_low, register_high, address, writeback=False):
+    """Store Register Dual - stores two consecutive registers to memory
+
+    Args:
+        register_low: First register (must be even-numbered)
+        register_high: Second register (must be odd-numbered, consecutive to register_low)
+        address: Memory address (can include offset)
+        writeback: If True, enables pre-indexed writeback (default: False)
+
+    Usage examples:
+    - STRD(r4, r5, [r12])                    # Store r4,r5 to [r12]
+    - STRD(r4, r5, [r12, 8])                 # Store r4,r5 to [r12+8]
+    - STRD(r4, r5, [r12, 8], writeback=True) # Store r4,r5 to [r12+8], then r12 = r12+8 (pre-indexed with writeback)
+    - STRD(r4, r5, [r12], 8)                 # Store r4,r5 to [r12], then r12 = r12+8 (post-indexed)
+
+    Note: For post-indexed writeback, use the syntax STRD(r4, r5, [r12], 8)
+          For pre-indexed writeback, use writeback=True parameter or GeneralPurposeRegisterWriteback
+
+    Alternative writeback syntax:
+    - from nervapy.arm.registers import GeneralPurposeRegisterWriteback
+    - r12_wb = GeneralPurposeRegisterWriteback(r12)
+    - STRD(r4, r5, [r12_wb, 8])  # Equivalent to writeback=True
+    """
+    processed_address = _create_writeback_address(address, writeback)
+
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = DualRegisterLoadStoreInstruction('STRD', Operand(register_low), Operand(register_high), Operand(processed_address), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def LDRD(register_low, register_high, address, writeback=False):
+    """Load Register Dual - loads two consecutive registers from memory
+
+    Args:
+        register_low: First register (must be even-numbered)
+        register_high: Second register (must be odd-numbered, consecutive to register_low)
+        address: Memory address (can include offset)
+        writeback: If True, enables pre-indexed writeback (default: False)
+
+    Usage examples:
+    - LDRD(r4, r5, [r12])                    # Load r4,r5 from [r12]
+    - LDRD(r4, r5, [r12, 8])                 # Load r4,r5 from [r12+8]
+    - LDRD(r4, r5, [r12, 8], writeback=True) # Load r4,r5 from [r12+8], then r12 = r12+8 (pre-indexed with writeback)
+    - LDRD(r4, r5, [r12], 8)                 # Load r4,r5 from [r12], then r12 = r12+8 (post-indexed)
+
+    Note: For post-indexed writeback, use the syntax LDRD(r4, r5, [r12], 8)
+          For pre-indexed writeback, use writeback=True parameter or GeneralPurposeRegisterWriteback
+
+    Alternative writeback syntax:
+    - from nervapy.arm.registers import GeneralPurposeRegisterWriteback
+    - r12_wb = GeneralPurposeRegisterWriteback(r12)
+    - LDRD(r4, r5, [r12_wb, 8])  # Equivalent to writeback=True
+    """
+    processed_address = _create_writeback_address(address, writeback)
+
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = DualRegisterLoadStoreInstruction('LDRD', Operand(register_low), Operand(register_high), Operand(processed_address), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
