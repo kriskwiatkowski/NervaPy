@@ -99,14 +99,32 @@ class Extension:
     def __str__(self):
         return self.name
 
-    V4, V5, V5E, V6, V6K, V7, V7MP, V7M = None, None, None, None, None, None, None, None
-    Div, DSP = None, None
-    Thumb, Thumb2 = None, None
-    VFP, VFP2, VFP3, VFP4 = None, None, None, None
-    VFPVectorMode, VFPd32, VFPHP = None, None, None
-    XScale, WMMX, WMMX2 = None, None, None
-    NEON, NEONHP, NEON2 = None, None, None
-    All = None
+    V4: 'Extension'
+    V5: 'Extension'
+    V5E: 'Extension'
+    V6: 'Extension'
+    V6K: 'Extension'
+    V7: 'Extension'
+    V7MP: 'Extension'
+    V7M: 'Extension'
+    Div: 'Extension'
+    DSP: 'Extension'
+    Thumb: 'Extension'
+    Thumb2: 'Extension'
+    VFP: 'Extension'
+    VFP2: 'Extension'
+    VFP3: 'Extension'
+    VFP4: 'Extension'
+    VFPVectorMode: 'Extension'
+    VFPd32: 'Extension'
+    VFPHP: 'Extension'
+    XScale: 'Extension'
+    WMMX: 'Extension'
+    WMMX2: 'Extension'
+    NEON: 'Extension'
+    NEONHP: 'Extension'
+    NEON2: 'Extension'
+    All: list
 
 Extension.V4 = Extension('V4')
 Extension.V5 = Extension('V5')

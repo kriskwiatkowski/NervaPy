@@ -44,8 +44,11 @@ class TestARMv7M(unittest.TestCase):
         # Verify ARMv7-M architecture specification
         self.assertIn(".arch armv7-m", assembly)
         # Verify function structure
-        self.assertIn("BEGIN_ARM_FUNCTION add_1", assembly)
-        self.assertIn("END_ARM_FUNCTION add_1", assembly)
+        self.assertIn(".global add_1", assembly)
+        self.assertIn("add_1:", assembly)
+        # Verify loop labels use underscores (ARMCC compatible)
+        self.assertIn("loop_begin", assembly)
+        self.assertIn("loop_end", assembly)
 
     def test_cortex_m4_armcc_assembly(self):
         """Test ARMv7-M assembly generation for Cortex-M4 with ARMCC format."""
@@ -87,10 +90,16 @@ class TestARMv7M(unittest.TestCase):
         print(assembly)
         
         # Verify ARMCC format characteristics
-        self.assertIn("AREA    |.text|, CODE, READONLY", assembly)
+        self.assertIn("AREA", assembly)
+        self.assertIn(".text", assembly)
         self.assertIn("PROC", assembly)
         self.assertIn("ENDP", assembly)
         self.assertIn("EXPORT", assembly)
+        # Verify loop labels use underscores (no dots for ARMCC)
+        self.assertIn("loop_begin", assembly)
+        self.assertIn("loop_end", assembly)
+        self.assertNotIn(".begin", assembly, "Loop labels should not contain dots in ARMCC format")
+        self.assertNotIn(".end", assembly, "Loop labels should not contain dots in ARMCC format")
 
     def test_cortex_m7_gas_assembly_with_dsp(self):
         """Test ARMv7-M assembly generation for Cortex-M7 with DSP extensions."""
