@@ -218,8 +218,8 @@ class Loop:
                 else:
                     raise ValueError('Loop name is unspecified')
         self.name = name
-        self.begin = Label(self.name + ".begin")
-        self.end = Label(self.name + ".end")
+        self.begin = Label(self.name + "_begin")
+        self.end = Label(self.name + "_end")
 
     def __enter__(self):
         LABEL(self.begin)
