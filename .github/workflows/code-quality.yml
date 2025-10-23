@@ -8,7 +8,7 @@ on:
 
 jobs:
   security-scan:
-    runs-on: ubuntu-latest-small
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +32,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload security reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
@@ -40,7 +40,7 @@ jobs:
             safety-report.json
 
   type-checking:
-    runs-on: ubuntu-latest-small
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -61,7 +61,7 @@ jobs:
         continue-on-error: true
 
   code-formatting:
-    runs-on: ubuntu-latest-small
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -84,7 +84,7 @@ jobs:
         continue-on-error: true
 
   complexity-analysis:
-    runs-on: ubuntu-latest-small
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 

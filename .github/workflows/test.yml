@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest-small]
+        os: [ubuntu-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         exclude:
           # Exclude some combinations to reduce CI load if needed
@@ -115,7 +115,7 @@ jobs:
         python -m nervapy.x86_64 --help
 
   lint:
-    runs-on: ubuntu-latest-small
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
