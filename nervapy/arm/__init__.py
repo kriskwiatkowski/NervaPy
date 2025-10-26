@@ -78,7 +78,7 @@ from nervapy.arm.generic import \
     STR, STRB, STRH, STRD, LDRD, \
     PUSH, POP, PUSH_W, POP_W, STMDB, LDMIA, STMIA, LDMDB, \
     B, BEQ, BNE, BCS, BHS, BCC, BLO, BMI, BPL, BVS, BVC, BHI, BLS, BGE, BLT, BGT, BLE, \
-    BKPT
+    BL, BKPT
 
 from nervapy.arm.vfpneon import VADD, VADDL, VSUB, VSUBL, VMUL, VMULL, VMIN, VMAX, \
     VABD, VABS, VACGE, VACGT, VACLE, VACLT, \

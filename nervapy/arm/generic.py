@@ -314,6 +314,26 @@ class BranchInstruction(Instruction):
         return self.name + " L" + str(self.operands[0])
 
 
+class BranchWithLinkInstruction(Instruction):
+    def __init__(self, destination, origin=None):
+        from nervapy.arm.registers import lr
+        super(BranchWithLinkInstruction, self).__init__('BL', [destination], origin=origin)
+        self.lr = lr
+        if destination.is_label():
+            pass
+        else:
+            raise ValueError('Invalid operands in instruction {0} {1}'.format('BL', destination))
+
+    def get_input_registers_list(self):
+        return list()
+
+    def get_output_registers_list(self):
+        return [self.lr]
+
+    def __str__(self):
+        return self.name + " " + str(self.operands[0])
+
+
 class BranchExchangeInstruction(Instruction):
     def __init__(self, destination, origin=None):
         from nervapy.arm.registers import lr
@@ -5403,6 +5423,14 @@ def BGT(destination):
 def BLE(destination):
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
     instruction = BranchInstruction('BLE', Operand(destination), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def BL(destination):
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = BranchWithLinkInstruction(Operand(destination), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
