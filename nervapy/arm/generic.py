@@ -335,7 +335,7 @@ class DualRegisterLoadStoreInstruction(Instruction):
     dual_load_instructions = ['LDRD']
     dual_store_instructions = ['STRD']
 
-    def __init__(self, name, register_low, register_high, address, origin=None):
+    def __init__(self, name, register_low, register_high, address, increment, origin=None):
         allowed_instructions = self.dual_load_instructions + self.dual_store_instructions
         if name not in allowed_instructions:
             raise ValueError('Instruction {0} is not one of the allowed instructions ({1})'.format(name, ", ".join(
@@ -356,12 +356,20 @@ class DualRegisterLoadStoreInstruction(Instruction):
                 raise ValueError('STRD/LDRD requires consecutive even/odd register pair: got r{0}, r{1}'.format(
                     low_reg_id, high_reg_id))
 
-        # Validate memory address (STRD/LDRD supports 8-bit offset, must be word-aligned)
-        if not address.is_memory_address(offset_bits=8):
-            raise ValueError('Invalid memory address in instruction {0}'.format(name))
-
-        super(DualRegisterLoadStoreInstruction, self).__init__(name, [register_low, register_high, address],
-                                                             origin=origin)
+        # Validate memory address and increment for different addressing modes
+        if address.is_memory_address(offset_bits=8) and increment.is_none():
+            # Standard addressing or pre-indexed with writeback
+            super(DualRegisterLoadStoreInstruction, self).__init__(name, [register_low, register_high, address],
+                                                                 origin=origin)
+        elif address.is_memory_address(offset_bits=0, allow_writeback=False) and increment.is_offset8():
+            # Post-indexed addressing
+            super(DualRegisterLoadStoreInstruction, self).__init__(name, [register_low, register_high, address, increment],
+                                                                 origin=origin)
+        else:
+            if increment.is_none():
+                raise ValueError('Invalid memory address in instruction {0}'.format(name))
+            else:
+                raise ValueError('Invalid operands in instruction {0}: address={1}, increment={2}'.format(name, address, increment))
 
     def get_input_registers_list(self):
         input_registers_list = []
@@ -378,8 +386,12 @@ class DualRegisterLoadStoreInstruction(Instruction):
         if self.name in self.dual_load_instructions:
             output_registers_list = self.operands[0].get_registers_list() + self.operands[1].get_registers_list()
         # Handle writeback if present (pre-indexed or post-indexed)
+        # Pre-indexed: check if address operand has writeback
         if self.operands[2].is_writeback_memory_address() or self.operands[2].is_preindexed_memory_address():
             output_registers_list += self.operands[2].get_writeback_registers_list()
+        # Post-indexed: check if there's an increment operand (4th operand)
+        elif len(self.operands) > 3:
+            output_registers_list.append(self.operands[2].base)
         return output_registers_list
 
 
@@ -5186,13 +5198,14 @@ def _create_writeback_address(address, writeback):
     return address
 
 
-def STRD(register_low, register_high, address, writeback=False):
+def STRD(register_low, register_high, address, increment=None, writeback=False):
     """Store Register Dual - stores two consecutive registers to memory
 
     Args:
         register_low: First register (must be even-numbered)
         register_high: Second register (must be odd-numbered, consecutive to register_low)
         address: Memory address (can include offset)
+        increment: Optional offset for post-indexed addressing (default: None)
         writeback: If True, enables pre-indexed writeback (default: False)
 
     Usage examples:
@@ -5201,7 +5214,7 @@ def STRD(register_low, register_high, address, writeback=False):
     - STRD(r4, r5, [r12, 8], writeback=True) # Store r4,r5 to [r12+8], then r12 = r12+8 (pre-indexed with writeback)
     - STRD(r4, r5, [r12], 8)                 # Store r4,r5 to [r12], then r12 = r12+8 (post-indexed)
 
-    Note: For post-indexed writeback, use the syntax STRD(r4, r5, [r12], 8)
+    Note: For post-indexed addressing, use the syntax STRD(r4, r5, [r12], 8)
           For pre-indexed writeback, use writeback=True parameter or GeneralPurposeRegisterWriteback
 
     Alternative writeback syntax:
@@ -5209,22 +5222,27 @@ def STRD(register_low, register_high, address, writeback=False):
     - r12_wb = GeneralPurposeRegisterWriteback(r12)
     - STRD(r4, r5, [r12_wb, 8])  # Equivalent to writeback=True
     """
-    processed_address = _create_writeback_address(address, writeback)
-
+    # Handle writeback parameter for pre-indexed addressing
+    if writeback and increment is None:
+        processed_address = _create_writeback_address(address, writeback)
+    else:
+        processed_address = address
+    
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
-    instruction = DualRegisterLoadStoreInstruction('STRD', Operand(register_low), Operand(register_high), Operand(processed_address), origin=origin)
+    instruction = DualRegisterLoadStoreInstruction('STRD', Operand(register_low), Operand(register_high), Operand(processed_address), Operand(increment), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
 
-def LDRD(register_low, register_high, address, writeback=False):
+def LDRD(register_low, register_high, address, increment=None, writeback=False):
     """Load Register Dual - loads two consecutive registers from memory
 
     Args:
         register_low: First register (must be even-numbered)
         register_high: Second register (must be odd-numbered, consecutive to register_low)
         address: Memory address (can include offset)
+        increment: Optional offset for post-indexed addressing (default: None)
         writeback: If True, enables pre-indexed writeback (default: False)
 
     Usage examples:
@@ -5233,7 +5251,7 @@ def LDRD(register_low, register_high, address, writeback=False):
     - LDRD(r4, r5, [r12, 8], writeback=True) # Load r4,r5 from [r12+8], then r12 = r12+8 (pre-indexed with writeback)
     - LDRD(r4, r5, [r12], 8)                 # Load r4,r5 from [r12], then r12 = r12+8 (post-indexed)
 
-    Note: For post-indexed writeback, use the syntax LDRD(r4, r5, [r12], 8)
+    Note: For post-indexed addressing, use the syntax LDRD(r4, r5, [r12], 8)
           For pre-indexed writeback, use writeback=True parameter or GeneralPurposeRegisterWriteback
 
     Alternative writeback syntax:
@@ -5241,10 +5259,14 @@ def LDRD(register_low, register_high, address, writeback=False):
     - r12_wb = GeneralPurposeRegisterWriteback(r12)
     - LDRD(r4, r5, [r12_wb, 8])  # Equivalent to writeback=True
     """
-    processed_address = _create_writeback_address(address, writeback)
-
+    # Handle writeback parameter for pre-indexed addressing
+    if writeback and increment is None:
+        processed_address = _create_writeback_address(address, writeback)
+    else:
+        processed_address = address
+    
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
-    instruction = DualRegisterLoadStoreInstruction('LDRD', Operand(register_low), Operand(register_high), Operand(processed_address), origin=origin)
+    instruction = DualRegisterLoadStoreInstruction('LDRD', Operand(register_low), Operand(register_high), Operand(processed_address), Operand(increment), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
