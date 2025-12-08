@@ -56,11 +56,15 @@ class Operand(object):
     def __init__(self, operand):
         super(Operand, self).__init__()
         import copy
+
         from nervapy import Constant
-        from nervapy.arm.registers import Register, GeneralPurposeRegister, \
-            GeneralPurposeRegisterWriteback, ShiftedGeneralPurposeRegister, DRegisterLanes
         from nervapy.arm.function import LocalVariable
         from nervapy.arm.pseudo import Label
+        from nervapy.arm.registers import (DRegisterLanes,
+                                           GeneralPurposeRegister,
+                                           GeneralPurposeRegisterWriteback,
+                                           Register,
+                                           ShiftedGeneralPurposeRegister)
         from nervapy.util import is_int
 
         if isinstance(operand, GeneralPurposeRegisterWriteback):
@@ -245,7 +249,8 @@ class Operand(object):
             isinstance(self.base, GeneralPurposeRegisterWriteback)
 
     def is_memory_address(self, offset_bits=None, allow_writeback=True):
-        from nervapy.arm.registers import GeneralPurposeRegisterWriteback, ShiftedGeneralPurposeRegister
+        from nervapy.arm.registers import (GeneralPurposeRegisterWriteback,
+                                           ShiftedGeneralPurposeRegister)
         if self.type == Operand.MemoryType:
             if not allow_writeback and isinstance(self.base, GeneralPurposeRegisterWriteback):
                 return False
@@ -357,7 +362,8 @@ class Operand(object):
         return self.type == Operand.MemoryType and -4095 <= self.offset <= 4095
 
     def get_registers_list(self):
-        from nervapy.arm.registers import sp, GeneralPurposeRegisterWriteback, ShiftedGeneralPurposeRegister
+        from nervapy.arm.registers import (GeneralPurposeRegisterWriteback,
+                                           ShiftedGeneralPurposeRegister, sp)
         if self.is_address_register() or self.is_register() or self.is_register_lanes():
             return [self.register]
         elif self.is_shifted_general_purpose_register():

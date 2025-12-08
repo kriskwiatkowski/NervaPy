@@ -13,8 +13,8 @@ This test demonstrates:
 from nervapy import *
 from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf
-from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.formats import AssemblyFormat, HighRegisterStrategy
+from nervapy.arm.microarchitecture import Microarchitecture
 
 
 def test_push_w_strategy():

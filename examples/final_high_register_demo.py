@@ -8,8 +8,8 @@ This test forces high register usage to demonstrate both PUSH.W and STMDB approa
 from peachpy import *
 from peachpy.arm import *
 from peachpy.arm.abi import arm_gnueabihf
-from peachpy.arm.microarchitecture import Microarchitecture
 from peachpy.arm.formats import AssemblyFormat, HighRegisterStrategy
+from peachpy.arm.microarchitecture import Microarchitecture
 
 
 def demonstrate_high_register_strategies():

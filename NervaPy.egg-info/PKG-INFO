@@ -232,3 +232,82 @@ NervaPy can be used to explore instruction length, opcodes, and alternative enco
                                                          #     7: bytearray(b'\xc4\xe2uGD&\x08'),
                                                          #     9: bytearray(b'\xc4\xe2uG\x86\x08\x00\x00\x00')}
 
+Tutorials
+---------
+
+- `Writing Go assembly functions with NervaPy <https://blog.gopheracademy.com/advent-2016/nervapy/>`_ by `Damian Gryski <https://github.com/dgryski>`_
+
+- `Adventures in JIT compilation (Part 4) <http://eli.thegreenplace.net/2017/adventures-in-jit-compilation-part-4-in-python/>`_ by `Eli Bendersky <https://github.com/eliben>`_
+
+Users
+-----
+
+- `NNPACK <https://github.com/kriskwiatkowski/NNPACK>`_ -- an acceleration layer for convolutional networks on multi-core CPUs.
+
+- `ChaCha20 <https://git.schwanenlied.me/yawning/chacha20>`_ -- Go implementation of ChaCha20 cryptographic cipher.
+
+- `AEZ <https://git.schwanenlied.me/yawning/aez>`_ -- Go implementation of AEZ authenticated-encryption scheme.
+
+- `bp128 <https://github.com/robskie/bp128>`_ -- Go implementation of SIMD-BP128 integer encoding and decoding.
+
+- `go-marvin32 <https://github.com/dgryski/go-marvin32>`_ -- Go implementation of Microsoft's Marvin32 hash function.
+
+- `go-highway <https://github.com/dgryski/go-highway>`_ -- Go implementation of Google's Highway hash function.
+
+- `go-metro <https://github.com/dgryski/go-metro>`_ -- Go implementation of MetroHash function.
+
+- `go-stadtx <https://github.com/dgryski/go-stadtx>`_ -- Go implementation of Stadtx hash function.
+
+- `go-sip13 <https://github.com/dgryski/go-sip13>`_ -- Go implementation of SipHash 1-3 function.
+
+- `go-chaskey <https://github.com/dgryski/go-chaskey>`_ -- Go implementation of Chaskey MAC.
+
+- `go-speck <https://github.com/dgryski/go-speck>`_ -- Go implementation of SPECK cipher.
+
+- `go-bloomindex <https://github.com/dgryski/go-bloomindex>`_ - Go implementation of Bloom-filter based search index.
+
+- `go-groupvariant <https://github.com/dgryski/go-groupvarint>`_ - SSE-optimized group varint integer encoding in Go.
+
+- `Yeppp! <http://www.yeppp.info>`_ performance library. All optimized kernels in Yeppp! are implemented in NervaPy (uses old version of NervaPy with deprecated syntax).
+
+Peer-Reviewed Publications
+--------------------------
+
+- Marat Dukhan "NervaPy: A Python Framework for Developing High-Performance Assembly Kernels", Python for High-Performance Computing (PyHPC) 2013 (`slides <http://www.yeppp.info/resources/nervapy-slides.pdf>`_, `paper <http://www.yeppp.info/resources/nervapy-paper.pdf>`_, code uses deprecated syntax)
+
+- Marat Dukhan "NervaPy meets Opcodes: Direct Machine Code Generation from Python", Python for High-Performance Computing (PyHPC) 2015 (`slides <http://www.nervapy.io/slides/pyhpc2015>`_, `paper on ACM Digital Library <https://dl.acm.org/citation.cfm?id=2835860>`_).
+
+Other Presentations
+-------------------
+
+- Marat Dukhan "Developing Low-Level Assembly Kernels in NervaPy", presentation on `The First BLIS Retreat Workshop <https://www.cs.utexas.edu/users/flame/BLISRetreat/>`_, 2013 (`slides <https://www.cs.utexas.edu/users/flame/BLISRetreat/BLISRetreatTalks/NervaPy.pdf>`_, code uses deprecated syntax)
+
+- Marat Dukhan "Porting BLIS micro-kernels to NervaPy", presentation on `The Third BLIS Retreat Workshop <https://www.cs.utexas.edu/users/flame/BLISRetreat2015/>`_, 2015 (`slides <http://www.nervapy.io/slides/blis-retreat-2015/>`_)
+
+- Marat Dukhan "Accelerating Data Processing in Go with SIMD Instructions", presentation on `Atlanta Go Meetup <http://www.meetup.com/Go-Users-Group-Atlanta>`_, September 16, 2015 (`slides <https://docs.google.com/presentation/d/1MYg8PyhEf0oIvZ9YU2panNkVXsKt5UQBl_vGEaCeB1k/edit?usp=sharing>`_)
+
+Dependencies
+------------
+
+- Nearly all instruction classes in NervaPy are generated from `Opcodes Database <https://github.com/kriskwiatkowski/Opcodes>`_
+
+- Instruction encodings in NervaPy are validated against `binutils <https://www.gnu.org/software/binutils/>`_ using auto-generated tests
+
+- NervaPy uses `six <https://pythonhosted.org/six/>`_ and `enum34 <https://pypi.python.org/pypi/enum34>`_ packages as a compatibility layer between Python 2 and Python 3
+
+Acknowledgements
+----------------
+
+.. image:: https://github.com/kriskwiatkowski/NervaPy/blob/master/logo/hpcgarage.png
+  :alt: HPC Garage logo
+  :target: http://hpcgarage.org/
+
+.. image:: https://github.com/kriskwiatkowski/NervaPy/blob/master/logo/college-of-computing.gif
+  :alt: Georgia Tech College of Computing logo
+  :target: http://www.cse.gatech.edu/
+
+This work is a research project at the HPC Garage lab in the Georgia Institute of Technology, College of Computing, School of Computational Science and Engineering.
+
+The work was supported in part by grants to Prof. Richard Vuduc's research lab, `The HPC Garage <www.hpcgarage.org>`_, from the National Science Foundation (NSF) under NSF CAREER award number 0953100; and a grant from the Defense Advanced Research Projects Agency (DARPA) Computer Science Study Group program
+
+Any opinions, conclusions or recommendations expressed in this software and documentation are those of the authors and not necessarily reflect those of NSF or DARPA.

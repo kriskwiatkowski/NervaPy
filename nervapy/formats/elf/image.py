@@ -4,8 +4,10 @@
 
 class Image:
     def __init__(self, abi, source=None):
-        from nervapy.formats.elf.section import null_section, StringSection, SymbolSection, SectionIndex
-        from nervapy.formats.elf.symbol import Symbol, SymbolBinding, SymbolType
+        from nervapy.formats.elf.section import (SectionIndex, StringSection,
+                                                 SymbolSection, null_section)
+        from nervapy.formats.elf.symbol import (Symbol, SymbolBinding,
+                                                SymbolType)
         self.abi = abi
         self.shstrtab = StringSection(".shstrtab")
         self.strtab = StringSection(".strtab")
@@ -39,8 +41,10 @@ class Image:
     @property
     def as_bytearray(self):
         import six
+
         from nervapy.formats.elf.file import FileHeader
-        from nervapy.formats.elf.section import Section, StringSection, SymbolSection
+        from nervapy.formats.elf.section import (Section, StringSection,
+                                                 SymbolSection)
         from nervapy.util import roundup
 
         file_header = FileHeader(self.abi)

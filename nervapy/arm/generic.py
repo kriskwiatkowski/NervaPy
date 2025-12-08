@@ -3,9 +3,9 @@
 
 import inspect
 
-import nervapy.stream
 import nervapy.arm.function
-from nervapy.arm.instructions import QuasiInstruction, Instruction, Operand
+import nervapy.stream
+from nervapy.arm.instructions import Instruction, Operand, QuasiInstruction
 from nervapy.arm.isa import Extension
 from nervapy.arm.registers import GeneralPurposeRegisterWriteback
 
@@ -5267,7 +5267,8 @@ def _create_writeback_address(address, writeback):
     if not writeback:
         return address
 
-    from nervapy.arm.registers import GeneralPurposeRegister, GeneralPurposeRegisterWriteback
+    from nervapy.arm.registers import (GeneralPurposeRegister,
+                                       GeneralPurposeRegisterWriteback)
 
     # Address should be a list with base register and optional offset
     if not isinstance(address, list) or len(address) == 0:

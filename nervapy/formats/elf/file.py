@@ -112,8 +112,8 @@ class FileIdentification:
 
 class FileHeader:
     def __init__(self, abi):
-        import nervapy.formats.elf.section
         import nervapy.abi
+        import nervapy.formats.elf.section
         if not isinstance(abi, nervapy.abi.ABI):
             raise TypeError("ABI %s must be represented by an ABI object" % str(abi))
         if not abi.is_elf_compatible:

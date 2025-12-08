@@ -82,8 +82,8 @@ class ARM64CpuSubType(IntEnum):
 
 class MachHeader:
     def __init__(self, abi):
-        import nervapy.x86_64
         import nervapy.arm
+        import nervapy.x86_64
 
         self.abi = abi
         self.size = {4: 28, 8: 32}[abi.pointer_size]

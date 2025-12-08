@@ -3,367 +3,322 @@
 
 
 import nervapy.x86_64.abi
-import nervapy.x86_64.uarch
 import nervapy.x86_64.isa
-
-
-from nervapy.x86_64.registers import GeneralPurposeRegister, \
-    GeneralPurposeRegister8, GeneralPurposeRegister16, GeneralPurposeRegister32, GeneralPurposeRegister64, \
-    MMXRegister, XMMRegister, YMMRegister, ZMMRegister, KRegister, \
-    rax, rbx, rcx, rdx, rsi, rdi, rbp, r8, r9, r10, r11, r12, r13, r14, r15, \
-    eax, ebx, ecx, edx, esi, edi, ebp, r8d, r9d, r10d, r11d, r12d, r13d, r14d, r15d, \
-    ax, bx, cx, dx, si, di, bp, r8w, r9w, r10w, r11w, r12w, r13w, r14w, r15w, \
-    al, ah, bl, bh, cl, ch, dl, dh, sil, dil, bpl, r8b, r9b, r10b, r11b, r12b, r13b, r14b, r15b, \
-    mm0, mm1, mm2, mm3, mm4, mm5, mm6, mm7, \
-    xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15, \
-    xmm16, xmm17, xmm18, xmm19, xmm20, xmm21, xmm22, xmm23, xmm24, xmm25, xmm26, xmm27, xmm28, xmm29, xmm30, xmm31, \
-    ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7, ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15, \
-    ymm16, ymm17, ymm18, ymm19, ymm20, ymm21, ymm22, ymm23, ymm24, ymm25, ymm26, ymm27, ymm28, ymm29, ymm30, ymm31, \
-    zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7, zmm8, zmm9, zmm10, zmm11, zmm12, zmm13, zmm14, zmm15, \
-    zmm16, zmm17, zmm18, zmm19, zmm20, zmm21, zmm22, zmm23, zmm24, zmm25, zmm26, zmm27, zmm28, zmm29, zmm30, zmm31, \
-    k0, k1, k2, k3, k4, k5, k6, k7
+import nervapy.x86_64.uarch
+from nervapy.x86_64.amd import (EXTRQ, FEMMS, INSERTQ, MOVNTSD, MOVNTSS,
+                                PAVGUSB, PF2ID, PF2IW, PFACC, PFADD, PFCMPEQ,
+                                PFCMPGE, PFCMPGT, PFMAX, PFMIN, PFMUL, PFNACC,
+                                PFPNACC, PFRCP, PFRCPIT1, PFRCPIT2, PFRSQIT1,
+                                PFRSQRT, PFSUB, PFSUBR, PI2FD, PI2FW, PMULHRW,
+                                PSWAPD, VFRCZPD, VFRCZPS, VFRCZSD, VFRCZSS,
+                                VPCMOV, VPCOMB, VPCOMD, VPCOMQ, VPCOMUB,
+                                VPCOMUD, VPCOMUQ, VPCOMUW, VPCOMW, VPERMIL2PD,
+                                VPERMIL2PS, VPHADDBD, VPHADDBQ, VPHADDBW,
+                                VPHADDDQ, VPHADDUBD, VPHADDUBQ, VPHADDUBW,
+                                VPHADDUDQ, VPHADDUWD, VPHADDUWQ, VPHADDWD,
+                                VPHADDWQ, VPHSUBBW, VPHSUBDQ, VPHSUBWD,
+                                VPMACSDD, VPMACSDQH, VPMACSDQL, VPMACSSDD,
+                                VPMACSSDQH, VPMACSSDQL, VPMACSSWD, VPMACSSWW,
+                                VPMACSWD, VPMACSWW, VPMADCSSWD, VPMADCSWD,
+                                VPPERM, VPROTB, VPROTD, VPROTQ, VPROTW, VPSHAB,
+                                VPSHAD, VPSHAQ, VPSHAW, VPSHLB, VPSHLD, VPSHLQ,
+                                VPSHLW)
+from nervapy.x86_64.avx import (VADDPD, VADDPS, VADDSD, VADDSS, VADDSUBPD,
+                                VADDSUBPS, VALIGND, VALIGNQ, VANDNPD, VANDNPS,
+                                VANDPD, VANDPS, VBLENDMPD, VBLENDMPS, VBLENDPD,
+                                VBLENDPS, VBLENDVPD, VBLENDVPS,
+                                VBROADCASTF32X2, VBROADCASTF32X4,
+                                VBROADCASTF32X8, VBROADCASTF64X2,
+                                VBROADCASTF64X4, VBROADCASTF128,
+                                VBROADCASTI32X2, VBROADCASTI32X4,
+                                VBROADCASTI32X8, VBROADCASTI64X2,
+                                VBROADCASTI64X4, VBROADCASTI128, VBROADCASTSD,
+                                VBROADCASTSS, VCMPPD, VCMPPS, VCMPSD, VCMPSS,
+                                VCOMISD, VCOMISS, VCOMPRESSPD, VCOMPRESSPS,
+                                VCVTDQ2PD, VCVTDQ2PS, VCVTPD2DQ, VCVTPD2PS,
+                                VCVTPD2QQ, VCVTPD2UDQ, VCVTPD2UQQ, VCVTPH2PS,
+                                VCVTPS2DQ, VCVTPS2PD, VCVTPS2PH, VCVTPS2QQ,
+                                VCVTPS2UDQ, VCVTPS2UQQ, VCVTQQ2PD, VCVTQQ2PS,
+                                VCVTSD2SI, VCVTSD2SS, VCVTSD2USI, VCVTSI2SD,
+                                VCVTSI2SS, VCVTSS2SD, VCVTSS2SI, VCVTSS2USI,
+                                VCVTTPD2DQ, VCVTTPD2QQ, VCVTTPD2UDQ,
+                                VCVTTPD2UQQ, VCVTTPS2DQ, VCVTTPS2QQ,
+                                VCVTTPS2UDQ, VCVTTPS2UQQ, VCVTTSD2SI,
+                                VCVTTSD2USI, VCVTTSS2SI, VCVTTSS2USI,
+                                VCVTUDQ2PD, VCVTUDQ2PS, VCVTUQQ2PD, VCVTUQQ2PS,
+                                VCVTUSI2SD, VCVTUSI2SS, VDBPSADBW, VDIVPD,
+                                VDIVPS, VDIVSD, VDIVSS, VDPPD, VDPPS, VEXP2PD,
+                                VEXP2PS, VEXPANDPD, VEXPANDPS, VEXTRACTF32X4,
+                                VEXTRACTF32X8, VEXTRACTF64X2, VEXTRACTF64X4,
+                                VEXTRACTF128, VEXTRACTI32X4, VEXTRACTI32X8,
+                                VEXTRACTI64X2, VEXTRACTI64X4, VEXTRACTI128,
+                                VEXTRACTPS, VFIXUPIMMPD, VFIXUPIMMPS,
+                                VFIXUPIMMSD, VFIXUPIMMSS, VFPCLASSPD,
+                                VFPCLASSPS, VFPCLASSSD, VFPCLASSSS, VGATHERDPD,
+                                VGATHERDPS, VGATHERPF0DPD, VGATHERPF0DPS,
+                                VGATHERPF0QPD, VGATHERPF0QPS, VGATHERPF1DPD,
+                                VGATHERPF1DPS, VGATHERPF1QPD, VGATHERPF1QPS,
+                                VGATHERQPD, VGATHERQPS, VGETEXPPD, VGETEXPPS,
+                                VGETEXPSD, VGETEXPSS, VGETMANTPD, VGETMANTPS,
+                                VGETMANTSD, VGETMANTSS, VHADDPD, VHADDPS,
+                                VHSUBPD, VHSUBPS, VINSERTF32X4, VINSERTF32X8,
+                                VINSERTF64X2, VINSERTF64X4, VINSERTF128,
+                                VINSERTI32X4, VINSERTI32X8, VINSERTI64X2,
+                                VINSERTI64X4, VINSERTI128, VINSERTPS, VLDDQU,
+                                VLDMXCSR, VMASKMOVDQU, VMASKMOVPD, VMASKMOVPS,
+                                VMAXPD, VMAXPS, VMAXSD, VMAXSS, VMINPD, VMINPS,
+                                VMINSD, VMINSS, VMOVAPD, VMOVAPS, VMOVD,
+                                VMOVDDUP, VMOVDQA, VMOVDQA32, VMOVDQA64,
+                                VMOVDQU, VMOVDQU8, VMOVDQU16, VMOVDQU32,
+                                VMOVDQU64, VMOVHLPS, VMOVHPD, VMOVHPS,
+                                VMOVLHPS, VMOVLPD, VMOVLPS, VMOVMSKPD,
+                                VMOVMSKPS, VMOVNTDQ, VMOVNTDQA, VMOVNTPD,
+                                VMOVNTPS, VMOVQ, VMOVSD, VMOVSHDUP, VMOVSLDUP,
+                                VMOVSS, VMOVUPD, VMOVUPS, VMPSADBW, VMULPD,
+                                VMULPS, VMULSD, VMULSS, VORPD, VORPS, VPABSB,
+                                VPABSD, VPABSQ, VPABSW, VPACKSSDW, VPACKSSWB,
+                                VPACKUSDW, VPACKUSWB, VPADDB, VPADDD, VPADDQ,
+                                VPADDSB, VPADDSW, VPADDUSB, VPADDUSW, VPADDW,
+                                VPALIGNR, VPAND, VPANDD, VPANDN, VPANDND,
+                                VPANDNQ, VPANDQ, VPAVGB, VPAVGW, VPBLENDD,
+                                VPBLENDMB, VPBLENDMD, VPBLENDMQ, VPBLENDMW,
+                                VPBLENDVB, VPBLENDW, VPBROADCASTB,
+                                VPBROADCASTD, VPBROADCASTMB2Q, VPBROADCASTMW2D,
+                                VPBROADCASTQ, VPBROADCASTW, VPCMPB, VPCMPD,
+                                VPCMPEQB, VPCMPEQD, VPCMPEQQ, VPCMPEQW,
+                                VPCMPESTRI, VPCMPESTRM, VPCMPGTB, VPCMPGTD,
+                                VPCMPGTQ, VPCMPGTW, VPCMPISTRI, VPCMPISTRM,
+                                VPCMPQ, VPCMPUB, VPCMPUD, VPCMPUQ, VPCMPUW,
+                                VPCMPW, VPCOMPRESSD, VPCOMPRESSQ, VPCONFLICTD,
+                                VPCONFLICTQ, VPERM2F128, VPERM2I128, VPERMB,
+                                VPERMD, VPERMI2B, VPERMI2D, VPERMI2PD,
+                                VPERMI2PS, VPERMI2Q, VPERMI2W, VPERMILPD,
+                                VPERMILPS, VPERMPD, VPERMPS, VPERMQ, VPERMT2B,
+                                VPERMT2D, VPERMT2PD, VPERMT2PS, VPERMT2Q,
+                                VPERMT2W, VPERMW, VPEXPANDD, VPEXPANDQ,
+                                VPEXTRB, VPEXTRD, VPEXTRQ, VPEXTRW, VPGATHERDD,
+                                VPGATHERDQ, VPGATHERQD, VPGATHERQQ, VPHADDD,
+                                VPHADDSW, VPHADDW, VPHMINPOSUW, VPHSUBD,
+                                VPHSUBSW, VPHSUBW, VPINSRB, VPINSRD, VPINSRQ,
+                                VPINSRW, VPLZCNTD, VPLZCNTQ, VPMADD52HUQ,
+                                VPMADD52LUQ, VPMADDUBSW, VPMADDWD, VPMASKMOVD,
+                                VPMASKMOVQ, VPMAXSB, VPMAXSD, VPMAXSQ, VPMAXSW,
+                                VPMAXUB, VPMAXUD, VPMAXUQ, VPMAXUW, VPMINSB,
+                                VPMINSD, VPMINSQ, VPMINSW, VPMINUB, VPMINUD,
+                                VPMINUQ, VPMINUW, VPMOVB2M, VPMOVD2M, VPMOVDB,
+                                VPMOVDW, VPMOVM2B, VPMOVM2D, VPMOVM2Q,
+                                VPMOVM2W, VPMOVMSKB, VPMOVQ2M, VPMOVQB,
+                                VPMOVQD, VPMOVQW, VPMOVSDB, VPMOVSDW, VPMOVSQB,
+                                VPMOVSQD, VPMOVSQW, VPMOVSWB, VPMOVSXBD,
+                                VPMOVSXBQ, VPMOVSXBW, VPMOVSXDQ, VPMOVSXWD,
+                                VPMOVSXWQ, VPMOVUSDB, VPMOVUSDW, VPMOVUSQB,
+                                VPMOVUSQD, VPMOVUSQW, VPMOVUSWB, VPMOVW2M,
+                                VPMOVWB, VPMOVZXBD, VPMOVZXBQ, VPMOVZXBW,
+                                VPMOVZXDQ, VPMOVZXWD, VPMOVZXWQ, VPMULDQ,
+                                VPMULHRSW, VPMULHUW, VPMULHW, VPMULLD, VPMULLQ,
+                                VPMULLW, VPMULTISHIFTQB, VPMULUDQ, VPOPCNTD,
+                                VPOPCNTQ, VPOR, VPORD, VPORQ, VPROLD, VPROLQ,
+                                VPROLVD, VPROLVQ, VPRORD, VPRORQ, VPRORVD,
+                                VPRORVQ, VPSADBW, VPSCATTERDD, VPSCATTERDQ,
+                                VPSCATTERQD, VPSCATTERQQ, VPSHUFB, VPSHUFD,
+                                VPSHUFHW, VPSHUFLW, VPSIGNB, VPSIGND, VPSIGNW,
+                                VPSLLD, VPSLLDQ, VPSLLQ, VPSLLVD, VPSLLVQ,
+                                VPSLLVW, VPSLLW, VPSRAD, VPSRAQ, VPSRAVD,
+                                VPSRAVQ, VPSRAVW, VPSRAW, VPSRLD, VPSRLDQ,
+                                VPSRLQ, VPSRLVD, VPSRLVQ, VPSRLVW, VPSRLW,
+                                VPSUBB, VPSUBD, VPSUBQ, VPSUBSB, VPSUBSW,
+                                VPSUBUSB, VPSUBUSW, VPSUBW, VPTERNLOGD,
+                                VPTERNLOGQ, VPTEST, VPTESTMB, VPTESTMD,
+                                VPTESTMQ, VPTESTMW, VPTESTNMB, VPTESTNMD,
+                                VPTESTNMQ, VPTESTNMW, VPUNPCKHBW, VPUNPCKHDQ,
+                                VPUNPCKHQDQ, VPUNPCKHWD, VPUNPCKLBW,
+                                VPUNPCKLDQ, VPUNPCKLQDQ, VPUNPCKLWD, VPXOR,
+                                VPXORD, VPXORQ, VRANGEPD, VRANGEPS, VRANGESD,
+                                VRANGESS, VRCP14PD, VRCP14PS, VRCP14SD,
+                                VRCP14SS, VRCP28PD, VRCP28PS, VRCP28SD,
+                                VRCP28SS, VRCPPS, VRCPSS, VREDUCEPD, VREDUCEPS,
+                                VREDUCESD, VREDUCESS, VRNDSCALEPD, VRNDSCALEPS,
+                                VRNDSCALESD, VRNDSCALESS, VROUNDPD, VROUNDPS,
+                                VROUNDSD, VROUNDSS, VRSQRT14PD, VRSQRT14PS,
+                                VRSQRT14SD, VRSQRT14SS, VRSQRT28PD, VRSQRT28PS,
+                                VRSQRT28SD, VRSQRT28SS, VRSQRTPS, VRSQRTSS,
+                                VSCALEFPD, VSCALEFPS, VSCALEFSD, VSCALEFSS,
+                                VSCATTERDPD, VSCATTERDPS, VSCATTERPF0DPD,
+                                VSCATTERPF0DPS, VSCATTERPF0QPD, VSCATTERPF0QPS,
+                                VSCATTERPF1DPD, VSCATTERPF1DPS, VSCATTERPF1QPD,
+                                VSCATTERPF1QPS, VSCATTERQPD, VSCATTERQPS,
+                                VSHUFF32X4, VSHUFF64X2, VSHUFI32X4, VSHUFI64X2,
+                                VSHUFPD, VSHUFPS, VSQRTPD, VSQRTPS, VSQRTSD,
+                                VSQRTSS, VSTMXCSR, VSUBPD, VSUBPS, VSUBSD,
+                                VSUBSS, VTESTPD, VTESTPS, VUCOMISD, VUCOMISS,
+                                VUNPCKHPD, VUNPCKHPS, VUNPCKLPD, VUNPCKLPS,
+                                VXORPD, VXORPS, VZEROALL, VZEROUPPER)
+from nervapy.x86_64.crypto import (AESDEC, AESDECLAST, AESENC, AESENCLAST,
+                                   AESIMC, AESKEYGENASSIST, PCLMULQDQ, RDRAND,
+                                   RDSEED, SHA1MSG1, SHA1MSG2, SHA1NEXTE,
+                                   SHA1RNDS4, SHA256MSG1, SHA256MSG2,
+                                   SHA256RNDS2, VAESDEC, VAESDECLAST, VAESENC,
+                                   VAESENCLAST, VAESIMC, VAESKEYGENASSIST,
+                                   VPCLMULQDQ)
+from nervapy.x86_64.fma import (VFMADD132PD, VFMADD132PS, VFMADD132SD,
+                                VFMADD132SS, VFMADD213PD, VFMADD213PS,
+                                VFMADD213SD, VFMADD213SS, VFMADD231PD,
+                                VFMADD231PS, VFMADD231SD, VFMADD231SS,
+                                VFMADDPD, VFMADDPS, VFMADDSD, VFMADDSS,
+                                VFMADDSUB132PD, VFMADDSUB132PS, VFMADDSUB213PD,
+                                VFMADDSUB213PS, VFMADDSUB231PD, VFMADDSUB231PS,
+                                VFMADDSUBPD, VFMADDSUBPS, VFMSUB132PD,
+                                VFMSUB132PS, VFMSUB132SD, VFMSUB132SS,
+                                VFMSUB213PD, VFMSUB213PS, VFMSUB213SD,
+                                VFMSUB213SS, VFMSUB231PD, VFMSUB231PS,
+                                VFMSUB231SD, VFMSUB231SS, VFMSUBADD132PD,
+                                VFMSUBADD132PS, VFMSUBADD213PD, VFMSUBADD213PS,
+                                VFMSUBADD231PD, VFMSUBADD231PS, VFMSUBADDPD,
+                                VFMSUBADDPS, VFMSUBPD, VFMSUBPS, VFMSUBSD,
+                                VFMSUBSS, VFNMADD132PD, VFNMADD132PS,
+                                VFNMADD132SD, VFNMADD132SS, VFNMADD213PD,
+                                VFNMADD213PS, VFNMADD213SD, VFNMADD213SS,
+                                VFNMADD231PD, VFNMADD231PS, VFNMADD231SD,
+                                VFNMADD231SS, VFNMADDPD, VFNMADDPS, VFNMADDSD,
+                                VFNMADDSS, VFNMSUB132PD, VFNMSUB132PS,
+                                VFNMSUB132SD, VFNMSUB132SS, VFNMSUB213PD,
+                                VFNMSUB213PS, VFNMSUB213SD, VFNMSUB213SS,
+                                VFNMSUB231PD, VFNMSUB231PS, VFNMSUB231SD,
+                                VFNMSUB231SS, VFNMSUBPD, VFNMSUBPS, VFNMSUBSD,
+                                VFNMSUBSS)
 from nervapy.x86_64.function import Function, LocalVariable
-from nervapy.x86_64.operand import byte, word, dword, qword, oword, hword, yword, zword, \
-    rn_sae, rz_sae, ru_sae, rd_sae, sae
-
-from nervapy.x86_64.pseudo import Label, Loop, Block, \
-    LABEL, ALIGN, IACA, RETURN, LOAD, STORE, SWAP, REDUCE
+from nervapy.x86_64.generic import (ADC, ADCX, ADD, ADOX, AND, ANDN, BEXTR,
+                                    BLCFILL, BLCI, BLCIC, BLCMSK, BLCS,
+                                    BLSFILL, BLSI, BLSIC, BLSMSK, BLSR, BSF,
+                                    BSR, BSWAP, BT, BTC, BTR, BTS, BZHI, CALL,
+                                    CBW, CDQ, CDQE, CLC, CLD, CLFLUSH,
+                                    CLFLUSHOPT, CLWB, CLZERO, CMC, CMOVA,
+                                    CMOVAE, CMOVB, CMOVBE, CMOVC, CMOVE, CMOVG,
+                                    CMOVGE, CMOVL, CMOVLE, CMOVNA, CMOVNAE,
+                                    CMOVNB, CMOVNBE, CMOVNC, CMOVNE, CMOVNG,
+                                    CMOVNGE, CMOVNL, CMOVNLE, CMOVNO, CMOVNP,
+                                    CMOVNS, CMOVNZ, CMOVO, CMOVP, CMOVPE,
+                                    CMOVPO, CMOVS, CMOVZ, CMP, CMPXCHG,
+                                    CMPXCHG8B, CMPXCHG16B, CPUID, CQO, CRC32,
+                                    CWD, CWDE, DEC, DIV, IDIV, IMUL, INC, INT,
+                                    JA, JAE, JB, JBE, JC, JE, JECXZ, JG, JGE,
+                                    JL, JLE, JMP, JNA, JNAE, JNB, JNBE, JNC,
+                                    JNE, JNG, JNGE, JNL, JNLE, JNO, JNP, JNS,
+                                    JNZ, JO, JP, JPE, JPO, JRCXZ, JS, JZ, LEA,
+                                    LFENCE, LZCNT, MFENCE, MOV, MOVBE, MOVNTI,
+                                    MOVSX, MOVSXD, MOVZX, MUL, MULX, NEG, NOP,
+                                    NOT, OR, PAUSE, PDEP, PEXT, POP, POPCNT,
+                                    PREFETCH, PREFETCHNTA, PREFETCHT0,
+                                    PREFETCHT1, PREFETCHT2, PREFETCHW,
+                                    PREFETCHWT1, PUSH, RCL, RCR, RDTSC, RDTSCP,
+                                    RET, ROL, ROR, RORX, SAL, SAR, SARX, SBB,
+                                    SETA, SETAE, SETB, SETBE, SETC, SETE, SETG,
+                                    SETGE, SETL, SETLE, SETNA, SETNAE, SETNB,
+                                    SETNBE, SETNC, SETNE, SETNG, SETNGE, SETNL,
+                                    SETNLE, SETNO, SETNP, SETNS, SETNZ, SETO,
+                                    SETP, SETPE, SETPO, SETS, SETZ, SFENCE,
+                                    SHL, SHLD, SHLX, SHR, SHRD, SHRX, STC, STD,
+                                    SUB, SYSCALL, T1MSKC, TEST, TZCNT, TZMSK,
+                                    UD2, XADD, XCHG, XGETBV, XOR)
+from nervapy.x86_64.mask import (KADDB, KADDD, KADDQ, KADDW, KANDB, KANDD,
+                                 KANDNB, KANDND, KANDNQ, KANDNW, KANDQ, KANDW,
+                                 KMOVB, KMOVD, KMOVQ, KMOVW, KNOTB, KNOTD,
+                                 KNOTQ, KNOTW, KORB, KORD, KORQ, KORTESTB,
+                                 KORTESTD, KORTESTQ, KORTESTW, KORW, KSHIFTLB,
+                                 KSHIFTLD, KSHIFTLQ, KSHIFTLW, KSHIFTRB,
+                                 KSHIFTRD, KSHIFTRQ, KSHIFTRW, KTESTB, KTESTD,
+                                 KTESTQ, KTESTW, KUNPCKBW, KUNPCKDQ, KUNPCKWD,
+                                 KXNORB, KXNORD, KXNORQ, KXNORW, KXORB, KXORD,
+                                 KXORQ, KXORW)
+from nervapy.x86_64.mmxsse import (ADDPD, ADDPS, ADDSD, ADDSS, ADDSUBPD,
+                                   ADDSUBPS, ANDNPD, ANDNPS, ANDPD, ANDPS,
+                                   BLENDPD, BLENDPS, BLENDVPD, BLENDVPS, CMPPD,
+                                   CMPPS, CMPSD, CMPSS, COMISD, COMISS,
+                                   CVTDQ2PD, CVTDQ2PS, CVTPD2DQ, CVTPD2PI,
+                                   CVTPD2PS, CVTPI2PD, CVTPI2PS, CVTPS2DQ,
+                                   CVTPS2PD, CVTPS2PI, CVTSD2SI, CVTSD2SS,
+                                   CVTSI2SD, CVTSI2SS, CVTSS2SD, CVTSS2SI,
+                                   CVTTPD2DQ, CVTTPD2PI, CVTTPS2DQ, CVTTPS2PI,
+                                   CVTTSD2SI, CVTTSS2SI, DIVPD, DIVPS, DIVSD,
+                                   DIVSS, DPPD, DPPS, EMMS, EXTRACTPS, HADDPD,
+                                   HADDPS, HSUBPD, HSUBPS, INSERTPS, LDDQU,
+                                   LDMXCSR, MASKMOVDQU, MASKMOVQ, MAXPD, MAXPS,
+                                   MAXSD, MAXSS, MINPD, MINPS, MINSD, MINSS,
+                                   MOVAPD, MOVAPS, MOVD, MOVDDUP, MOVDQ2Q,
+                                   MOVDQA, MOVDQU, MOVHLPS, MOVHPD, MOVHPS,
+                                   MOVLHPS, MOVLPD, MOVLPS, MOVMSKPD, MOVMSKPS,
+                                   MOVNTDQ, MOVNTDQA, MOVNTPD, MOVNTPS, MOVNTQ,
+                                   MOVQ, MOVQ2DQ, MOVSD, MOVSHDUP, MOVSLDUP,
+                                   MOVSS, MOVUPD, MOVUPS, MPSADBW, MULPD,
+                                   MULPS, MULSD, MULSS, ORPD, ORPS, PABSB,
+                                   PABSD, PABSW, PACKSSDW, PACKSSWB, PACKUSDW,
+                                   PACKUSWB, PADDB, PADDD, PADDQ, PADDSB,
+                                   PADDSW, PADDUSB, PADDUSW, PADDW, PALIGNR,
+                                   PAND, PANDN, PAVGB, PAVGW, PBLENDVB,
+                                   PBLENDW, PCMPEQB, PCMPEQD, PCMPEQQ, PCMPEQW,
+                                   PCMPESTRI, PCMPESTRM, PCMPGTB, PCMPGTD,
+                                   PCMPGTQ, PCMPGTW, PCMPISTRI, PCMPISTRM,
+                                   PEXTRB, PEXTRD, PEXTRQ, PEXTRW, PHADDD,
+                                   PHADDSW, PHADDW, PHMINPOSUW, PHSUBD,
+                                   PHSUBSW, PHSUBW, PINSRB, PINSRD, PINSRQ,
+                                   PINSRW, PMADDUBSW, PMADDWD, PMAXSB, PMAXSD,
+                                   PMAXSW, PMAXUB, PMAXUD, PMAXUW, PMINSB,
+                                   PMINSD, PMINSW, PMINUB, PMINUD, PMINUW,
+                                   PMOVMSKB, PMOVSXBD, PMOVSXBQ, PMOVSXBW,
+                                   PMOVSXDQ, PMOVSXWD, PMOVSXWQ, PMOVZXBD,
+                                   PMOVZXBQ, PMOVZXBW, PMOVZXDQ, PMOVZXWD,
+                                   PMOVZXWQ, PMULDQ, PMULHRSW, PMULHUW, PMULHW,
+                                   PMULLD, PMULLW, PMULUDQ, POR, PSADBW,
+                                   PSHUFB, PSHUFD, PSHUFHW, PSHUFLW, PSHUFW,
+                                   PSIGNB, PSIGND, PSIGNW, PSLLD, PSLLDQ,
+                                   PSLLQ, PSLLW, PSRAD, PSRAW, PSRLD, PSRLDQ,
+                                   PSRLQ, PSRLW, PSUBB, PSUBD, PSUBQ, PSUBSB,
+                                   PSUBSW, PSUBUSB, PSUBUSW, PSUBW, PTEST,
+                                   PUNPCKHBW, PUNPCKHDQ, PUNPCKHQDQ, PUNPCKHWD,
+                                   PUNPCKLBW, PUNPCKLDQ, PUNPCKLQDQ, PUNPCKLWD,
+                                   PXOR, RCPPS, RCPSS, ROUNDPD, ROUNDPS,
+                                   ROUNDSD, ROUNDSS, RSQRTPS, RSQRTSS, SHUFPD,
+                                   SHUFPS, SQRTPD, SQRTPS, SQRTSD, SQRTSS,
+                                   STMXCSR, SUBPD, SUBPS, SUBSD, SUBSS,
+                                   UCOMISD, UCOMISS, UNPCKHPD, UNPCKHPS,
+                                   UNPCKLPD, UNPCKLPS, XORPD, XORPS)
 from nervapy.x86_64.nacl import NACLJMP
-
-from nervapy.x86_64.generic import \
-    ADD, SUB, ADC, SBB, ADCX, ADOX, \
-    AND, OR, XOR, ANDN, \
-    NOT, NEG, INC, DEC, \
-    TEST, CMP, \
-    MOV, MOVZX, MOVSX, MOVSXD, MOVBE, MOVNTI, \
-    BT, BTS, BTR, BTC, POPCNT, BSWAP, \
-    BSF, BSR, LZCNT, TZCNT, \
-    SHR, SAR, SHL, SAL, SHRX, SARX, SHLX, \
-    SHRD, SHLD, \
-    ROR, ROL, RORX, \
-    RCR, RCL, \
-    IMUL, MUL, MULX, \
-    IDIV, DIV, \
-    LEA, PUSH, POP, \
-    POPCNT, LZCNT, TZCNT, \
-    BEXTR, PDEP, PEXT, \
-    BZHI, \
-    BLCFILL, BLCI, BLCIC, BLCMSK, BLCS, \
-    BLSFILL, BLSI, BLSIC, BLSMSK, BLSR, \
-    T1MSKC, TZMSK, \
-    CRC32, \
-    CBW, CDQ, CQO, \
-    CWD, CWDE, CDQE, \
-    CMOVA, CMOVNA, CMOVAE, CMOVNAE, \
-    CMOVB, CMOVNB, CMOVBE, CMOVNBE, \
-    CMOVC, CMOVNC, CMOVE, CMOVNE, \
-    CMOVG, CMOVNG, CMOVGE, CMOVNGE, \
-    CMOVL, CMOVNL, CMOVLE, CMOVNLE, \
-    CMOVO, CMOVNO, CMOVP, CMOVNP, \
-    CMOVS, CMOVNS, CMOVZ, CMOVNZ, \
-    CMOVPE, CMOVPO, \
-    SETA, SETNA, SETAE, SETNAE, \
-    SETB, SETNB, SETBE, SETNBE, \
-    SETC, SETNC, SETE, SETNE, \
-    SETG, SETNG, SETGE, SETNGE, \
-    SETL, SETNL, SETLE, SETNLE, \
-    SETO, SETNO, SETP, SETNP, \
-    SETS, SETNS, SETZ, SETNZ, \
-    SETPE, SETPO, \
-    JA, JNA, JAE, JNAE, \
-    JB, JNB, JBE, JNBE, \
-    JC, JNC, JE, JNE, \
-    JG, JNG, JGE, JNGE, \
-    JL, JNL, JLE, JNLE, \
-    JO, JNO, JP, JNP, \
-    JS, JNS, JZ, JNZ, \
-    JPE, JPO, JMP, \
-    JRCXZ, JECXZ, \
-    RET, CALL, \
-    PAUSE, NOP, \
-    INT, UD2, \
-    CPUID, RDTSC, RDTSCP, XGETBV, \
-    SYSCALL, \
-    STC, CLC, CMC, \
-    STD, CLD, \
-    XADD, XCHG, \
-    CMPXCHG, CMPXCHG8B, CMPXCHG16B, \
-    SFENCE, MFENCE, LFENCE, \
-    PREFETCHNTA, PREFETCHT0, PREFETCHT1, PREFETCHT2, PREFETCH, PREFETCHW, PREFETCHWT1, \
-    CLFLUSH, CLFLUSHOPT, CLWB, CLZERO
-
-from nervapy.x86_64.mmxsse import \
-    MOVSS, EXTRACTPS, INSERTPS, \
-    ADDSS, SUBSS, MULSS, DIVSS, SQRTSS, \
-    ROUNDSS, MINSS, MAXSS, RCPSS, RSQRTSS, \
-    CMPSS, COMISS, UCOMISS, \
-    MOVSD, ADDSD, SUBSD, MULSD, DIVSD, SQRTSD, \
-    ROUNDSD, MINSD, MAXSD, \
-    CMPSD, COMISD, UCOMISD, \
-    MOVAPS, MOVUPS, MOVLPS, MOVNTPS, \
-    MOVHPS, MOVSLDUP, MOVSHDUP, \
-    MOVAPD, MOVUPD, MOVLPD, MOVNTPD, \
-    MOVHPD, MOVDDUP, \
-    ADDPS, HADDPS, SUBPS, HSUBPS, ADDSUBPS, MULPS, DIVPS, SQRTPS, \
-    ADDPD, HADDPD, SUBPD, HSUBPD, ADDSUBPD, MULPD, DIVPD, SQRTPD, \
-    ROUNDPS, MINPS, MAXPS, RCPPS, RSQRTPS, DPPS, \
-    CMPPS, MOVMSKPS, \
-    ROUNDPD, MINPD, MAXPD, DPPD, \
-    CMPPD, MOVMSKPD, \
-    ANDPS, ANDNPS, ORPS, XORPS, BLENDPS, BLENDVPS, \
-    ANDPD, ANDNPD, ORPD, XORPD, BLENDPD, BLENDVPD, \
-    UNPCKLPS, UNPCKHPS, MOVLHPS, MOVHLPS, SHUFPS, \
-    UNPCKLPD, UNPCKHPD, SHUFPD, \
-    MOVD, MOVQ, MOVDQ2Q, MOVQ2DQ, MOVDQA, MOVDQU, LDDQU, \
-    MASKMOVQ, MASKMOVDQU, \
-    MOVNTQ, MOVNTDQ, MOVNTDQA, \
-    PMOVSXBW, PMOVSXBD, PMOVSXBQ, PMOVSXWD, PMOVSXWQ, PMOVSXDQ, \
-    PMOVZXBW, PMOVZXBD, PMOVZXBQ, PMOVZXWD, PMOVZXWQ, PMOVZXDQ, \
-    PEXTRB, PEXTRW, PEXTRD, PEXTRQ, \
-    PINSRB, PINSRW, PINSRD, PINSRQ, \
-    PMOVMSKB, PTEST, \
-    PADDB, PADDW, PADDD, PADDQ, PADDSB, PADDSW, PADDUSB, PADDUSW, \
-    PHADDW, PHADDD, PHADDSW, \
-    PSUBB, PSUBW, PSUBD, PSUBQ, PSUBSB, PSUBSW, PSUBUSB, PSUBUSW, \
-    PHSUBW, PHSUBD, PHSUBSW, \
-    PMAXSB, PMAXSW, PMAXSD, PMAXUB, PMAXUW, PMAXUD, \
-    PMINSB, PMINSW, PMINSD, PMINUB, PMINUW, PMINUD, \
-    PSLLW, PSLLD, PSLLQ, PSRLW, PSRLD, PSRLQ, PSRAW, PSRAD, \
-    PMULLW, PMULHW, PMULHUW, PMULLD, PMULDQ, PMULUDQ, \
-    PMULHRSW, PMADDWD, PMADDUBSW, \
-    PAVGB, PAVGW, \
-    PSADBW, MPSADBW, PHMINPOSUW, \
-    PCMPEQB, PCMPEQW, PCMPEQD, PCMPEQQ, \
-    PCMPGTB, PCMPGTW, PCMPGTD, PCMPGTQ, \
-    PABSB, PABSW, PABSD, PSIGNB, PSIGNW, PSIGND, \
-    PAND, PANDN, POR, PXOR, PBLENDW, PBLENDVB, \
-    PUNPCKLBW, PUNPCKLWD, PUNPCKLDQ, PUNPCKLQDQ, \
-    PUNPCKHBW, PUNPCKHWD, PUNPCKHDQ, PUNPCKHQDQ, \
-    PACKSSWB, PACKSSDW, PACKUSWB, PACKUSDW, \
-    PSHUFB, PSHUFW, PSHUFLW, PSHUFHW, PSHUFD, \
-    PSLLDQ, PSRLDQ, PALIGNR, \
-    PCMPESTRI, PCMPESTRM, PCMPISTRI, PCMPISTRM, \
-    CVTSS2SI, CVTTSS2SI, CVTSI2SS, \
-    CVTSD2SI, CVTTSD2SI, CVTSI2SD, \
-    CVTPS2DQ, CVTTPS2DQ, CVTDQ2PS, \
-    CVTPD2DQ, CVTTPD2DQ, CVTDQ2PD, \
-    CVTPS2PI, CVTTPS2PI, CVTPI2PS, \
-    CVTPD2PI, CVTTPD2PI, CVTPI2PD, \
-    CVTSD2SS, CVTSS2SD, \
-    CVTPD2PS, CVTPS2PD, \
-    LDMXCSR, STMXCSR, \
-    EMMS
-
-from nervapy.x86_64.avx import \
-    VMOVSS, VEXTRACTPS, VINSERTPS, \
-    VADDSS, VSUBSS, VMULSS, VDIVSS, VSQRTSS, \
-    VROUNDSS, VRNDSCALESS, VRANGESS, \
-    VMINSS, VMAXSS, VREDUCESS, \
-    VGETMANTSS, VGETEXPSS, VSCALEFSS, VFIXUPIMMSS, VFPCLASSSS, \
-    VRCPSS, VRSQRTSS, VRCP14SS, VRSQRT14SS, VRCP28SS, VRSQRT28SS, \
-    VCMPSS, VCOMISS, VUCOMISS, \
-    VMOVSD, VADDSD, VSUBSD, VMULSD, VDIVSD, VSQRTSD, \
-    VROUNDSD, VRNDSCALESD, VRANGESD, \
-    VMINSD, VMAXSD, VREDUCESD, \
-    VGETMANTSD, VGETEXPSD, VSCALEFSD, VFIXUPIMMSD, VFPCLASSSD, \
-    VRCP14SD, VRSQRT14SD, VRCP28SD, VRSQRT28SD, \
-    VCMPSD, VCOMISD, VUCOMISD, \
-    VMOVAPS, VMOVUPS, VMOVLPS, VMOVHPS, \
-    VMASKMOVPS, VMOVMSKPS, VMOVNTPS, \
-    VBROADCASTSS, VMOVSLDUP, VMOVSHDUP, \
-    VEXPANDPS, VCOMPRESSPS, \
-    VGATHERDPS, VGATHERQPS, \
-    VGATHERPF0DPS, VGATHERPF0QPS, \
-    VGATHERPF1DPS, VGATHERPF1QPS, \
-    VSCATTERDPS, VSCATTERQPS, \
-    VSCATTERPF0DPS, VSCATTERPF0QPS, \
-    VSCATTERPF1DPS, VSCATTERPF1QPS, \
-    VMOVAPD, VMOVUPD, VMOVLPD, VMOVHPD, \
-    VMASKMOVPD, VMOVMSKPD, VMOVNTPD, \
-    VBROADCASTSD, VMOVDDUP, \
-    VEXPANDPD, VCOMPRESSPD, \
-    VGATHERDPD, VGATHERQPD, \
-    VGATHERPF0DPD, VGATHERPF0QPD, \
-    VGATHERPF1DPD, VGATHERPF1QPD, \
-    VSCATTERDPD, VSCATTERQPD, \
-    VSCATTERPF0DPD, VSCATTERPF0QPD, \
-    VSCATTERPF1DPD, VSCATTERPF1QPD, \
-    VADDPS, VHADDPS, VSUBPS, VHSUBPS, VADDSUBPS, VMULPS, VDIVPS, VSQRTPS, \
-    VADDPD, VHADDPD, VSUBPD, VHSUBPD, VADDSUBPD, VMULPD, VDIVPD, VSQRTPD, \
-    VROUNDPS, VRNDSCALEPS, VRANGEPS, \
-    VMINPS, VMAXPS, VREDUCEPS, VDPPS, \
-    VGETMANTPS, VGETEXPPS, VSCALEFPS, VFIXUPIMMPS, VFPCLASSPS, \
-    VRCPPS, VRSQRTPS, VRCP14PS, VRSQRT14PS, VRCP28PS, VRSQRT28PS, VEXP2PS, \
-    VCMPPS, VTESTPS, \
-    VROUNDPD, VRNDSCALEPD, VRANGEPD, \
-    VMINPD, VMAXPD, VREDUCEPD, VDPPD, \
-    VGETMANTPD, VGETEXPPD, VSCALEFPD, VFIXUPIMMPD, VFPCLASSPD, \
-    VRCP14PD, VRSQRT14PD, VRCP28PD, VRSQRT28PD, VEXP2PD, \
-    VCMPPD, VTESTPD, \
-    VANDPS, VANDNPS, VORPS, VXORPS, VBLENDPS, VBLENDVPS, VBLENDMPS, \
-    VANDPD, VANDNPD, VORPD, VXORPD, VBLENDPD, VBLENDVPD, VBLENDMPD, \
-    VUNPCKLPS, VUNPCKHPS, VMOVLHPS, VMOVHLPS, VSHUFPS, \
-    VUNPCKLPD, VUNPCKHPD, VSHUFPD, \
-    VPERMPS, VPERMILPS, VPERMT2PS, VPERMI2PS, \
-    VPERMPD, VPERMILPD, VPERMT2PD, VPERMI2PD, \
-    VMOVD, VMOVQ, VMOVDQA, VMOVDQA32, VMOVDQA64, \
-    VMOVDQU, VMOVDQU8, VMOVDQU16, VMOVDQU32, VMOVDQU64, VLDDQU, \
-    VPBROADCASTB, VPBROADCASTW, VPBROADCASTD, VPBROADCASTQ, \
-    VPEXPANDD, VPEXPANDQ, \
-    VPCOMPRESSD, VPCOMPRESSQ, \
-    VPMASKMOVD, VPMASKMOVQ, VMASKMOVDQU, VMOVNTDQ, VMOVNTDQA, \
-    VPMOVSXBW, VPMOVSXBD, VPMOVSXBQ, VPMOVSXWD, VPMOVSXWQ, VPMOVSXDQ, \
-    VPMOVZXBW, VPMOVZXBD, VPMOVZXBQ, VPMOVZXWD, VPMOVZXWQ, VPMOVZXDQ, \
-    VPMOVWB, VPMOVDB, VPMOVDW, VPMOVQB, VPMOVQW, VPMOVQD, \
-    VPMOVSWB, VPMOVSDB, VPMOVSDW, VPMOVSQB, VPMOVSQW, VPMOVSQD, \
-    VPMOVUSWB, VPMOVUSDB, VPMOVUSDW, VPMOVUSQB, VPMOVUSQW, VPMOVUSQD, \
-    VPEXTRB, VPEXTRW, VPEXTRD, VPEXTRQ, \
-    VPINSRB, VPINSRW, VPINSRD, VPINSRQ, \
-    VPGATHERDD, VPGATHERDQ, VPGATHERQD, VPGATHERQQ, \
-    VPSCATTERDD, VPSCATTERDQ, VPSCATTERQD, VPSCATTERQQ, \
-    VPCONFLICTD, VPCONFLICTQ, \
-    VPLZCNTD, VPLZCNTQ, \
-    VPTEST, VPMOVMSKB, \
-    VPADDB, VPADDW, VPADDD, VPADDQ, VPADDSB, VPADDSW, VPADDUSB, VPADDUSW, \
-    VPHADDW, VPHADDD, VPHADDSW, \
-    VPSUBB, VPSUBW, VPSUBD, VPSUBQ, VPSUBSB, VPSUBSW, VPSUBUSB, VPSUBUSW, \
-    VPHSUBW, VPHSUBD, VPHSUBSW, \
-    VPMAXSB, VPMAXSW, VPMAXSD, VPMAXSQ, VPMAXUB, VPMAXUW, VPMAXUD, VPMAXUQ, \
-    VPMINSB, VPMINSW, VPMINSD, VPMINSQ, VPMINUB, VPMINUW, VPMINUD, VPMINUQ, \
-    VPSLLW, VPSLLD, VPSLLQ, VPSRLW, VPSRLD, VPSRLQ, VPSRAW, VPSRAD, VPSRAQ, \
-    VPROLD, VPROLQ, VPRORD, VPRORQ, \
-    VPSLLVW, VPSLLVD, VPSLLVQ, VPSRLVW, VPSRLVD, VPSRLVQ, VPSRAVW, VPSRAVD, VPSRAVQ, \
-    VPROLVD, VPROLVQ, VPRORVD, VPRORVQ, \
-    VPMULLW, VPMULHW, VPMULHUW, VPMULLD, VPMULLQ, VPMULDQ, VPMULUDQ, \
-    VPMULHRSW, VPMADDWD, VPMADDUBSW, \
-    VPMADD52LUQ, VPMADD52HUQ, \
-    VPAVGB, VPAVGW, \
-    VPSADBW, VMPSADBW, VDBPSADBW, VPHMINPOSUW, \
-    VPCMPEQB, VPCMPEQW, VPCMPEQD, VPCMPEQQ, \
-    VPCMPGTB, VPCMPGTW, VPCMPGTD, VPCMPGTQ, \
-    VPCMPB, VPCMPW, VPCMPD, VPCMPQ, \
-    VPCMPUB, VPCMPUW, VPCMPUD, VPCMPUQ, \
-    VPABSB, VPABSW, VPABSD, VPABSQ, VPSIGNB, VPSIGNW, VPSIGND, \
-    VPAND, VPANDD, VPANDQ, VPANDN, VPANDND, VPANDNQ, \
-    VPOR, VPORD, VPORQ, VPXOR, VPXORD, VPXORQ, \
-    VPTERNLOGD, VPTERNLOGQ, \
-    VPBLENDW, VPBLENDVB, VPBLENDD, \
-    VPBLENDMB, VPBLENDMW, VPBLENDMD, VPBLENDMQ, \
-    VPUNPCKLBW, VPUNPCKLWD, VPUNPCKLDQ, VPUNPCKLQDQ, \
-    VPUNPCKHBW, VPUNPCKHWD, VPUNPCKHDQ, VPUNPCKHQDQ, \
-    VPACKSSWB, VPACKSSDW, VPACKUSWB, VPACKUSDW, \
-    VPSHUFB, VPSHUFLW, VPSHUFHW, VPSHUFD, \
-    VPERMB, VPERMW, VPERMD, VPERMQ, \
-    VPERMT2B, VPERMT2W, VPERMT2D, VPERMT2Q, \
-    VPERMI2B, VPERMI2W, VPERMI2D, VPERMI2Q, \
-    VPSLLDQ, VPSRLDQ, VPALIGNR, VALIGND, VALIGNQ, VPMULTISHIFTQB, \
-    VPOPCNTD, VPOPCNTQ, \
-    VPCMPESTRI, VPCMPESTRM, VPCMPISTRI, VPCMPISTRM, \
-    VCVTSS2SI, VCVTSS2USI, VCVTTSS2SI, VCVTTSS2USI, VCVTSI2SS, VCVTUSI2SS, \
-    VCVTSD2SI, VCVTSD2USI, VCVTTSD2SI, VCVTTSD2USI, VCVTSI2SD, VCVTUSI2SD, \
-    VCVTPS2DQ, VCVTPS2UDQ, VCVTTPS2DQ, VCVTTPS2UDQ, VCVTDQ2PS, VCVTUDQ2PS, \
-    VCVTPS2QQ, VCVTPS2UQQ, VCVTTPS2QQ, VCVTTPS2UQQ, VCVTQQ2PS, VCVTUQQ2PS, \
-    VCVTPD2DQ, VCVTPD2UDQ, VCVTTPD2DQ, VCVTTPD2UDQ, VCVTDQ2PD, VCVTUDQ2PD, \
-    VCVTPD2QQ, VCVTPD2UQQ, VCVTTPD2QQ, VCVTTPD2UQQ, VCVTQQ2PD, VCVTUQQ2PD, \
-    VCVTSD2SS, VCVTSS2SD, \
-    VCVTPD2PS, VCVTPS2PD, \
-    VCVTPS2PH, VCVTPH2PS, \
-    VBROADCASTF128, VBROADCASTI128, \
-    VBROADCASTF32X2, VBROADCASTI32X2, \
-    VBROADCASTF32X4, VBROADCASTI32X4, \
-    VBROADCASTF32X8, VBROADCASTI32X8, \
-    VBROADCASTF64X2, VBROADCASTI64X2, \
-    VBROADCASTF64X4, VBROADCASTI64X4, \
-    VEXTRACTF128, VEXTRACTI128, \
-    VEXTRACTF32X4, VEXTRACTI32X4, \
-    VEXTRACTF32X8, VEXTRACTI32X8, \
-    VEXTRACTF64X2, VEXTRACTI64X2, \
-    VEXTRACTF64X4, VEXTRACTI64X4, \
-    VINSERTF128, VINSERTI128, \
-    VINSERTF32X4, VINSERTI32X4, \
-    VINSERTF32X8, VINSERTI32X8, \
-    VINSERTF64X2, VINSERTI64X2, \
-    VINSERTF64X4, VINSERTI64X4, \
-    VPERM2F128, VPERM2I128, \
-    VSHUFF32X4, VSHUFI32X4, \
-    VSHUFF64X2, VSHUFI64X2, \
-    VPTESTMB, VPTESTMW, VPTESTMD, VPTESTMQ, \
-    VPTESTNMB, VPTESTNMW, VPTESTNMD, VPTESTNMQ, \
-    VPMOVB2M, VPMOVW2M, VPMOVD2M, VPMOVQ2M, \
-    VPMOVM2B, VPMOVM2W, VPMOVM2D, VPMOVM2Q, \
-    VPBROADCASTMB2Q, VPBROADCASTMW2D, \
-    VPTESTMB, VPTESTMW, VPTESTMD, VPTESTMQ, \
-    VPTESTNMB, VPTESTNMW, VPTESTNMD, VPTESTNMQ, \
-    VLDMXCSR, VSTMXCSR, \
-    VZEROUPPER, VZEROALL
-
-from nervapy.x86_64.fma import \
-    VFMADD132SS,  VFMADD213SS,  VFMADD231SS,  VFMADDSS, \
-    VFMSUB132SS,  VFMSUB213SS,  VFMSUB231SS,  VFMSUBSS, \
-    VFNMADD132SS, VFNMADD213SS, VFNMADD231SS, VFNMADDSS, \
-    VFNMSUB132SS, VFNMSUB213SS, VFNMSUB231SS, VFNMSUBSS, \
-    VFMADD132SD,  VFMADD213SD,  VFMADD231SD,  VFMADDSD, \
-    VFMSUB132SD,  VFMSUB213SD,  VFMSUB231SD,  VFMSUBSD, \
-    VFNMADD132SD, VFNMADD213SD, VFNMADD231SD, VFNMADDSD, \
-    VFNMSUB132SD, VFNMSUB213SD, VFNMSUB231SD, VFNMSUBSD, \
-    VFMADD132PS,  VFMADD213PS,  VFMADD231PS,  VFMADDPS, \
-    VFMSUB132PS,  VFMSUB213PS,  VFMSUB231PS,  VFMSUBPS, \
-    VFNMADD132PS, VFNMADD213PS, VFNMADD231PS, VFNMADDPS, \
-    VFNMSUB132PS, VFNMSUB213PS, VFNMSUB231PS, VFNMSUBPS, \
-    VFMADD132PD,  VFMADD213PD,  VFMADD231PD,  VFMADDPD, \
-    VFMSUB132PD,  VFMSUB213PD,  VFMSUB231PD,  VFMSUBPD, \
-    VFNMADD132PD, VFNMADD213PD, VFNMADD231PD, VFNMADDPD, \
-    VFNMSUB132PD, VFNMSUB213PD, VFNMSUB231PD, VFNMSUBPD, \
-    VFMADDSUB132PS, VFMADDSUB213PS, VFMADDSUB231PS, VFMADDSUBPS, \
-    VFMSUBADD132PS, VFMSUBADD213PS, VFMSUBADD231PS, VFMSUBADDPS, \
-    VFMADDSUB132PD, VFMADDSUB213PD, VFMADDSUB231PD, VFMADDSUBPD, \
-    VFMSUBADD132PD, VFMSUBADD213PD, VFMSUBADD231PD, VFMSUBADDPD
-
-from nervapy.x86_64.mask import \
-    KADDB, KADDW, KADDD, KADDQ, \
-    KANDB, KANDW, KANDD, KANDQ, \
-    KANDNB, KANDNW, KANDND, KANDNQ, \
-    KORB, KORW, KORD, KORQ, \
-    KXNORB, KXNORW, KXNORD, KXNORQ, \
-    KXORB, KXORW, KXORD, KXORQ, \
-    KMOVB, KMOVW, KMOVD, KMOVQ, \
-    KNOTB, KNOTW, KNOTD, KNOTQ, \
-    KUNPCKBW, KUNPCKWD, KUNPCKDQ, \
-    KTESTB, KTESTW, KTESTD, KTESTQ, \
-    KORTESTB, KORTESTW, KORTESTD, KORTESTQ, \
-    KSHIFTLB, KSHIFTLW, KSHIFTLD, KSHIFTLQ, \
-    KSHIFTRB, KSHIFTRW, KSHIFTRD, KSHIFTRQ
-
-from nervapy.x86_64.crypto import \
-    AESDEC, AESDECLAST, AESENC, AESENCLAST, AESIMC, AESKEYGENASSIST, \
-    VAESDEC, VAESDECLAST, VAESENC, VAESENCLAST, VAESIMC, VAESKEYGENASSIST, \
-    SHA1MSG1, SHA1MSG2, SHA1NEXTE, SHA1RNDS4, SHA256MSG1, SHA256MSG2, SHA256RNDS2, \
-    PCLMULQDQ, VPCLMULQDQ, \
-    RDRAND, RDSEED
-
-from nervapy.x86_64.amd import \
-    PAVGUSB, PMULHRW, \
-    PF2ID, PF2IW, PI2FW, PI2FD, \
-    PFADD, PFSUB, PFSUBR, PFMUL, PFMAX, PFMIN, \
-    PFACC, PFNACC, PFPNACC, PSWAPD, \
-    PFCMPEQ, PFCMPGT, PFCMPGE, \
-    PFRCP, PFRCPIT1, PFRCPIT2, PFRSQRT, PFRSQIT1, \
-    FEMMS, \
-    MOVNTSS, MOVNTSD, \
-    INSERTQ, EXTRQ, \
-    VPPERM, VPCMOV, \
-    VPROTB, VPROTW, VPROTD, VPROTQ, \
-    VPSHAB, VPSHAW, VPSHAD, VPSHAQ, \
-    VPSHLB, VPSHLW, VPSHLD, VPSHLQ, \
-    VPCOMB, VPCOMW, VPCOMD, VPCOMQ, \
-    VPCOMUB, VPCOMUW, VPCOMUD, VPCOMUQ, \
-    VPHADDBW, VPHADDBD, VPHADDBQ, VPHADDWD, VPHADDWQ, VPHADDDQ, \
-    VPHADDUBW, VPHADDUBD, VPHADDUBQ, VPHADDUWD, VPHADDUWQ, VPHADDUDQ, \
-    VPHSUBBW, VPHSUBWD, VPHSUBDQ, \
-    VPMACSDQH, VPMACSDQL, VPMACSDD, VPMACSWD, VPMACSWW, VPMADCSWD, \
-    VPMACSSDD, VPMACSSDQH, VPMACSSDQL, VPMACSSWD, VPMACSSWW, VPMADCSSWD, \
-    VFRCZSS, VFRCZSD, VFRCZPS, VFRCZPD, \
-    VPERMIL2PD, VPERMIL2PS
-
-from nervapy.x86_64.types import \
-    m64, m128, m128d, m128i, m256, m256d, m256i, m512, m512d, m512i, mmask8, mmask16
+from nervapy.x86_64.operand import (byte, dword, hword, oword, qword, rd_sae,
+                                    rn_sae, ru_sae, rz_sae, sae, word, yword,
+                                    zword)
+from nervapy.x86_64.pseudo import (ALIGN, IACA, LABEL, LOAD, REDUCE, RETURN,
+                                   STORE, SWAP, Block, Label, Loop)
+from nervapy.x86_64.registers import (GeneralPurposeRegister,
+                                      GeneralPurposeRegister8,
+                                      GeneralPurposeRegister16,
+                                      GeneralPurposeRegister32,
+                                      GeneralPurposeRegister64, KRegister,
+                                      MMXRegister, XMMRegister, YMMRegister,
+                                      ZMMRegister, ah, al, ax, bh, bl, bp, bpl,
+                                      bx, ch, cl, cx, dh, di, dil, dl, dx, eax,
+                                      ebp, ebx, ecx, edi, edx, esi, k0, k1, k2,
+                                      k3, k4, k5, k6, k7, mm0, mm1, mm2, mm3,
+                                      mm4, mm5, mm6, mm7, r8, r8b, r8d, r8w,
+                                      r9, r9b, r9d, r9w, r10, r10b, r10d, r10w,
+                                      r11, r11b, r11d, r11w, r12, r12b, r12d,
+                                      r12w, r13, r13b, r13d, r13w, r14, r14b,
+                                      r14d, r14w, r15, r15b, r15d, r15w, rax,
+                                      rbp, rbx, rcx, rdi, rdx, rsi, si, sil,
+                                      xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6,
+                                      xmm7, xmm8, xmm9, xmm10, xmm11, xmm12,
+                                      xmm13, xmm14, xmm15, xmm16, xmm17, xmm18,
+                                      xmm19, xmm20, xmm21, xmm22, xmm23, xmm24,
+                                      xmm25, xmm26, xmm27, xmm28, xmm29, xmm30,
+                                      xmm31, ymm0, ymm1, ymm2, ymm3, ymm4,
+                                      ymm5, ymm6, ymm7, ymm8, ymm9, ymm10,
+                                      ymm11, ymm12, ymm13, ymm14, ymm15, ymm16,
+                                      ymm17, ymm18, ymm19, ymm20, ymm21, ymm22,
+                                      ymm23, ymm24, ymm25, ymm26, ymm27, ymm28,
+                                      ymm29, ymm30, ymm31, zmm0, zmm1, zmm2,
+                                      zmm3, zmm4, zmm5, zmm6, zmm7, zmm8, zmm9,
+                                      zmm10, zmm11, zmm12, zmm13, zmm14, zmm15,
+                                      zmm16, zmm17, zmm18, zmm19, zmm20, zmm21,
+                                      zmm22, zmm23, zmm24, zmm25, zmm26, zmm27,
+                                      zmm28, zmm29, zmm30, zmm31)
+from nervapy.x86_64.types import (m64, m128, m128d, m128i, m256, m256d, m256i,
+                                  m512, m512d, m512i, mmask8, mmask16)

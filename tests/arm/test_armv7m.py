@@ -1,9 +1,10 @@
 import unittest
+
 from nervapy import *
 from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf
-from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.formats import AssemblyFormat
+from nervapy.arm.microarchitecture import Microarchitecture
 
 
 class TestARMv7M(unittest.TestCase):

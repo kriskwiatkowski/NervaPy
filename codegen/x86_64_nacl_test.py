@@ -2,13 +2,15 @@
 #    See license.rst for the full text of the license.
 
 from __future__ import print_function
-from opcodes.x86_64 import *
-from codegen.code import CodeWriter, CodeBlock
-import operator
-import json
-import os
-import six
 
+import json
+import operator
+import os
+
+import six
+from opcodes.x86_64 import *
+
+from codegen.code import CodeBlock, CodeWriter
 
 instruction_set = read_instruction_set()
 

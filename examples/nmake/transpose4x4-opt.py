@@ -1,8 +1,8 @@
 # This file is part of PeachPy package and is licensed under the Simplified BSD license.
 #    See license.rst for the full text of the license.
 
-from peachpy.x86_64 import *
 from peachpy import *
+from peachpy.x86_64 import *
 
 matrix = Argument(ptr(float_))
 

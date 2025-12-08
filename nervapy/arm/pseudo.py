@@ -4,7 +4,7 @@
 import inspect
 
 import nervapy.stream
-from nervapy.arm.instructions import QuasiInstruction, Instruction, Operand
+from nervapy.arm.instructions import Instruction, Operand, QuasiInstruction
 
 
 class Label(object):
@@ -91,8 +91,8 @@ class LoadConstantPseudoInstruction(Instruction):
 
 class LoadArgumentPseudoInstruction(Instruction):
     def __init__(self, destination, source, origin=None):
-        from nervapy.arm.function import active_function
         from nervapy import Argument, Yep32f, Yep64f
+        from nervapy.arm.function import active_function
         super(LoadArgumentPseudoInstruction, self).__init__('<LOAD-PARAMETER>', [destination, source], origin=origin)
         if isinstance(source, Argument):
             argument = active_function.find_argument(source)
@@ -140,9 +140,9 @@ class ReturnInstruction(QuasiInstruction):
             raise ValueError('Return value is not representable as a 12-bit modified immediate integer')
 
     def to_instruction_list(self):
+        from nervapy.arm.generic import BX, MOV
+        from nervapy.arm.registers import lr, r0
         from nervapy.stream import InstructionStream
-        from nervapy.arm.registers import r0, lr
-        from nervapy.arm.generic import MOV, BX
         return_instructions = InstructionStream()
         with return_instructions:
             if self.return_value is None:
@@ -265,9 +265,10 @@ class LOAD:
 
     @staticmethod
     def ARGUMENTS():
-        from nervapy.arm.function import active_function
-        from nervapy.arm.registers import GeneralPurposeRegister, SRegister, DRegister
         from nervapy import Yep32f, Yep64f
+        from nervapy.arm.function import active_function
+        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
+                                           SRegister)
         registers = list()
         for argument in active_function.arguments:
             if argument.is_pointer or argument.is_integer or argument.is_codeunit:
@@ -313,12 +314,13 @@ class LOAD:
 
     @staticmethod
     def ELEMENT(destination, source, ctype, increment_pointer=False):
-        from nervapy.arm.function import active_function
-        from nervapy.arm.instructions import Operand
-        from nervapy.arm.registers import Register, GeneralPurposeRegister, SRegister, DRegister
-        from nervapy.arm.generic import LDR, LDRH, LDRSH, LDRB, LDRSB, ADD
-        from nervapy.arm.vfpneon import VLDR
         from nervapy import Type
+        from nervapy.arm.function import active_function
+        from nervapy.arm.generic import ADD, LDR, LDRB, LDRH, LDRSB, LDRSH
+        from nervapy.arm.instructions import Operand
+        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
+                                           Register, SRegister)
+        from nervapy.arm.vfpneon import VLDR
         if not isinstance(ctype, Type):
             raise TypeError("Type must be a C type")
         if isinstance(destination, Register):
@@ -395,9 +397,10 @@ class STORE:
     @staticmethod
     def ELEMENT(destination, source, ctype, increment_pointer=False):
         from nervapy.arm.function import active_function
+        from nervapy.arm.generic import ADD, STR, STRB, STRH
         from nervapy.arm.instructions import Operand
-        from nervapy.arm.registers import GeneralPurposeRegister, SRegister, DRegister
-        from nervapy.arm.generic import STR, STRH, STRB, ADD
+        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
+                                           SRegister)
         from nervapy.arm.vfpneon import VSTR
         if isinstance(ctype, nervapy.c.Type):
             if Operand(destination).is_memory_address():

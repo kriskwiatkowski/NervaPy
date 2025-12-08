@@ -5,13 +5,14 @@
 def check_operand(operand):
     """Validates operand object as an instruction operand and converts it to a standard form"""
 
-    from nervapy.x86_64.registers import Register, MaskedRegister
-    from nervapy.x86_64.pseudo import Label
-    from nervapy.x86_64.function import LocalVariable
-    from nervapy.literal import Constant
-    from nervapy import Argument
-    from nervapy.util import is_int, is_int64
     from copy import copy, deepcopy
+
+    from nervapy import Argument
+    from nervapy.literal import Constant
+    from nervapy.util import is_int, is_int64
+    from nervapy.x86_64.function import LocalVariable
+    from nervapy.x86_64.pseudo import Label
+    from nervapy.x86_64.registers import MaskedRegister, Register
     if isinstance(operand, Register):
         return copy(operand)
     elif isinstance(operand, (MaskedRegister, MemoryOperand)):
@@ -47,7 +48,7 @@ def check_operand(operand):
 def get_operand_registers(operand):
     """Returns a set of registers that comprise the operand"""
 
-    from nervapy.x86_64.registers import Register, MaskedRegister
+    from nervapy.x86_64.registers import MaskedRegister, Register
     if isinstance(operand, Register):
         return [operand]
     elif isinstance(operand, MaskedRegister):
@@ -83,11 +84,16 @@ def format_operand(operand, assembly_format):
 
 def format_operand_type(operand):
     """Returns string representation of the operand type in assembly language"""
-    from nervapy.x86_64.registers import GeneralPurposeRegister64, GeneralPurposeRegister32, GeneralPurposeRegister16,\
-        GeneralPurposeRegister8, MMXRegister, XMMRegister, YMMRegister, ZMMRegister, MaskedRegister, \
-        al, ax, eax, rax, cl, xmm0
+    from nervapy.util import is_int8, is_int16, is_int32, is_int64
     from nervapy.x86_64.pseudo import Label
-    from nervapy.util import is_int64, is_int32, is_int16, is_int8
+    from nervapy.x86_64.registers import (GeneralPurposeRegister8,
+                                          GeneralPurposeRegister16,
+                                          GeneralPurposeRegister32,
+                                          GeneralPurposeRegister64,
+                                          MaskedRegister, MMXRegister,
+                                          XMMRegister, YMMRegister,
+                                          ZMMRegister, al, ax, cl, eax, rax,
+                                          xmm0)
     if is_int8(operand):
         return "imm8"
     elif is_int16(operand):
@@ -153,9 +159,10 @@ class MemoryAddress:
     """An address expression involving a register, e.g. rax - 10, r8d * 4."""
 
     def __init__(self, base=None, index=None, scale=None, displacement=0):
-        from nervapy.x86_64.registers import GeneralPurposeRegister64, \
-            XMMRegister, YMMRegister, ZMMRegister, MaskedRegister
         from nervapy.util import is_int, is_sint32
+        from nervapy.x86_64.registers import (GeneralPurposeRegister64,
+                                              MaskedRegister, XMMRegister,
+                                              YMMRegister, ZMMRegister)
 
         # Check individual arguments
         if base is not None and not isinstance(base, GeneralPurposeRegister64):
@@ -186,8 +193,8 @@ class MemoryAddress:
         self.displacement = int(displacement)
 
     def __add__(self, addend):
-        from nervapy.x86_64.registers import GeneralPurposeRegister64
         from nervapy.util import is_int, is_sint32
+        from nervapy.x86_64.registers import GeneralPurposeRegister64
         if is_int(addend):
             if not is_sint32(addend):
                 raise ValueError("The addend value (%d) is not representable as a signed 32-bit integer" % addend)
@@ -239,10 +246,11 @@ class MemoryAddress:
 
 class MemoryOperand:
     def __init__(self, address, size=None, mask=None, broadcast=None):
-        from nervapy.x86_64.registers import GeneralPurposeRegister64, \
-            XMMRegister, YMMRegister, ZMMRegister, MaskedRegister
-        from nervapy.x86_64.function import LocalVariable
         from nervapy.literal import Constant
+        from nervapy.x86_64.function import LocalVariable
+        from nervapy.x86_64.registers import (GeneralPurposeRegister64,
+                                              MaskedRegister, XMMRegister,
+                                              YMMRegister, ZMMRegister)
         assert isinstance(address, (GeneralPurposeRegister64, XMMRegister, YMMRegister, ZMMRegister,
                                     MemoryAddress, Constant, LocalVariable, RIPRelativeOffset)) or \
             isinstance(address, MaskedRegister) and \

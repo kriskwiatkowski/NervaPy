@@ -272,8 +272,8 @@ class GeneralPurposeRegister64(GeneralPurposeRegister):
         return MemoryAddress(self) - offset
 
     def __mul__(self, scale):
-        from nervapy.x86_64.operand import MemoryAddress
         from nervapy.util import is_int
+        from nervapy.x86_64.operand import MemoryAddress
         if not is_int(scale):
             raise TypeError("Register can be scaled only by an integer number")
         if int(scale) not in {1, 2, 4, 8}:
@@ -331,8 +331,8 @@ class GeneralPurposeRegister32(GeneralPurposeRegister):
         return MemoryAddress(self) - offset
 
     def __mul__(self, scale):
-        from nervapy.x86_64.operand import MemoryAddress
         from nervapy.util import is_int
+        from nervapy.x86_64.operand import MemoryAddress
         if not is_int(scale):
             raise TypeError("Register can be scaled only by an integer number")
         if int(scale) not in {1, 2, 4, 8}:
@@ -584,8 +584,8 @@ class XMMRegister(Register):
         return MaskedRegister(self, mask)
 
     def __mul__(self, scale):
-        from nervapy.x86_64.operand import MemoryAddress
         from nervapy.util import is_int
+        from nervapy.x86_64.operand import MemoryAddress
         if not is_int(scale):
             raise TypeError("Register can be scaled only by an integer number")
         if int(scale) not in {1, 2, 4, 8}:
@@ -697,8 +697,8 @@ class YMMRegister(Register):
         return MaskedRegister(self, mask)
 
     def __mul__(self, scale):
-        from nervapy.x86_64.operand import MemoryAddress
         from nervapy.util import is_int
+        from nervapy.x86_64.operand import MemoryAddress
         if not is_int(scale):
             raise TypeError("Register can be scaled only by an integer number")
         if int(scale) not in {1, 2, 4, 8}:
@@ -797,8 +797,8 @@ class ZMMRegister(Register):
         return MaskedRegister(self, mask)
 
     def __mul__(self, scale):
-        from nervapy.x86_64.operand import MemoryAddress
         from nervapy.util import is_int
+        from nervapy.x86_64.operand import MemoryAddress
         if not is_int(scale):
             raise TypeError("Register can be scaled only by an integer number")
         if int(scale) not in {1, 2, 4, 8}:
@@ -961,8 +961,8 @@ class MaskedRegister:
         return self.mask.zcode
 
     def __mul__(self, scale):
-        from nervapy.x86_64.operand import MemoryAddress
         from nervapy.util import is_int
+        from nervapy.x86_64.operand import MemoryAddress
         if not is_int(scale):
             raise TypeError("Register can be scaled only by an integer number")
         if int(scale) not in {1, 2, 4, 8}:

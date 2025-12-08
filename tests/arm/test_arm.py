@@ -1,4 +1,5 @@
 import unittest
+
 from nervapy import *
 from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf

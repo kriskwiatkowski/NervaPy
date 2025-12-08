@@ -122,7 +122,7 @@ class ELFWriter(ImageWriter):
     def __init__(self, output_path, abi, input_path=None):
         super(ELFWriter, self).__init__(output_path)
         from nervapy.formats.elf.image import Image
-        from nervapy.formats.elf.section import TextSection, ProgramBitsSection
+        from nervapy.formats.elf.section import ProgramBitsSection, TextSection
 
         self.abi = abi
         self.image = Image(abi, input_path)
@@ -167,7 +167,8 @@ class ELFWriter(ImageWriter):
             self.rodata_section.alignment = max(self.rodata_section.alignment, encoded_function.const_section.alignment)
 
         # Map from symbol name to symbol index
-        from nervapy.formats.elf.symbol import Symbol, SymbolBinding, SymbolType
+        from nervapy.formats.elf.symbol import (Symbol, SymbolBinding,
+                                                SymbolType)
         symbol_map = dict()
         for symbol in encoded_function.const_section.symbols:
             const_symbol = Symbol()
@@ -182,11 +183,13 @@ class ELFWriter(ImageWriter):
 
         if encoded_function.code_section.relocations:
             if self.text_rela_section is None:
-                from nervapy.formats.elf.section import RelocationsWithAddendSection
+                from nervapy.formats.elf.section import \
+                    RelocationsWithAddendSection
                 self.text_rela_section = RelocationsWithAddendSection(self.text_section, self.image.symtab)
                 self.image.add_section(self.text_rela_section)
 
-            from nervapy.formats.elf.symbol import RelocationWithAddend, RelocationType
+            from nervapy.formats.elf.symbol import (RelocationType,
+                                                    RelocationWithAddend)
             for relocation in encoded_function.code_section.relocations:
                 elf_relocation = RelocationWithAddend(RelocationType.x86_64_pc32,
                                                       code_offset + relocation.offset,
@@ -221,8 +224,9 @@ class MachOWriter(ImageWriter):
         assert isinstance(function, nervapy.x86_64.function.ABIFunction), \
             "Function must be finalized with an ABI before its assembly can be used"
 
-        from nervapy.formats.macho.symbol import Symbol, SymbolType, SymbolDescription, SymbolVisibility, \
-            Relocation, RelocationType
+        from nervapy.formats.macho.symbol import (Relocation, RelocationType,
+                                                  Symbol, SymbolDescription,
+                                                  SymbolType, SymbolVisibility)
         from nervapy.util import roundup
 
         encoded_function = function.encode()
@@ -278,7 +282,8 @@ class MSCOFFWriter(ImageWriter):
     def __init__(self, output_path, abi, input_path=None):
         super(MSCOFFWriter, self).__init__(output_path)
 
-        from nervapy.formats.mscoff import Image, TextSection, ReadOnlyDataSection
+        from nervapy.formats.mscoff import (Image, ReadOnlyDataSection,
+                                            TextSection)
 
         self.output_path = output_path
         self.abi = abi
@@ -295,8 +300,9 @@ class MSCOFFWriter(ImageWriter):
         import nervapy.x86_64.function
         assert isinstance(function, nervapy.x86_64.function.ABIFunction), \
             "Function must be finalized with an ABI before its assembly can be used"
+        from nervapy.formats.mscoff import (Relocation, RelocationType,
+                                            StorageClass, Symbol, SymbolType)
         from nervapy.util import roundup
-        from nervapy.formats.mscoff import Symbol, SymbolType, StorageClass, Relocation, RelocationType
 
         encoded_function = function.encode()
 

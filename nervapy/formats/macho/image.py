@@ -4,7 +4,9 @@
 
 class Image:
     def __init__(self, abi):
-        from nervapy.formats.macho.section import Segment, TextSection, ConstSection, StringTable, SymbolTable
+        from nervapy.formats.macho.section import (ConstSection, Segment,
+                                                   StringTable, SymbolTable,
+                                                   TextSection)
 
         self.abi = abi
         self.segments = list()
@@ -28,10 +30,10 @@ class Image:
         self.segments.append(segment)
 
     def encode(self):
+        from nervapy.encoder import Encoder
         from nervapy.formats.macho.file import MachHeader
         from nervapy.formats.macho.symbol import Relocation
         from nervapy.util import roundup
-        from nervapy.encoder import Encoder
 
         bitness = {4: 32, 8: 64}[self.abi.pointer_size]
         encoder = Encoder(self.abi.endianness, bitness)

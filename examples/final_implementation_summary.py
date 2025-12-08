@@ -7,8 +7,8 @@ Final summary and demonstration of ARMv7-M high register strategy implementation
 from nervapy import *
 from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf
-from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.formats import AssemblyFormat, HighRegisterStrategy
+from nervapy.arm.microarchitecture import Microarchitecture
 
 
 def final_summary():

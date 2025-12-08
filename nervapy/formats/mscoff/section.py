@@ -154,6 +154,7 @@ class StringTable:
 
     def encode(self):
         import codecs
+
         import nervapy.encoder
 
         bytestring = nervapy.encoder.Encoder.uint32le(self.size)

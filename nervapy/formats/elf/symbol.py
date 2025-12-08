@@ -232,7 +232,7 @@ class RelocationType(IntEnum):
 
 class RelocationWithAddend:
     def __init__(self, type, offset, symbol, addend):
-        from nervapy.util import is_uint64, is_sint64
+        from nervapy.util import is_sint64, is_uint64
         assert isinstance(type, RelocationType)
         assert is_uint64(offset)
         assert isinstance(symbol, Symbol)

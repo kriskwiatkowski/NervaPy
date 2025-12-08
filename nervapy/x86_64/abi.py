@@ -1,14 +1,15 @@
 # This file is part of PeachPy package and is licensed under the Simplified BSD license.
 #    See license.rst for the full text of the license.
 
-from nervapy.abi import ABI
-from nervapy.abi import Endianness
-from nervapy.x86_64.registers import rax, rbx, rcx, rdx, rsi, rdi, rbp, r8, r9, r10, r11, r12, r13, r14, r15, \
-    xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15, \
-    mm0, mm1, mm2, mm3, mm4, mm5, mm6, mm7
 import nervapy.formats.elf.file
 import nervapy.formats.mscoff
-
+from nervapy.abi import ABI, Endianness
+from nervapy.x86_64.registers import (mm0, mm1, mm2, mm3, mm4, mm5, mm6, mm7,
+                                      r8, r9, r10, r11, r12, r13, r14, r15,
+                                      rax, rbp, rbx, rcx, rdi, rdx, rsi, xmm0,
+                                      xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7,
+                                      xmm8, xmm9, xmm10, xmm11, xmm12, xmm13,
+                                      xmm14, xmm15)
 
 microsoft_x64_abi = ABI("Microsoft x64 ABI", endianness=Endianness.Little,
                         bool_size=1, wchar_size=2, short_size=2, int_size=4, long_size=4, longlong_size=8,
@@ -128,8 +129,8 @@ def detect(system_abi=False):
     :returns: the host ABI or None if the host is not recognized or is not x86-64.
     :rtype: ABI or None
     """
-    import platform
     import os
+    import platform
     import struct
     (osname, node, release, version, machine, processor) = platform.uname()  # pylint:disable=unpacking-non-sequence
     pointer_size = struct.calcsize("P")

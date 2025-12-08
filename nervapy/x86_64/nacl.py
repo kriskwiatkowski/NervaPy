@@ -6,8 +6,8 @@ import inspect
 
 import nervapy.stream
 from nervapy.x86_64.instructions import Instruction
-from nervapy.x86_64.operand import check_operand, format_operand_type, is_r32, is_imm32
-
+from nervapy.x86_64.operand import (check_operand, format_operand_type,
+                                    is_imm32, is_r32)
 
 # Permitted pseudo-instructions:
 #
@@ -98,7 +98,7 @@ class NACLJMP(Instruction):
 
     def _lower(self):
         from nervapy.stream import InstructionStream
-        from nervapy.x86_64.generic import AND, ADD, JMP
+        from nervapy.x86_64.generic import ADD, AND, JMP
         from nervapy.x86_64.registers import r15
         with InstructionStream() as stream:
             AND(self.operands[0], -32)
@@ -140,7 +140,7 @@ class NACLASP(Instruction):
     def _lower(self):
         from nervapy.stream import InstructionStream
         from nervapy.x86_64.generic import ADD
-        from nervapy.x86_64.registers import esp, rsp, r15
+        from nervapy.x86_64.registers import esp, r15, rsp
         with InstructionStream() as stream:
             ADD(esp, self.operands[0])
             ADD(rsp, r15)
@@ -179,8 +179,8 @@ class NACLSSP(Instruction):
 
     def _lower(self):
         from nervapy.stream import InstructionStream
-        from nervapy.x86_64.generic import SUB, ADD
-        from nervapy.x86_64.registers import esp, rsp, r15
+        from nervapy.x86_64.generic import ADD, SUB
+        from nervapy.x86_64.registers import esp, r15, rsp
         with InstructionStream() as stream:
             SUB(esp, self.operands[0])
             ADD(rsp, r15)
@@ -220,8 +220,8 @@ class NACLRESTSP(Instruction):
 
     def _lower(self):
         from nervapy.stream import InstructionStream
-        from nervapy.x86_64.generic import MOV, ADD
-        from nervapy.x86_64.registers import esp, rsp, r15
+        from nervapy.x86_64.generic import ADD, MOV
+        from nervapy.x86_64.registers import esp, r15, rsp
         with InstructionStream() as stream:
             MOV(esp, self.operands[0])
             ADD(rsp, r15)
@@ -261,8 +261,8 @@ class NACLRESTBP(Instruction):
 
     def _lower(self):
         from nervapy.stream import InstructionStream
-        from nervapy.x86_64.generic import MOV, ADD
-        from nervapy.x86_64.registers import ebp, rbp, r15
+        from nervapy.x86_64.generic import ADD, MOV
+        from nervapy.x86_64.registers import ebp, r15, rbp
         with InstructionStream() as stream:
             MOV(ebp, self.operands[0])
             ADD(rbp, r15)

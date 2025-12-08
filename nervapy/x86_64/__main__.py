@@ -3,13 +3,13 @@
 
 from __future__ import absolute_import
 
+import argparse
+import sys
+
+import six
 
 from nervapy import *
 from nervapy.x86_64 import *
-import sys
-import argparse
-import six
-
 
 parser = argparse.ArgumentParser(
     description="PeachPy: Portable Efficient Assembly Code-generation in High-level Python")
@@ -223,7 +223,8 @@ def main():
     if options.name_mangling:
         nervapy.x86_64.options.name_mangling = options.name_mangling
 
-    from nervapy.writer import ELFWriter, MachOWriter, MSCOFFWriter, AssemblyWriter, JSONMetadataWriter, CHeaderWriter
+    from nervapy.writer import (AssemblyWriter, CHeaderWriter, ELFWriter,
+                                JSONMetadataWriter, MachOWriter, MSCOFFWriter)
     writers = []
     if nervapy.x86_64.options.generate_assembly:
         assembly_format = options.assembly_format

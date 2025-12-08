@@ -2,6 +2,7 @@
 #    See license.rst for the full text of the license.
 
 from __future__ import print_function
+
 import time
 
 import nervapy.arm.instructions
@@ -216,10 +217,11 @@ class Function(object):
 
     def _generate_gas_assembly(self):
         """Generate assembly code in GNU Assembler (GAS) format."""
-        from nervapy.arm.instructions import Instruction
-        from nervapy.arm.generic import BranchInstruction
-        from nervapy.arm.pseudo import LabelQuasiInstruction
         import os
+
+        from nervapy.arm.generic import BranchInstruction
+        from nervapy.arm.instructions import Instruction
+        from nervapy.arm.pseudo import LabelQuasiInstruction
 
         function_label = self.name
         constants_label = self.name + "_constants"
@@ -271,10 +273,11 @@ class Function(object):
 
     def _generate_armcc_assembly(self):
         """Generate assembly code in ARM Compiler (ARMCC) format."""
-        from nervapy.arm.instructions import Instruction
-        from nervapy.arm.generic import BranchInstruction
-        from nervapy.arm.pseudo import LabelQuasiInstruction
         import os
+
+        from nervapy.arm.generic import BranchInstruction
+        from nervapy.arm.instructions import Instruction
+        from nervapy.arm.pseudo import LabelQuasiInstruction
 
         function_label = self.name
         constants_label = self.name + "_constants"
@@ -462,8 +465,8 @@ class Function(object):
         self.instructions = new_instructions
 
     def generate_labels(self):
-        from nervapy.arm.pseudo import LabelQuasiInstruction
         from nervapy.arm.instructions import Operand
+        from nervapy.arm.pseudo import LabelQuasiInstruction
         for instruction in self.instructions:
             if isinstance(instruction, LabelQuasiInstruction):
                 if instruction.name == 'ENTRY':
@@ -513,8 +516,8 @@ class Function(object):
         pass
 
     def determine_available_registers(self):
-        from nervapy.arm.instructions import Instruction
         from nervapy.arm.generic import BranchInstruction
+        from nervapy.arm.instructions import Instruction
         processed_branches = set()
         label_table = self.get_label_table()
 
@@ -539,9 +542,10 @@ class Function(object):
         mark_available_registers(self.instructions, current_index, set())
 
     def determine_live_registers(self, exclude_parameter_loads=False):
-        from nervapy.arm.instructions import Instruction
         from nervapy.arm.generic import BranchInstruction
-        from nervapy.arm.pseudo import LoadArgumentPseudoInstruction, LabelQuasiInstruction
+        from nervapy.arm.instructions import Instruction
+        from nervapy.arm.pseudo import (LabelQuasiInstruction,
+                                        LoadArgumentPseudoInstruction)
         from nervapy.arm.registers import Register
         self.determine_branches()
         for instruction in self.instructions:
@@ -615,9 +619,11 @@ class Function(object):
 
     def determine_register_relations(self):
         from nervapy import RegisterAllocationError
-        from nervapy.arm.registers import Register, SRegister, DRegister, QRegister
         from nervapy.arm.instructions import Instruction
-        from nervapy.arm.vfpneon import NeonLoadStoreInstruction, VFPLoadStoreMultipleInstruction
+        from nervapy.arm.registers import (DRegister, QRegister, Register,
+                                           SRegister)
+        from nervapy.arm.vfpneon import (NeonLoadStoreInstruction,
+                                         VFPLoadStoreMultipleInstruction)
         all_registers = self.abi.volatile_registers + list(
             reversed(self.abi.argument_registers)) + self.abi.callee_save_registers
         available_registers = {Register.GPType: list(), Register.WMMXType: list(), Register.VFPType: list()}
@@ -844,9 +850,10 @@ class Function(object):
             self.allocation_options[register_id_list] = list(options)
 
     def allocate_registers(self):
-        from nervapy.arm.registers import Register
         from nervapy.arm.instructions import Instruction
         from nervapy.arm.pseudo import LoadArgumentPseudoInstruction
+        from nervapy.arm.registers import Register
+
         # Map from virtual register id to physical register
         register_allocation = dict()
         for (virtual_register_id, virtual_register_type) in self.unallocated_registers:
@@ -947,9 +954,9 @@ class Function(object):
         self.instructions = new_instructions
 
     def generate_parameter_loads(self):
-        from nervapy.arm.registers import sp
-        from nervapy.arm.generic import MOV, LDR
+        from nervapy.arm.generic import LDR, MOV
         from nervapy.arm.pseudo import LoadArgumentPseudoInstruction
+        from nervapy.arm.registers import sp
         new_instructions = list()
         for instruction in self.instructions:
             if isinstance(instruction, LoadArgumentPseudoInstruction):
@@ -976,9 +983,9 @@ class Function(object):
         self.instructions = new_instructions
 
     def generate_constant_loads(self):
+        from nervapy import ConstantBucket
         from nervapy.arm.instructions import Instruction
         from nervapy.arm.pseudo import LoadConstantPseudoInstruction
-        from nervapy import ConstantBucket
         max_alignment = 0
         for instruction in self.instructions:
             if isinstance(instruction, Instruction):
@@ -1042,8 +1049,9 @@ class Function(object):
     @property
     def isa_extensions(self):
         from nervapy.arm.instructions import Instruction
-        from nervapy.arm.registers import QRegister, DRegister
         from nervapy.arm.isa import Extension, Extensions
+        from nervapy.arm.registers import DRegister, QRegister
+
         # Start with the target microarchitecture's extensions
         isa_extensions = Extensions(*self.target.extensions)
         for instruction in self.instructions:
@@ -1128,7 +1136,8 @@ class Function(object):
 
 class LocalVariable(object):
     def __init__(self, register_type):
-        from nervapy.arm.registers import GeneralPurposeRegister, WMMXRegister, SRegister, DRegister, QRegister
+        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
+                                           QRegister, SRegister, WMMXRegister)
         super(LocalVariable, self).__init__()
         if isinstance(register_type, int):
             self.size = register_type
@@ -1218,7 +1227,8 @@ class StackFrame(object):
             self.preserve_register(register)
 
     def preserve_register(self, register):
-        from nervapy.arm.registers import GeneralPurposeRegister, SRegister, DRegister, QRegister
+        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
+                                           QRegister, SRegister)
         if isinstance(register, GeneralPurposeRegister):
             if not register in self.general_purpose_registers:
                 if register in self.abi.callee_save_registers:
@@ -1262,12 +1272,12 @@ class StackFrame(object):
         return parameters_offset + len(self.d_registers) * 8
 
     def generate_prologue(self):
-        from nervapy.stream import InstructionStream
-        from nervapy.arm.registers import r3, sp
-        from nervapy.arm.generic import PUSH, PUSH_W, STMDB
-        from nervapy.arm.vfpneon import VPUSH
-        from nervapy.arm.isa import Extension
         from nervapy.arm.formats import HighRegisterStrategy
+        from nervapy.arm.generic import PUSH, PUSH_W, STMDB
+        from nervapy.arm.isa import Extension
+        from nervapy.arm.registers import r3, sp
+        from nervapy.arm.vfpneon import VPUSH
+        from nervapy.stream import InstructionStream
         with InstructionStream() as instructions:
             if self.general_purpose_registers:
                 general_purpose_registers = list(self.general_purpose_registers)
@@ -1314,12 +1324,12 @@ class StackFrame(object):
         return list(iter(instructions))
 
     def generate_epilogue(self):
-        from nervapy.stream import InstructionStream
-        from nervapy.arm.registers import r3, sp
-        from nervapy.arm.generic import POP, POP_W, LDMIA
-        from nervapy.arm.vfpneon import VPOP
-        from nervapy.arm.isa import Extension
         from nervapy.arm.formats import HighRegisterStrategy
+        from nervapy.arm.generic import LDMIA, POP, POP_W
+        from nervapy.arm.isa import Extension
+        from nervapy.arm.registers import r3, sp
+        from nervapy.arm.vfpneon import VPOP
+        from nervapy.stream import InstructionStream
         with InstructionStream() as instructions:
             if self.d_registers:
                 VPOP(tuple(sorted(self.d_registers, key=lambda reg: reg.get_physical_number())))

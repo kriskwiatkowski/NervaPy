@@ -128,7 +128,8 @@ def evex(mm, w____1pp, ll, rr, rm, Vvvvv=0, aaa=0, z=0, b=0):
     assert aaa & ~0b111 == 0, "EVEX.aaa must be a 3-bit mask"
     assert z & ~0b1 == 0, "EVEX.z must be a single-bit mask"
     from nervapy.x86_64.operand import MemoryAddress, RIPRelativeOffset
-    from nervapy.x86_64.registers import Register, XMMRegister, YMMRegister, ZMMRegister
+    from nervapy.x86_64.registers import (Register, XMMRegister, YMMRegister,
+                                          ZMMRegister)
     assert rm is None or isinstance(rm, (Register, MemoryAddress, RIPRelativeOffset)), \
         "rm is expected to be a register, a memory address, or None"
     r_, r = rr >> 1, rr & 1
@@ -156,9 +157,9 @@ def evex(mm, w____1pp, ll, rr, rm, Vvvvv=0, aaa=0, z=0, b=0):
 
 
 def modrm_sib_disp(reg, rm, force_sib=False, min_disp=0, disp8xN=None):
+    from nervapy.util import ilog2, is_int, is_sint8
     from nervapy.x86_64.operand import MemoryAddress, RIPRelativeOffset
-    from nervapy.x86_64.registers import rsp, rbp, r13
-    from nervapy.util import is_int, is_sint8, ilog2
+    from nervapy.x86_64.registers import r13, rbp, rsp
 
     assert is_int(reg) and 0 <= reg <= 7, \
         "Constant reg value expected, got " + str(reg)

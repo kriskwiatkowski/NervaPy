@@ -1,10 +1,9 @@
 import six
-from nervapy.c.types import Type, \
-    int8_t, int16_t, int32_t, int64_t, \
-    uint8_t, uint16_t, uint32_t, uint64_t, \
-    float_, double_
-from nervapy.parse import parse_assigned_variable_name
+
+from nervapy.c.types import (Type, double_, float_, int8_t, int16_t, int32_t,
+                             int64_t, uint8_t, uint16_t, uint32_t, uint64_t)
 from nervapy.name import Name
+from nervapy.parse import parse_assigned_variable_name
 
 
 class Constant:

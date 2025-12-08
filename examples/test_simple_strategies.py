@@ -8,8 +8,8 @@ Tests both PUSH.W and STMDB approaches for r8-r15 registers.
 from nervapy import *
 from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf
-from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.formats import AssemblyFormat, HighRegisterStrategy
+from nervapy.arm.microarchitecture import Microarchitecture
 
 
 def test_basic_strategies():
@@ -126,10 +126,10 @@ def test_manual_instructions():
     print("=" * 50)
     
     # Test PUSH.W and STMDB instructions directly
+    import nervapy.arm.function
     from nervapy.arm.registers import r8, r9, r10, sp
     from nervapy.stream import InstructionStream
-    import nervapy.arm.function
-    
+
     # Create a mock function context to avoid the 'NoneType' error
     class MockFunction:
         def __init__(self):

@@ -1,7 +1,8 @@
 import unittest
-from tests import equal_codes
+
 from nervapy import *
 from nervapy.x86_64 import *
+from tests import equal_codes
 
 
 class Empty(unittest.TestCase):

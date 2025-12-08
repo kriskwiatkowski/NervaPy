@@ -1,6 +1,7 @@
 import unittest
-from tests import equal_codes
+
 from nervapy.x86_64 import *
+from tests import equal_codes
 
 
 class TestInvalidLabelName(unittest.TestCase):

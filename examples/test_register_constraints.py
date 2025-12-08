@@ -13,8 +13,8 @@ This test demonstrates that PeachPy correctly handles:
 from nervapy import *
 from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf
-from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.formats import AssemblyFormat
+from nervapy.arm.microarchitecture import Microarchitecture
 
 
 def test_register_constraints():

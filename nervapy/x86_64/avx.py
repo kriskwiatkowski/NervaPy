@@ -4,20 +4,30 @@
 import inspect
 
 import nervapy.stream
-import nervapy.x86_64.options
 import nervapy.x86_64.isa
+import nervapy.x86_64.options
 from nervapy.util import is_sint8, is_sint32
-from nervapy.x86_64.encoding import rex, optional_rex, vex2, vex3, evex, modrm_sib_disp
-from nervapy.x86_64.instructions import Instruction, BranchInstruction
-from nervapy.x86_64.operand import is_al, is_ax, is_eax, is_rax, is_cl, is_xmm0, is_r8, is_r8rex, is_r16, is_r32, is_r64, \
-    is_mm, is_xmm, is_ymm, is_m, is_m8, is_m16, is_m32, is_m64, is_m80, is_m128, is_m256, is_m512, \
-    is_evex_xmm, is_xmmk, is_xmmkz, is_evex_ymm, is_ymmk, is_ymmkz, is_zmm, is_zmmk, is_zmmkz, is_k, is_kk, \
-    is_m32k, is_m64k, is_m16kz, is_m32kz, is_m64kz, is_m128kz, is_m256kz, is_m512kz, \
-    is_m64_m32bcst, is_m128_m32bcst, is_m256_m32bcst, is_m512_m32bcst, \
-    is_m128_m64bcst, is_m256_m64bcst, is_m512_m64bcst, \
-    is_vmx, is_vmy, is_evex_vmx, is_evex_vmy, is_vmz, is_vmxk, is_vmyk, is_vmzk, \
-    is_imm, is_imm4, is_imm8, is_imm16, is_imm32, is_imm64, \
-    is_rel8, is_rel32, is_label, is_er, is_sae, check_operand, format_operand_type
+from nervapy.x86_64.encoding import (evex, modrm_sib_disp, optional_rex, rex,
+                                     vex2, vex3)
+from nervapy.x86_64.instructions import BranchInstruction, Instruction
+from nervapy.x86_64.operand import (check_operand, format_operand_type, is_al,
+                                    is_ax, is_cl, is_eax, is_er, is_evex_vmx,
+                                    is_evex_vmy, is_evex_xmm, is_evex_ymm,
+                                    is_imm, is_imm4, is_imm8, is_imm16,
+                                    is_imm32, is_imm64, is_k, is_kk, is_label,
+                                    is_m, is_m8, is_m16, is_m16kz, is_m32,
+                                    is_m32k, is_m32kz, is_m64, is_m64_m32bcst,
+                                    is_m64k, is_m64kz, is_m80, is_m128,
+                                    is_m128_m32bcst, is_m128_m64bcst,
+                                    is_m128kz, is_m256, is_m256_m32bcst,
+                                    is_m256_m64bcst, is_m256kz, is_m512,
+                                    is_m512_m32bcst, is_m512_m64bcst,
+                                    is_m512kz, is_mm, is_r8, is_r8rex, is_r16,
+                                    is_r32, is_r64, is_rax, is_rel8, is_rel32,
+                                    is_sae, is_vmx, is_vmxk, is_vmy, is_vmyk,
+                                    is_vmz, is_vmzk, is_xmm, is_xmm0, is_xmmk,
+                                    is_xmmkz, is_ymm, is_ymmk, is_ymmkz,
+                                    is_zmm, is_zmmk, is_zmmkz)
 
 
 class VMOVSS(Instruction):

@@ -158,8 +158,9 @@ class Instruction(object):
     @property
     def output_registers_masks(self):
         from nervapy.x86_64.operand import get_operand_registers
-        from nervapy.x86_64.registers import GeneralPurposeRegister32, GeneralPurposeRegister64, \
-            XMMRegister, YMMRegister
+        from nervapy.x86_64.registers import (GeneralPurposeRegister32,
+                                              GeneralPurposeRegister64,
+                                              XMMRegister, YMMRegister)
         registers_masks = self._implicit_out_regs.copy()
         for (is_output_register, operand) in zip(self.out_regs, self.operands):
             if is_output_register:
@@ -176,15 +177,15 @@ class Instruction(object):
 
     @property
     def constant(self):
-        from nervapy.x86_64.operand import MemoryOperand
         from nervapy.literal import Constant
+        from nervapy.x86_64.operand import MemoryOperand
         return next(iter(operand.symbol for operand in self.operands if
                     isinstance(operand, MemoryOperand) and isinstance(operand.symbol, Constant)), None)
 
     @property
     def local_variable(self):
-        from nervapy.x86_64.operand import MemoryOperand
         from nervapy.x86_64.function import LocalVariable
+        from nervapy.x86_64.operand import MemoryOperand
         return next(iter(operand.symbol for operand in self.operands if
                     isinstance(operand, MemoryOperand) and isinstance(operand.symbol, LocalVariable)), None)
 
@@ -383,8 +384,8 @@ class BranchInstruction(Instruction):
             encodings = [encode(0) for (_, encode) in self.encodings]
         else:
             encodings = []
-            from nervapy.x86_64.encoding import Flags
             from nervapy.util import is_sint8, is_sint32
+            from nervapy.x86_64.encoding import Flags
             for (flags, encode) in self.encodings:
                 offset = label_address - (address + len(encode(0)))
                 if flags & Flags.Rel8Label != 0 and is_sint8(offset) or \

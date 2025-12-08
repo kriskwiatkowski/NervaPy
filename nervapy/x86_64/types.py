@@ -3,7 +3,6 @@
 
 from nervapy import Type
 
-
 m64 = Type("__m64", size=8, is_vector=True, header="mmintrin.h")
 m128 = Type("__m128", size=16, is_vector=True, header="xmmintrin.h")
 m128d = Type("__m128d", size=16, is_vector=True, header="emmintrin.h")

@@ -3,8 +3,8 @@
 
 import inspect
 
-import nervapy.stream
 import nervapy.arm.function
+import nervapy.stream
 from nervapy.arm.instructions import Instruction, Operand
 from nervapy.arm.isa import Extension
 

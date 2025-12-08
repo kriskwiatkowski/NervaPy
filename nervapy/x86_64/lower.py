@@ -1,11 +1,12 @@
-from nervapy.x86_64.registers import GeneralPurposeRegister, MMXRegister, XMMRegister, YMMRegister
-from nervapy.x86_64.generic import MOV, MOVZX, MOVSX, MOVSXD
-from nervapy.x86_64.mmxsse import MOVQ, MOVAPS, MOVAPD, MOVSS, MOVSD, MOVDQA
-from nervapy.x86_64.avx import VMOVAPS, VMOVAPD, VMOVSS, VMOVSD, VMOVDQA
-from nervapy.x86_64.operand import dword, word, byte
+from nervapy import Type
 from nervapy.stream import NullStream
 from nervapy.x86_64 import m128, m128d, m128i, m256, m256d, m256i
-from nervapy import Type
+from nervapy.x86_64.avx import VMOVAPD, VMOVAPS, VMOVDQA, VMOVSD, VMOVSS
+from nervapy.x86_64.generic import MOV, MOVSX, MOVSXD, MOVZX
+from nervapy.x86_64.mmxsse import MOVAPD, MOVAPS, MOVDQA, MOVQ, MOVSD, MOVSS
+from nervapy.x86_64.operand import byte, dword, word
+from nervapy.x86_64.registers import (GeneralPurposeRegister, MMXRegister,
+                                      XMMRegister, YMMRegister)
 
 
 def load_register(dst_reg, src_reg, data_type, prototype):

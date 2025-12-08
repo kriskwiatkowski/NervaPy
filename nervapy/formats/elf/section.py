@@ -102,7 +102,7 @@ class Section(object):
                       address=None, link_section=None, info=None,
                       content_size=0, entry_size=0):
         import nervapy.encoder
-        from nervapy.util import is_uint64, is_uint32
+        from nervapy.util import is_uint32, is_uint64
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert isinstance(name_index_map, dict)
         assert section_index_map is None or isinstance(section_index_map, dict)
@@ -259,8 +259,8 @@ class SymbolSection(Section):
             self._nonlocal_symbols.append(symbol)
 
     def get_content_size(self, abi):
-        from nervapy.formats.elf.symbol import Symbol
         from nervapy.abi import ABI
+        from nervapy.formats.elf.symbol import Symbol
         assert isinstance(abi, ABI)
         assert abi.elf_bitness in [32, 64]
 

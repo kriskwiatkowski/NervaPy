@@ -4,11 +4,12 @@
 import inspect
 
 import nervapy.stream
-import nervapy.x86_64.options
 import nervapy.x86_64.isa
+import nervapy.x86_64.options
+from nervapy.parse import (parse_assigned_variable_name,
+                           parse_with_variable_name)
 from nervapy.x86_64.instructions import Instruction
 from nervapy.x86_64.operand import check_operand, format_operand_type
-from nervapy.parse import parse_assigned_variable_name, parse_with_variable_name
 
 
 class Label:
@@ -181,7 +182,9 @@ class ALIGN(Instruction):
 class RETURN(Instruction):
     def __init__(self, *args, **kwargs):
         from nervapy.common.function import active_function
-        from nervapy.x86_64.registers import GeneralPurposeRegister, MMXRegister, XMMRegister, YMMRegister
+        from nervapy.x86_64.registers import (GeneralPurposeRegister,
+                                              MMXRegister, XMMRegister,
+                                              YMMRegister)
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
@@ -196,7 +199,7 @@ class RETURN(Instruction):
             self.out_operands = tuple()
         elif len(self.operands) == 1:
             # It is an error to return something from a void function
-            from nervapy.util import is_int64, int_size
+            from nervapy.util import int_size, is_int64
             if active_function.result_type is None:
                 raise ValueError("Void function should not return a value")
             if active_function.result_type.is_integer or active_function.result_type.is_pointer:
@@ -261,8 +264,9 @@ class LOAD:
     class ARGUMENT(Instruction):
         def __init__(self, *args, **kwargs):
             from nervapy.common.function import active_function
-            from nervapy.x86_64.registers import GeneralPurposeRegister, XMMRegister, YMMRegister
             from nervapy.x86_64 import m64
+            from nervapy.x86_64.registers import (GeneralPurposeRegister,
+                                                  XMMRegister, YMMRegister)
 
             origin = kwargs.get("origin")
             prototype = kwargs.get("prototype")
@@ -304,9 +308,13 @@ class LOAD:
 
             text = "\t" if indent else ""
             if assembly_format == "go":
-                from nervapy.x86_64.registers import GeneralPurposeRegister64, GeneralPurposeRegister32, \
-                    GeneralPurposeRegister16, GeneralPurposeRegister8, GeneralPurposeRegister, \
-                    MMXRegister, XMMRegister, YMMRegister
+                from nervapy.x86_64.registers import (GeneralPurposeRegister,
+                                                      GeneralPurposeRegister8,
+                                                      GeneralPurposeRegister16,
+                                                      GeneralPurposeRegister32,
+                                                      GeneralPurposeRegister64,
+                                                      MMXRegister, XMMRegister,
+                                                      YMMRegister)
                 assert isinstance(self.operands[0], (GeneralPurposeRegister, MMXRegister, XMMRegister)), \
                     "LOAD.ARGUMENT must load into a general-purpose, mmx, or xmm register"
                 if isinstance(self.operands[0], GeneralPurposeRegister8):
@@ -367,9 +375,11 @@ class STORE:
     class RESULT(Instruction):
         def __init__(self, *args, **kwargs):
             from nervapy.common.function import active_function
-            from nervapy.x86_64.registers import GeneralPurposeRegister, MMXRegister, XMMRegister, YMMRegister
             from nervapy.util import is_int16, is_int32
             from nervapy.x86_64.abi import goasm_amd64_abi, goasm_amd64p32_abi
+            from nervapy.x86_64.registers import (GeneralPurposeRegister,
+                                                  MMXRegister, XMMRegister,
+                                                  YMMRegister)
 
             origin = kwargs.get("origin")
             prototype = kwargs.get("prototype")
@@ -429,8 +439,8 @@ class STORE:
 
             text = "\t" if indent else ""
             if assembly_format == "go":
-                from nervapy.x86_64.registers import MMXRegister, XMMRegister
                 from nervapy.x86_64.operand import format_operand
+                from nervapy.x86_64.registers import MMXRegister, XMMRegister
 
                 if isinstance(self.operands[0], MMXRegister):
                     mov_name = {
