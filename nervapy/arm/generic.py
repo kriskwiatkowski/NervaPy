@@ -164,8 +164,8 @@ class MovInstruction(Instruction):
 
 
 class LoadStoreInstruction(Instruction):
-    load_instructions = ['LDR', 'LDRH', 'LDRSH', 'LDRB', 'LDRSB']
-    store_instructions = ['STR', 'STRB', 'STRH']
+    load_instructions = ['LDR', 'LDRH', 'LDRSH', 'LDRB', 'LDRSB', 'LDR.W', 'LDRH.W', 'LDRSH.W', 'LDRB.W', 'LDRSB.W']
+    store_instructions = ['STR', 'STRB', 'STRH', 'STR.W', 'STRB.W', 'STRH.W']
 
     def __init__(self, name, register, address, increment, origin=None):
         allowed_instructions = LoadStoreInstruction.load_instructions + LoadStoreInstruction.store_instructions
@@ -174,8 +174,8 @@ class LoadStoreInstruction(Instruction):
                 allowed_instructions)))
         if register.is_general_purpose_register() and address.is_memory_address(offset_bits=8) and increment.is_none():
             super(LoadStoreInstruction, self).__init__(name, [register, address], origin=origin)
-        elif name in {'STR', 'LDR', 'LDRB',
-                      'STRB'} and register.is_general_purpose_register() and address.is_memory_address(
+        elif name in {'STR', 'LDR', 'LDRB', 'STRB', 'STR.W', 'LDR.W', 'LDRB.W',
+                      'STRB.W'} and register.is_general_purpose_register() and address.is_memory_address(
                 offset_bits=12) and increment.is_none():
             super(LoadStoreInstruction, self).__init__(name, [register, address], origin=origin)
         elif register.is_general_purpose_register() and address.is_memory_address(offset_bits=0,
@@ -5185,6 +5185,78 @@ def LDRSB(register, address, increment=None):
 def STRB(register, address, increment=None):
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
     instruction = LoadStoreInstruction('STRB', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def LDRB_W(register, address, increment=None):
+    """LDRB.W - 32-bit wide encoding for byte load in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('LDRB.W', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def STRB_W(register, address, increment=None):
+    """STRB.W - 32-bit wide encoding for byte store in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('STRB.W', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def LDR_W(register, address, increment=None):
+    """LDR.W - 32-bit wide encoding for word load in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('LDR.W', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def STR_W(register, address, increment=None):
+    """STR.W - 32-bit wide encoding for word store in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('STR.W', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def LDRH_W(register, address, increment=None):
+    """LDRH.W - 32-bit wide encoding for halfword load in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('LDRH.W', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def STRH_W(register, address, increment=None):
+    """STRH.W - 32-bit wide encoding for halfword store in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('STRH.W', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def LDRSH_W(register, address, increment=None):
+    """LDRSH.W - 32-bit wide encoding for signed halfword load in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('LDRSH.W', Operand(register), Operand(address), Operand(increment), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def LDRSB_W(register, address, increment=None):
+    """LDRSB.W - 32-bit wide encoding for signed byte load in Thumb-2"""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = LoadStoreInstruction('LDRSB.W', Operand(register), Operand(address), Operand(increment), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
