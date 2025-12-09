@@ -51,7 +51,7 @@ class GenerateInstructions(Command):
 
 setup(
     name="NervaPy",
-    version="0.2.0",
+    version="0.0.3",
     description="Experimental Python framework for exploring advanced program synthesis and transformation techniques",
     author="Marat Dukhan",
     author_email="maratek@gmail.com",
