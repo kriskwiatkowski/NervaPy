@@ -336,9 +336,8 @@ class BranchWithLinkInstruction(Instruction):
 
 class BranchExchangeInstruction(Instruction):
     def __init__(self, destination, origin=None):
-        from nervapy.arm.registers import lr
         super(BranchExchangeInstruction, self).__init__('BX', [destination], origin=origin)
-        if destination.is_general_purpose_register() and destination.register == lr:
+        if destination.is_general_purpose_register():
             pass
         else:
             raise ValueError('Invalid operands in instruction {0} {1}'.format('BX', destination))
@@ -348,6 +347,23 @@ class BranchExchangeInstruction(Instruction):
 
     def get_output_registers_list(self):
         return list()
+
+
+class BranchLinkExchangeInstruction(Instruction):
+    def __init__(self, destination, origin=None):
+        from nervapy.arm.registers import lr
+        super(BranchLinkExchangeInstruction, self).__init__('BLX', [destination], origin=origin)
+        self.lr = lr
+        if destination.is_general_purpose_register():
+            pass
+        else:
+            raise ValueError('Invalid operands in instruction {0} {1}'.format('BLX', destination))
+
+    def get_input_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+    def get_output_registers_list(self):
+        return [self.lr]
 
 
 class DualRegisterLoadStoreInstruction(Instruction):
@@ -5504,6 +5520,14 @@ def BLE(destination):
 def BL(destination):
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
     instruction = BranchWithLinkInstruction(Operand(destination), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def BLX(destination):
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = BranchLinkExchangeInstruction(Operand(destination), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
