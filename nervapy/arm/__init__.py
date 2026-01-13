@@ -88,8 +88,8 @@ from nervapy.arm.generic import (ADC, ADCCC, ADCCS, ADCEQ, ADCGE, ADCGT, ADCHI,
                                  TSTLO, TSTLS, TSTLT, TSTMI, TSTNE, TSTPL,
                                  TSTVC, TSTVS, B)
 from nervapy.arm.microarchitecture import Microarchitecture
-from nervapy.arm.pseudo import (ALIGN, ASSUME, INIT, LABEL, LOAD, REDUCE,
-                                RETURN, STORE, SWAP, Label, Loop)
+from nervapy.arm.pseudo import (ALIGN, ASSUME, IMPORT, INIT, LABEL, LOAD, REDUCE,
+                                RETURN, STORE, SWAP, ExternalFunction, Label, Loop)
 from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
                                    QRegister, SRegister, WMMXRegister, d0, d1,
                                    d2, d3, d4, d5, d6, d7, d8, d9, d10, d11,

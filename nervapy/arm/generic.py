@@ -317,10 +317,19 @@ class BranchInstruction(Instruction):
 class BranchWithLinkInstruction(Instruction):
     def __init__(self, destination, origin=None):
         from nervapy.arm.registers import lr
+        from nervapy.arm.pseudo import ExternalFunction
         super(BranchWithLinkInstruction, self).__init__('BL', [destination], origin=origin)
         self.lr = lr
+        self.is_external = False
+        
         if destination.is_label():
-            pass
+            # Check if this is an external function label
+            from nervapy.arm.function import active_function
+            if hasattr(destination, 'label') and isinstance(destination.label, str):
+                # Check if it's marked as external or if ExternalFunction was used
+                if active_function and hasattr(active_function, 'external_functions'):
+                    if destination.label in active_function.external_functions:
+                        self.is_external = True
         else:
             raise ValueError('Invalid operands in instruction {0} {1}'.format('BL', destination))
 
@@ -331,7 +340,12 @@ class BranchWithLinkInstruction(Instruction):
         return [self.lr]
 
     def __str__(self):
-        return self.name + " " + str(self.operands[0])
+        label = str(self.operands[0])
+        # For external functions, don't add the 'L' prefix
+        if self.is_external:
+            return self.name + " " + label
+        else:
+            return self.name + " L" + label
 
 
 class BranchExchangeInstruction(Instruction):

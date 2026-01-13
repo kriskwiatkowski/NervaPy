@@ -8,12 +8,23 @@ from nervapy.arm.instructions import Instruction, Operand, QuasiInstruction
 
 
 class Label(object):
-    def __init__(self, name):
+    def __init__(self, name, is_external=False):
         super(Label, self).__init__()
         self.name = name
+        self.is_external = is_external
 
     def __str__(self):
         return "<LABEL:" + self.name + '>'
+
+
+class ExternalFunction(object):
+    """Represents an external function that needs to be imported."""
+    def __init__(self, name):
+        super(ExternalFunction, self).__init__()
+        self.name = name
+        
+    def __str__(self):
+        return self.name
 
 
 class LabelQuasiInstruction(QuasiInstruction):
@@ -468,6 +479,38 @@ class ASSUME:
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(instruction)
         return instruction
+
+
+class IMPORT:
+    """Declare external functions for ARMCC assembly."""
+    @staticmethod
+    def FUNCTION(name):
+        """
+        Declare an external function that will be called.
+        For ARMCC, this generates an IMPORT directive.
+        
+        Args:
+            name: Name of the external function (string or ExternalFunction)
+        
+        Returns:
+            ExternalFunction object that can be used with BL
+        """
+        from nervapy.arm.function import active_function
+        
+        if isinstance(name, str):
+            external_func = ExternalFunction(name)
+        elif isinstance(name, ExternalFunction):
+            external_func = name
+        else:
+            raise TypeError("Function name must be a string or ExternalFunction")
+        
+        # Register the external function with the active function
+        if active_function is not None:
+            if not hasattr(active_function, 'external_functions'):
+                active_function.external_functions = set()
+            active_function.external_functions.add(external_func.name)
+        
+        return external_func
 
 
 class INIT:
