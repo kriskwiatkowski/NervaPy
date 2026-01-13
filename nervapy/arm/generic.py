@@ -317,10 +317,19 @@ class BranchInstruction(Instruction):
 class BranchWithLinkInstruction(Instruction):
     def __init__(self, destination, origin=None):
         from nervapy.arm.registers import lr
+        from nervapy.arm.pseudo import ExternalFunction
         super(BranchWithLinkInstruction, self).__init__('BL', [destination], origin=origin)
         self.lr = lr
+        self.is_external = False
+        
         if destination.is_label():
-            pass
+            # Check if this is an external function label
+            from nervapy.arm.function import active_function
+            if hasattr(destination, 'label') and isinstance(destination.label, str):
+                # Check if it's marked as external or if ExternalFunction was used
+                if active_function and hasattr(active_function, 'external_functions'):
+                    if destination.label in active_function.external_functions:
+                        self.is_external = True
         else:
             raise ValueError('Invalid operands in instruction {0} {1}'.format('BL', destination))
 
@@ -331,14 +340,18 @@ class BranchWithLinkInstruction(Instruction):
         return [self.lr]
 
     def __str__(self):
-        return self.name + " " + str(self.operands[0])
+        label = str(self.operands[0])
+        # For external functions, don't add the 'L' prefix
+        if self.is_external:
+            return self.name + " " + label
+        else:
+            return self.name + " L" + label
 
 
 class BranchExchangeInstruction(Instruction):
     def __init__(self, destination, origin=None):
-        from nervapy.arm.registers import lr
         super(BranchExchangeInstruction, self).__init__('BX', [destination], origin=origin)
-        if destination.is_general_purpose_register() and destination.register == lr:
+        if destination.is_general_purpose_register():
             pass
         else:
             raise ValueError('Invalid operands in instruction {0} {1}'.format('BX', destination))
@@ -348,6 +361,23 @@ class BranchExchangeInstruction(Instruction):
 
     def get_output_registers_list(self):
         return list()
+
+
+class BranchLinkExchangeInstruction(Instruction):
+    def __init__(self, destination, origin=None):
+        from nervapy.arm.registers import lr
+        super(BranchLinkExchangeInstruction, self).__init__('BLX', [destination], origin=origin)
+        self.lr = lr
+        if destination.is_general_purpose_register():
+            pass
+        else:
+            raise ValueError('Invalid operands in instruction {0} {1}'.format('BLX', destination))
+
+    def get_input_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+    def get_output_registers_list(self):
+        return [self.lr]
 
 
 class DualRegisterLoadStoreInstruction(Instruction):
@@ -5504,6 +5534,14 @@ def BLE(destination):
 def BL(destination):
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
     instruction = BranchWithLinkInstruction(Operand(destination), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def BLX(destination):
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = BranchLinkExchangeInstruction(Operand(destination), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction

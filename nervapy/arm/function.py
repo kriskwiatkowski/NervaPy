@@ -90,6 +90,7 @@ class Function(object):
 
         self.instructions = list()
         self.constants = list()
+        self.external_functions = set()  # Track external function imports
         self.stack_frame = StackFrame(self.abi)
         self.local_variables_count = 0
         self.virtual_registers_count = 0x40
@@ -307,6 +308,13 @@ class Function(object):
         if self.armcc_fpu_spec:
             assembly += "        " + self.armcc_fpu_spec + os.linesep
         assembly += os.linesep
+        
+        # Add IMPORT statements for external functions
+        if hasattr(self, 'external_functions') and len(self.external_functions) > 0:
+            for func_name in sorted(self.external_functions):
+                assembly += "        IMPORT  " + func_name + os.linesep
+            assembly += os.linesep
+        
         assembly += function_label + "    PROC" + os.linesep
         assembly += "        EXPORT  " + function_label + os.linesep
 

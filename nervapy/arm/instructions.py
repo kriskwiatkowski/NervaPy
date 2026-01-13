@@ -59,7 +59,7 @@ class Operand(object):
 
         from nervapy import Constant
         from nervapy.arm.function import LocalVariable
-        from nervapy.arm.pseudo import Label
+        from nervapy.arm.pseudo import Label, ExternalFunction
         from nervapy.arm.registers import (DRegisterLanes,
                                            GeneralPurposeRegister,
                                            GeneralPurposeRegisterWriteback,
@@ -118,6 +118,10 @@ class Operand(object):
             self.type = Operand.VariableType
             self.variable = operand
             self.size = operand.size * 8
+        elif isinstance(operand, ExternalFunction):
+            # Treat external functions as labels
+            self.type = Operand.LabelType
+            self.label = operand.name
         elif isinstance(operand, str):
             self.type = Operand.LabelType
             self.label = operand
