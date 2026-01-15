@@ -18,13 +18,14 @@ class Function(object):
                  abi=None, assembly_format=None, high_register_strategy=None,
                  collect_origin=False, dump_intermediate_assembly=False,
                  report_generation=True, report_live_registers=False, is_thumb=False, alignment=0,
-                 validate_stack_alignment=True):
+                 validate_stack_alignment=True, preserve8=False):
         self.name = name
         self.arguments = arguments
         self.return_type = return_type
         self.is_thumb = is_thumb
         self.alignment = alignment
         self.validate_stack_alignment = validate_stack_alignment
+        self.preserve8 = preserve8
 
         # Set default assembly format to GAS if not specified
         if assembly_format is None:
@@ -310,6 +311,8 @@ class Function(object):
         if self.alignment > 0:
             assembly += ", ALIGN={0}".format(self.alignment)
         assembly += os.linesep
+        if self.preserve8:
+            assembly += "        PRESERVE8" + os.linesep
         if self.armcc_fpu_spec:
             assembly += "        " + self.armcc_fpu_spec + os.linesep
         assembly += os.linesep
