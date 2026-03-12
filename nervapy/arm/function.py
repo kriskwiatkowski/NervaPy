@@ -222,6 +222,20 @@ class Function(object):
         else:  # Default to GAS format
             return self._generate_gas_assembly()
 
+    @property
+    def global_asm(self):
+        """Generate a Rust global_asm!() macro call embedding the GAS assembly.
+
+        Usage in a Rust source file:
+            use core::arch::global_asm;
+            include!("generated_kernels.rs");  // or paste directly
+
+        The extern declaration goes in your Rust code:
+            unsafe extern "C" { fn my_func(a: u32) -> u32; }
+        """
+        gas = self._generate_gas_assembly()
+        return 'core::arch::global_asm!(r#"\n{asm}"#);\n'.format(asm=gas)
+
     def _generate_gas_assembly(self):
         """Generate assembly code in GNU Assembler (GAS) format."""
         import os
@@ -252,6 +266,11 @@ class Function(object):
                                 Declaration=data_declaration_map[constant.size],
                                 Value=", ".join([str(constant)] * constant.repeats)) + os.linesep
                 need_alignment = not constant_bucket.is_full()
+            assembly += os.linesep
+
+        if hasattr(self, 'external_functions') and len(self.external_functions) > 0:
+            for func_name in sorted(self.external_functions):
+                assembly += '.extern {0}'.format(func_name) + os.linesep
             assembly += os.linesep
 
         assembly += '\n\t.text\n' + os.linesep

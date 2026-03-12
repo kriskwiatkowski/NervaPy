@@ -425,5 +425,68 @@ class TestARMv8MExtensions(unittest.TestCase):
         self.assertNotIn(Extension.V7M, target.extensions)
 
 
+class TestRustOutput(unittest.TestCase):
+    """Tests for Rust assembly output (global_asm! and .s file formats)."""
+
+    def _make_copy_words(self, target):
+        src_arg = Argument(ptr(const_uint32_t))
+        dst_arg = Argument(ptr(uint32_t))
+        len_arg = Argument(size_t)
+        with Function('copy_words', (src_arg, dst_arg, len_arg),
+                      target=target, abi=arm_gnueabihf,
+                      report_generation=False) as f:
+            (src, dst, length) = LOAD.ARGUMENTS()
+            with Loop() as loop:
+                val = GeneralPurposeRegister()
+                LDR(val, [src], 4)
+                STR(val, [dst], 4)
+                SUBS(length, 4)
+                BNE(loop.begin)
+            RETURN()
+        return f
+
+    def test_global_asm_macro_wrapping(self):
+        """global_asm property wraps GAS output in core::arch::global_asm!(r#"..."#)."""
+        f = self._make_copy_words(Microarchitecture.CortexM33)
+        out = f.global_asm
+        self.assertTrue(out.startswith('core::arch::global_asm!(r#"'))
+        self.assertTrue(out.rstrip().endswith('"#);'))
+        # Assembly content is present inside the macro
+        self.assertIn('copy_words:', out)
+        self.assertIn('.arch armv8-m.main', out)
+
+    def test_global_asm_matches_gas_assembly(self):
+        """global_asm content is identical to function.assembly."""
+        f = self._make_copy_words(Microarchitecture.CortexM33)
+        gas = f.assembly
+        global_asm = f.global_asm
+        self.assertIn(gas, global_asm)
+
+    def test_gas_output_usable_as_s_file(self):
+        """GAS output has directives required for a Rust .s file."""
+        f = self._make_copy_words(Microarchitecture.CortexM33)
+        asm = f.assembly
+        self.assertIn('.syntax unified', asm)
+        self.assertIn('.arch armv8-m.main', asm)
+        self.assertIn('.global copy_words', asm)
+        self.assertIn('.type copy_words, %function', asm)
+
+    def test_gas_extern_for_external_function(self):
+        """GAS output emits .extern for external function calls."""
+        from nervapy.arm.pseudo import IMPORT
+        from nervapy.arm.registers import r4, r5, lr
+        with Function('call_external', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      report_generation=False) as f:
+            ext = IMPORT.FUNCTION('memset')
+            PUSH((r4, r5))
+            BL(ext)
+            POP((r4, r5))
+            BX(lr)
+
+        asm = f.assembly
+        self.assertIn('.extern memset', asm)
+
+
 if __name__ == '__main__':
     unittest.main()

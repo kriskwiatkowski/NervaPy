@@ -34,3 +34,4 @@ MANIFEST
 # Example binaries and generated headers
 examples/make/test
 examples/make/matmul-opt.h
+examples/rust_output/
