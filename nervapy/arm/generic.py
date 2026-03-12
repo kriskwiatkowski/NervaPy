@@ -465,6 +465,97 @@ class BreakInstruction(Instruction):
         return None
 
 
+class SGInstruction(Instruction):
+    """SG (Secure Gateway) - ARMv8-M TrustZone entry point marker."""
+    def __init__(self, origin=None):
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+        super(SGInstruction, self).__init__('SG', [], origin=origin)
+        if active_function and Extension.TrustZone not in active_function.target.extensions:
+            raise ValueError("SG requires TrustZone extension (ARMv8-M architecture)")
+
+    def __str__(self):
+        return "SG"
+
+    def get_input_registers_list(self):
+        return []
+
+    def get_output_registers_list(self):
+        return []
+
+    def get_constant(self):
+        return None
+
+    def get_local_variable(self):
+        return None
+
+
+class BranchExchangeNonSecureInstruction(Instruction):
+    """BXNS (Branch and Exchange to Non-Secure state) - ARMv8-M TrustZone."""
+    def __init__(self, destination, origin=None):
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+        super(BranchExchangeNonSecureInstruction, self).__init__('BXNS', [destination], origin=origin)
+        if not destination.is_general_purpose_register():
+            raise ValueError('Invalid operands in instruction BXNS {0}'.format(destination))
+        if active_function and Extension.TrustZone not in active_function.target.extensions:
+            raise ValueError("BXNS requires TrustZone extension (ARMv8-M architecture)")
+
+    def get_input_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+    def get_output_registers_list(self):
+        return []
+
+
+class BranchLinkExchangeNonSecureInstruction(Instruction):
+    """BLXNS (Branch, Link and Exchange to Non-Secure state) - ARMv8-M TrustZone."""
+    def __init__(self, destination, origin=None):
+        from nervapy.arm.registers import lr
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+        super(BranchLinkExchangeNonSecureInstruction, self).__init__('BLXNS', [destination], origin=origin)
+        self.lr = lr
+        if not destination.is_general_purpose_register():
+            raise ValueError('Invalid operands in instruction BLXNS {0}'.format(destination))
+        if active_function and Extension.TrustZone not in active_function.target.extensions:
+            raise ValueError("BLXNS requires TrustZone extension (ARMv8-M architecture)")
+
+    def get_input_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+    def get_output_registers_list(self):
+        return [self.lr]
+
+
+class TestTargetInstruction(Instruction):
+    """TT/TTA/TTT/TTAT (Test Target) instructions - ARMv8-M TrustZone address attribute query."""
+    allowed_names = ['TT', 'TTA', 'TTT', 'TTAT']
+
+    def __init__(self, name, destination, source, origin=None):
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+        if name not in self.allowed_names:
+            raise ValueError('Instruction {0} is not valid; expected one of: {1}'.format(
+                name, ', '.join(self.allowed_names)))
+        super(TestTargetInstruction, self).__init__(name, [destination, source], origin=origin)
+        if not destination.is_general_purpose_register():
+            raise ValueError('Invalid destination in instruction {0}'.format(name))
+        if not source.is_general_purpose_register():
+            raise ValueError('Invalid source in instruction {0}'.format(name))
+        if active_function and Extension.TrustZone not in active_function.target.extensions:
+            raise ValueError("{0} requires TrustZone extension (ARMv8-M architecture)".format(name))
+
+    def get_input_registers_list(self):
+        return self.operands[1].get_registers_list()
+
+    def get_output_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+    def __str__(self):
+        return '{0} {1}, {2}'.format(self.name, self.operands[0], self.operands[1])
+
+
 def BX(destination):
     instruction = BranchExchangeInstruction(Operand(destination))
     if nervapy.stream.active_stream is not None:
@@ -5542,6 +5633,69 @@ def BL(destination):
 def BLX(destination):
     origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
     instruction = BranchLinkExchangeInstruction(Operand(destination), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SG():
+    """Secure Gateway - ARMv8-M TrustZone entry point marker."""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = SGInstruction(origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def BXNS(destination):
+    """Branch and Exchange to Non-Secure state - ARMv8-M TrustZone."""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = BranchExchangeNonSecureInstruction(Operand(destination), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def BLXNS(destination):
+    """Branch, Link and Exchange to Non-Secure state - ARMv8-M TrustZone."""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = BranchLinkExchangeNonSecureInstruction(Operand(destination), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def TT(destination, source):
+    """Test Target - query address attributes for ARMv8-M TrustZone."""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = TestTargetInstruction('TT', Operand(destination), Operand(source), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def TTA(destination, source):
+    """Test Target Alternate domain - ARMv8-M TrustZone."""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = TestTargetInstruction('TTA', Operand(destination), Operand(source), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def TTT(destination, source):
+    """Test Target unprivileged - ARMv8-M TrustZone."""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = TestTargetInstruction('TTT', Operand(destination), Operand(source), origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def TTAT(destination, source):
+    """Test Target Alternate domain unprivileged - ARMv8-M TrustZone."""
+    origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    instruction = TestTargetInstruction('TTAT', Operand(destination), Operand(source), origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction

@@ -348,12 +348,18 @@ class Function(object):
     def gnu_arch_spec(self):
         from nervapy.arm.isa import Extension
         isa_extensions = self.isa_extensions
-        if Extension.Div in isa_extensions:
+        if Extension.V8_1MMain in isa_extensions:
+            return ".arch armv8.1-m.main"
+        elif Extension.V8MMain in isa_extensions:
+            return ".arch armv8-m.main"
+        elif Extension.Div in isa_extensions:
             return ".cpu cortex-a15"
         elif Extension.V7MP in isa_extensions:
             return ".cpu cortex-a9"
         elif Extension.V7M in isa_extensions:
             return ".arch armv7-m"
+        elif Extension.V8MBase in isa_extensions:
+            return ".arch armv8-m.base"
         elif Extension.V7 in isa_extensions:
             return ".arch armv7-a"
         elif Extension.V6K in isa_extensions:
@@ -1061,8 +1067,8 @@ class Function(object):
         from nervapy.arm.isa import Extension
         from nervapy.arm.registers import sp
 
-        # Only enforce for ARMv7-M architecture
-        if Extension.V7M not in self.target.extensions:
+        # Enforce for ARMv7-M and ARMv8-M architectures (V8MMain implies V7M via prerequisites)
+        if Extension.V7M not in self.target.extensions and Extension.V8MBase not in self.target.extensions:
             return
 
         # Track stack offset from initial 8-byte aligned position
@@ -1150,7 +1156,7 @@ class Function(object):
                     raise ValueError(
                         "Stack is not 8-byte aligned before {0} instruction.\n"
                         "Current stack offset: {1} bytes (misaligned by {2} bytes).\n"
-                        "ARMv7-M requires 8-byte stack alignment at function calls (AAPCS requirement).\n"
+                        "ARMv7-M/ARMv8-M requires 8-byte stack alignment at function calls (AAPCS requirement).\n"
                         "Add a dummy register to PUSH instructions or adjust stack manually to maintain alignment."
                         .format(instruction.name, stack_offset, stack_offset % 8))
 

@@ -86,7 +86,8 @@ from nervapy.arm.generic import (ADC, ADCCC, ADCCS, ADCEQ, ADCGE, ADCGT, ADCHI,
                                  TEQNE, TEQPL, TEQVC, TEQVS, TST, TSTCC, TSTCS,
                                  TSTEQ, TSTGE, TSTGT, TSTHI, TSTHS, TSTLE,
                                  TSTLO, TSTLS, TSTLT, TSTMI, TSTNE, TSTPL,
-                                 TSTVC, TSTVS, B)
+                                 TSTVC, TSTVS, B,
+                                 SG, BXNS, BLXNS, TT, TTA, TTT, TTAT)
 from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.pseudo import (ALIGN, ASSUME, IMPORT, INIT, LABEL, LOAD, REDUCE,
                                 RETURN, STORE, SWAP, ExternalFunction, Label, Loop)

@@ -6,7 +6,8 @@ class Extension:
     def __init__(self, name):
         if name in {'V4', 'V5', 'V5E', 'V6', 'V6K', 'V7', 'V7MP', 'V7M', 'Div', 'Thumb', 'Thumb2',
                     'VFP', 'VFP2', 'VFP3', 'VFPd32', 'VFPHP', 'VFP4', 'VFPVectorMode',
-                    'XScale', 'WMMX', 'WMMX2', 'NEON', 'NEONHP', 'NEON2', 'DSP'}:
+                    'XScale', 'WMMX', 'WMMX2', 'NEON', 'NEONHP', 'NEON2', 'DSP',
+                    'V8MBase', 'V8MMain', 'V8_1MMain', 'TrustZone', 'MVE'}:
             self.name = name
         else:
             raise ValueError('Invalid ISA extension: {0} is not supported on this architecture'.format(name))
@@ -56,6 +57,14 @@ class Extension:
                        Extension.NEONHP],
             'NEON2': [Extension.VFP, Extension.VFP2, Extension.VFP3, Extension.VFPd32, Extension.NEON,
                       Extension.NEONHP, Extension.NEON2],
+            # ARMv8-M extensions
+            'V8MBase': [Extension.V4, Extension.V5, Extension.V5E, Extension.V6, Extension.V8MBase],
+            'V8MMain': [Extension.V4, Extension.V5, Extension.V5E, Extension.V6, Extension.V6K,
+                        Extension.V7, Extension.V7M, Extension.V8MMain],
+            'V8_1MMain': [Extension.V4, Extension.V5, Extension.V5E, Extension.V6, Extension.V6K,
+                          Extension.V7, Extension.V7M, Extension.V8MMain, Extension.V8_1MMain],
+            'TrustZone': [Extension.TrustZone],
+            'MVE': [Extension.MVE],
         }[self.name]
 
     @property
@@ -88,6 +97,12 @@ class Extension:
             'NEON': [Extension.NEON],
             'NEONHP': [Extension.NEON, Extension.NEONHP],
             'NEON2': [Extension.NEON, Extension.NEONHP, Extension.NEON2],
+            # ARMv8-M extensions
+            'V8MBase': [Extension.V8MBase],
+            'V8MMain': [Extension.V8MMain],
+            'V8_1MMain': [Extension.V8_1MMain],
+            'TrustZone': [Extension.TrustZone],
+            'MVE': [Extension.MVE],
         }[self.name]
 
     def __add__(self, extension):
@@ -124,6 +139,11 @@ class Extension:
     NEON: 'Extension'
     NEONHP: 'Extension'
     NEON2: 'Extension'
+    V8MBase: 'Extension'
+    V8MMain: 'Extension'
+    V8_1MMain: 'Extension'
+    TrustZone: 'Extension'
+    MVE: 'Extension'
     All: list
 
 Extension.V4 = Extension('V4')
@@ -151,11 +171,17 @@ Extension.WMMX2 = Extension('WMMX2')
 Extension.NEON = Extension('NEON')
 Extension.NEONHP = Extension('NEONHP')
 Extension.NEON2 = Extension('NEON2')
+Extension.V8MBase = Extension('V8MBase')
+Extension.V8MMain = Extension('V8MMain')
+Extension.V8_1MMain = Extension('V8_1MMain')
+Extension.TrustZone = Extension('TrustZone')
+Extension.MVE = Extension('MVE')
 Extension.All = [Extension.V4, Extension.V5, Extension.V5E, Extension.V6, Extension.V6K, Extension.V7, Extension.V7MP, Extension.V7M,
                  Extension.Div, Extension.DSP, Extension.Thumb, Extension.Thumb2,
                  Extension.VFP, Extension.VFP2, Extension.VFP3, Extension.VFP4, Extension.VFPd32, Extension.VFPHP,
                  Extension.VFPVectorMode, Extension.XScale, Extension.WMMX, Extension.WMMX2,
-                 Extension.NEON, Extension.NEONHP, Extension.NEON2]
+                 Extension.NEON, Extension.NEONHP, Extension.NEON2,
+                 Extension.V8MBase, Extension.V8MMain, Extension.V8_1MMain, Extension.TrustZone, Extension.MVE]
 
 
 class Extensions:

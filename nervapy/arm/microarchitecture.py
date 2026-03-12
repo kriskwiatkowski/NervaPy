@@ -31,6 +31,7 @@ class Microarchitecture:
     ARM9, ARM11 = None, None
     CortexA5, CortexA7, CortexA8, CortexA9, CortexA12, CortexA15 = None, None, None, None, None, None
     CortexM0, CortexM0Plus, CortexM1, CortexM3, CortexM4, CortexM7 = None, None, None, None, None, None
+    CortexM23, CortexM33, CortexM35P, CortexM55, CortexM85 = None, None, None, None, None
     Scorpion, Krait = None, None
     PJ4 = None
 
@@ -69,3 +70,19 @@ Microarchitecture.CortexM4 = Microarchitecture('Cortex M4', [Extension.V7M, Exte
                                                              Extension.VFP4])
 Microarchitecture.CortexM7 = Microarchitecture('Cortex M7', [Extension.V7M, Extension.Thumb2, Extension.DSP,
                                                              Extension.VFP4, Extension.VFPd32])
+
+# ARMv8-M Cortex-M series microarchitectures
+Microarchitecture.CortexM23 = Microarchitecture('Cortex M23', [Extension.V8MBase, Extension.Thumb,
+                                                               Extension.TrustZone])
+Microarchitecture.CortexM33 = Microarchitecture('Cortex M33', [Extension.V8MMain, Extension.Thumb2,
+                                                               Extension.DSP, Extension.VFP4,
+                                                               Extension.TrustZone])
+Microarchitecture.CortexM35P = Microarchitecture('Cortex M35P', [Extension.V8MMain, Extension.Thumb2,
+                                                                  Extension.DSP, Extension.VFP4,
+                                                                  Extension.TrustZone])
+Microarchitecture.CortexM55 = Microarchitecture('Cortex M55', [Extension.V8_1MMain, Extension.Thumb2,
+                                                               Extension.DSP, Extension.VFP4,
+                                                               Extension.TrustZone, Extension.MVE])
+Microarchitecture.CortexM85 = Microarchitecture('Cortex M85', [Extension.V8_1MMain, Extension.Thumb2,
+                                                               Extension.DSP, Extension.VFP4,
+                                                               Extension.TrustZone, Extension.MVE])
