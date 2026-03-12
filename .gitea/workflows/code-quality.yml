@@ -56,7 +56,6 @@ jobs:
       
       - name: Run type checking
         run: mypy nervapy/ --ignore-missing-imports --no-strict-optional
-        continue-on-error: true
 
   code-formatting:
     runs-on: ubuntu-latest-small

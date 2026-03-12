@@ -1,6 +1,8 @@
 # This file is part of PeachPy package and is licensed under the Simplified BSD license.
 #    See license.rst for the full text of the license.
 
+from typing import Optional
+
 from nervapy.arm.isa import Extension, Extensions
 
 
@@ -31,34 +33,30 @@ class Microarchitecture:
     def __str__(self):
         return self.name
 
-    Default = None
-    XScale = None
-    ARM9, ARM11 = None, None
-    CortexA5, CortexA7, CortexA8, CortexA9, CortexA12, CortexA15 = (
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
-    CortexM0, CortexM0Plus, CortexM1, CortexM3, CortexM4, CortexM7 = (
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
-    CortexM23, CortexM33, CortexM35P, CortexM55, CortexM85 = (
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
-    Scorpion, Krait = None, None
-    PJ4 = None
+    Default: Optional["Microarchitecture"] = None
+    XScale: Optional["Microarchitecture"] = None
+    ARM9: Optional["Microarchitecture"] = None
+    ARM11: Optional["Microarchitecture"] = None
+    CortexA5: Optional["Microarchitecture"] = None
+    CortexA7: Optional["Microarchitecture"] = None
+    CortexA8: Optional["Microarchitecture"] = None
+    CortexA9: Optional["Microarchitecture"] = None
+    CortexA12: Optional["Microarchitecture"] = None
+    CortexA15: Optional["Microarchitecture"] = None
+    CortexM0: Optional["Microarchitecture"] = None
+    CortexM0Plus: Optional["Microarchitecture"] = None
+    CortexM1: Optional["Microarchitecture"] = None
+    CortexM3: Optional["Microarchitecture"] = None
+    CortexM4: Optional["Microarchitecture"] = None
+    CortexM7: Optional["Microarchitecture"] = None
+    CortexM23: Optional["Microarchitecture"] = None
+    CortexM33: Optional["Microarchitecture"] = None
+    CortexM35P: Optional["Microarchitecture"] = None
+    CortexM55: Optional["Microarchitecture"] = None
+    CortexM85: Optional["Microarchitecture"] = None
+    Scorpion: Optional["Microarchitecture"] = None
+    Krait: Optional["Microarchitecture"] = None
+    PJ4: Optional["Microarchitecture"] = None
 
 
 Microarchitecture.Default = Microarchitecture("Default", Extension.All)

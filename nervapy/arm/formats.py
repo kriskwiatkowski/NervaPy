@@ -1,6 +1,8 @@
 # This file is part of PeachPy package and is licensed under the Simplified BSD license.
 #    See license.rst for the full text of the license.
 
+from typing import Optional
+
 
 class AssemblyFormat:
     """Defines different assembly output formats for ARM processors."""
@@ -15,8 +17,8 @@ class AssemblyFormat:
         return self.name == other.name
 
     # Assembly format constants
-    GAS = None  # GNU Assembler (default)
-    ARMCC = None  # ARM Compiler armasm
+    GAS: Optional["AssemblyFormat"] = None  # GNU Assembler (default)
+    ARMCC: Optional["AssemblyFormat"] = None  # ARM Compiler armasm
 
 
 class HighRegisterStrategy:
@@ -32,9 +34,9 @@ class HighRegisterStrategy:
         return self.name == other.name
 
     # High register handling strategies
-    PUSH_W = None  # Use PUSH.W/POP.W for high registers (modern, efficient)
-    STMDB = None  # Use STMDB sp!/LDMIA sp! for high registers (compatible)
-    AUTO = None  # Automatically choose based on target and assembler
+    PUSH_W: Optional["HighRegisterStrategy"] = None  # Use PUSH.W/POP.W for high registers (modern, efficient)
+    STMDB: Optional["HighRegisterStrategy"] = None  # Use STMDB sp!/LDMIA sp! for high registers (compatible)
+    AUTO: Optional["HighRegisterStrategy"] = None  # Automatically choose based on target and assembler
 
 
 # Initialize format constants

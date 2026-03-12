@@ -2,6 +2,8 @@
 #    See license.rst for the full text of the license.
 
 
+from typing import Any, ClassVar, Dict, Optional
+
 import six
 
 
@@ -20,7 +22,7 @@ class Register(object):
         0x300: 32,
         0x700: 64,
     }
-    size = None
+    size: Optional[int] = None
 
     def __init__(self, mask, virtual_id=None, physical_id=None):
         super(Register, self).__init__()
@@ -225,7 +227,7 @@ class Register(object):
 class GeneralPurposeRegister(Register):
     """A base class for general-purpose registers"""
 
-    _go_physical_id_map = {
+    _go_physical_id_map: ClassVar[Dict[Any, str]] = {
         0x0: "AX",
         0x1: "CX",
         0x2: "DX",
