@@ -14,6 +14,7 @@ name_mangling = "${Name}"
 
 def get_debug_level():
     from nervapy.common.function import active_function
+
     if active_function is None:
         return debug_level
     else:

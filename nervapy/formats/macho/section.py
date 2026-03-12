@@ -25,18 +25,25 @@ class Segment:
 
     def get_command_size(self, abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.pointer_size in [4, 8]
 
-        return {4: 56, 8: 72}[abi.pointer_size] + \
-            sum(section.get_command_size(abi) for section in self.sections)
+        return {4: 56, 8: 72}[abi.pointer_size] + sum(
+            section.get_command_size(abi) for section in self.sections
+        )
 
-    def encode_command(self, encoder, section_offset_map, section_address_map, section_relocations_map):
+    def encode_command(
+        self, encoder, section_offset_map, section_address_map, section_relocations_map
+    ):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
 
         offset = section_offset_map[self.sections[0]]
-        memory_size = section_address_map[self.sections[-1]] + self.sections[-1].content_size
+        memory_size = (
+            section_address_map[self.sections[-1]] + self.sections[-1].content_size
+        )
         file_size = sum(section.content_size for section in self.sections)
 
         address = 0
@@ -46,37 +53,44 @@ class Segment:
         if encoder.bitness == 32:
             command_id = 0x1
             command_size = 56 + len(self.sections) * 68
-            command = encoder.uint32(command_id) + \
-                encoder.uint32(command_size) + \
-                encoder.fixed_string(self.name, 16) + \
-                encoder.uint32(address) + \
-                encoder.uint32(memory_size) + \
-                encoder.uint32(offset) + \
-                encoder.uint32(file_size) + \
-                encoder.uint32(MemoryProtection.default) + \
-                encoder.uint32(MemoryProtection.default) + \
-                encoder.uint32(len(self.sections)) + \
-                encoder.uint32(self.flags)
+            command = (
+                encoder.uint32(command_id)
+                + encoder.uint32(command_size)
+                + encoder.fixed_string(self.name, 16)
+                + encoder.uint32(address)
+                + encoder.uint32(memory_size)
+                + encoder.uint32(offset)
+                + encoder.uint32(file_size)
+                + encoder.uint32(MemoryProtection.default)
+                + encoder.uint32(MemoryProtection.default)
+                + encoder.uint32(len(self.sections))
+                + encoder.uint32(self.flags)
+            )
         else:
             command_id = 0x19
             command_size = 72 + len(self.sections) * 80
-            command = encoder.uint32(command_id) + \
-                encoder.uint32(command_size) + \
-                encoder.fixed_string(self.name, 16) + \
-                encoder.uint64(address) + \
-                encoder.uint64(memory_size) + \
-                encoder.uint64(offset) + \
-                encoder.uint64(file_size) + \
-                encoder.uint32(MemoryProtection.default) + \
-                encoder.uint32(MemoryProtection.default) + \
-                encoder.uint32(len(self.sections)) + \
-                encoder.uint32(self.flags)
+            command = (
+                encoder.uint32(command_id)
+                + encoder.uint32(command_size)
+                + encoder.fixed_string(self.name, 16)
+                + encoder.uint64(address)
+                + encoder.uint64(memory_size)
+                + encoder.uint64(offset)
+                + encoder.uint64(file_size)
+                + encoder.uint32(MemoryProtection.default)
+                + encoder.uint32(MemoryProtection.default)
+                + encoder.uint32(len(self.sections))
+                + encoder.uint32(self.flags)
+            )
         for section in self.sections:
-            command += section.encode_command(encoder,
-                                              section_offset_map[section],
-                                              section_address_map[section],
-                                              section_relocations_map.get(section))
+            command += section.encode_command(
+                encoder,
+                section_offset_map[section],
+                section_address_map[section],
+                section_relocations_map.get(section),
+            )
         from nervapy.x86_64.abi import system_v_x86_64_abi
+
         return command
 
 
@@ -139,8 +153,12 @@ class Section(object):
     @alignment.setter
     def alignment(self, alignment):
         from nervapy.util import is_uint32
+
         if not is_uint32(alignment):
-            raise TypeError("Section alignment %s is not representable as a 32-bit unsigned integer" % str(alignment))
+            raise TypeError(
+                "Section alignment %s is not representable as a 32-bit unsigned integer"
+                % str(alignment)
+            )
         if alignment & (alignment - 1) != 0:
             raise ValueError("Section alignment %d is not a power of 2" % alignment)
         if alignment == 0:
@@ -150,6 +168,7 @@ class Section(object):
     @property
     def log2_alignment(self):
         from nervapy.util import ilog2
+
         return ilog2(self._alignment)
 
     @property
@@ -163,6 +182,7 @@ class Section(object):
     @staticmethod
     def get_command_size(abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.pointer_size in [4, 8]
 
@@ -170,40 +190,48 @@ class Section(object):
 
     def encode_command(self, encoder, offset, address, relocations_offset):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
 
         if len(self.relocations) == 0:
             relocations_offset = 0
         if encoder.bitness == 32:
-            return encoder.fixed_string(self.section_name, 16) + \
-                encoder.fixed_string(self.segment_name, 16) + \
-                encoder.uint32(address) + \
-                encoder.uint32(self.content_size) + \
-                encoder.uint32(offset) + \
-                encoder.uint32(self.log2_alignment) + \
-                encoder.uint32(relocations_offset) + \
-                encoder.uint32(self.relocations_count) + \
-                encoder.uint32(self.type | self.attributes) + \
-                bytearray(8)
+            return (
+                encoder.fixed_string(self.section_name, 16)
+                + encoder.fixed_string(self.segment_name, 16)
+                + encoder.uint32(address)
+                + encoder.uint32(self.content_size)
+                + encoder.uint32(offset)
+                + encoder.uint32(self.log2_alignment)
+                + encoder.uint32(relocations_offset)
+                + encoder.uint32(self.relocations_count)
+                + encoder.uint32(self.type | self.attributes)
+                + bytearray(8)
+            )
         else:
-            return encoder.fixed_string(self.section_name, 16) + \
-                encoder.fixed_string(self.segment_name, 16) + \
-                encoder.uint64(address) + \
-                encoder.uint64(self.content_size) + \
-                encoder.uint32(offset) + \
-                encoder.uint32(self.log2_alignment) + \
-                encoder.uint32(relocations_offset) + \
-                encoder.uint32(self.relocations_count) + \
-                encoder.uint32(self.type | self.attributes) + \
-                bytearray(12)
+            return (
+                encoder.fixed_string(self.section_name, 16)
+                + encoder.fixed_string(self.segment_name, 16)
+                + encoder.uint64(address)
+                + encoder.uint64(self.content_size)
+                + encoder.uint32(offset)
+                + encoder.uint32(self.log2_alignment)
+                + encoder.uint32(relocations_offset)
+                + encoder.uint32(self.relocations_count)
+                + encoder.uint32(self.type | self.attributes)
+                + bytearray(12)
+            )
 
 
 class RegularSection(Section):
     def __init__(self, segment_name, section_name):
-        super(RegularSection, self).__init__(SectionType.regular, segment_name, section_name)
+        super(RegularSection, self).__init__(
+            SectionType.regular, segment_name, section_name
+        )
 
     def align(self, alignment):
         import nervapy.util
+
         ilog2_alignment = nervapy.util.ilog2(alignment)
         self.alignment = max(self.alignment, ilog2_alignment)
         if len(self.content) % alignment != 0:
@@ -214,7 +242,9 @@ class RegularSection(Section):
 class TextSection(RegularSection):
     def __init__(self):
         super(TextSection, self).__init__("__TEXT", "__text")
-        self.attributes = SectionAttributes.only_instructions | SectionAttributes.some_instructions
+        self.attributes = (
+            SectionAttributes.only_instructions | SectionAttributes.some_instructions
+        )
 
 
 class ConstSection(RegularSection):
@@ -233,6 +263,7 @@ class SymbolTable:
 
     def add_symbol(self, symbol):
         from nervapy.formats.macho.symbol import Symbol
+
         assert isinstance(symbol, Symbol)
 
         self.symbols.append(symbol)
@@ -240,18 +271,21 @@ class SymbolTable:
 
     def encode_command(self, encoder, symbol_offset_map, string_offset):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
 
         command_id = 0x2
         symbols_offset = 0
         if self.symbols:
             symbols_offset = symbol_offset_map[self.symbols[0]]
-        return encoder.uint32(command_id) + \
-            encoder.uint32(SymbolTable.command_size) + \
-            encoder.uint32(symbols_offset) + \
-            encoder.uint32(len(self.symbols)) + \
-            encoder.uint32(string_offset) + \
-            encoder.uint32(self.string_table.size)
+        return (
+            encoder.uint32(command_id)
+            + encoder.uint32(SymbolTable.command_size)
+            + encoder.uint32(symbols_offset)
+            + encoder.uint32(len(self.symbols))
+            + encoder.uint32(string_offset)
+            + encoder.uint32(self.string_table.size)
+        )
 
 
 class StringTable:
@@ -261,6 +295,7 @@ class StringTable:
 
     def add(self, string):
         import codecs
+
         if string is None or len(string) == 0:
             return 0
         if string in self.string_index_map:
@@ -277,6 +312,7 @@ class StringTable:
 
     def encode(self):
         import codecs
+
         if self.size != 0:
             bytestring = b"\x00"
             for string in sorted(self.string_index_map, key=self.string_index_map.get):

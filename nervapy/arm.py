@@ -11,5 +11,3 @@ from nervapy import Constant, ConstantBucket, RegisterAllocationError
 
 active_function = None
 active_stream = None
-
-

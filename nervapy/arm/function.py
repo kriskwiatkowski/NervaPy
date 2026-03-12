@@ -13,12 +13,24 @@ active_function = None
 
 
 class Function(object):
-    def __init__(self, name, arguments, return_type=None,
-                 target=Microarchitecture.Default,
-                 abi=None, assembly_format=None, high_register_strategy=None,
-                 collect_origin=False, dump_intermediate_assembly=False,
-                 report_generation=True, report_live_registers=False, is_thumb=False, alignment=0,
-                 validate_stack_alignment=True, preserve8=False):
+    def __init__(
+        self,
+        name,
+        arguments,
+        return_type=None,
+        target=Microarchitecture.Default,
+        abi=None,
+        assembly_format=None,
+        high_register_strategy=None,
+        collect_origin=False,
+        dump_intermediate_assembly=False,
+        report_generation=True,
+        report_live_registers=False,
+        is_thumb=False,
+        alignment=0,
+        validate_stack_alignment=True,
+        preserve8=False,
+    ):
         self.name = name
         self.arguments = arguments
         self.return_type = return_type
@@ -30,19 +42,25 @@ class Function(object):
         # Set default assembly format to GAS if not specified
         if assembly_format is None:
             from nervapy.arm.formats import AssemblyFormat
+
             assembly_format = AssemblyFormat.GAS
         self.assembly_format = assembly_format
 
         # Set default high register strategy if not specified
         if high_register_strategy is None:
             from nervapy.arm.formats import HighRegisterStrategy
+
             high_register_strategy = HighRegisterStrategy.AUTO
         self.high_register_strategy = high_register_strategy
 
         for argument in self.arguments:
             argument.stack_offset = None
             argument.register = None
-            if argument.is_size_integer or argument.is_pointer_integer or argument.is_pointer:
+            if (
+                argument.is_size_integer
+                or argument.is_pointer_integer
+                or argument.is_pointer
+            ):
                 argument.c_type.size = abi.pointer_size
             assert argument.size
         self.target = target
@@ -56,6 +74,7 @@ class Function(object):
         # Assign argument locations
         from nervapy.arm.abi import arm_gnueabi, arm_gnueabihf
         from nervapy.arm.registers import r0, r1, r2, r3
+
         if abi == arm_gnueabi or abi == arm_gnueabihf:
             # Up to 4 first arguments are passed in registers, others passed through stack
             # Arguments smaller than 4 bytes are extended to 4 bytes (both when passed on stack or in a register).
@@ -79,7 +98,10 @@ class Function(object):
                     if register_offset % 2 == 1:
                         register_offset += 1
                     if register_offset < 4:
-                        argument.register = (argument_registers[register_offset], argument_registers[register_offset+1])
+                        argument.register = (
+                            argument_registers[register_offset],
+                            argument_registers[register_offset + 1],
+                        )
                         register_offset += 2
                     else:
                         if stack_offset % 8 == 4:
@@ -87,7 +109,9 @@ class Function(object):
                         argument.stack_offset = stack_offset
                         stack_offset += 8
                 else:
-                    raise ValueError("Unsupported argument size {0}".format(argument.size))
+                    raise ValueError(
+                        "Unsupported argument size {0}".format(argument.size)
+                    )
         else:
             raise ValueError("Unsupported assembler ABI %s" % abi)
 
@@ -103,17 +127,23 @@ class Function(object):
 
     def __enter__(self):
         import nervapy.stream
+
         global active_function
 
         if active_function is not None:
-            raise ValueError('Function {0} was not detached'.format(active_function.name))
+            raise ValueError(
+                "Function {0} was not detached".format(active_function.name)
+            )
         if nervapy.stream.active_stream is not None:
-            raise ValueError('Alternative instruction stream is active')
+            raise ValueError("Alternative instruction stream is active")
         active_function = self
         nervapy.stream.active_stream = self
         if self.report_generation:
-            print("Generating function {Function} for microarchitecture {Microarchitecture} and ABI {ABI}"
-                  .format(Function=self.name, Microarchitecture=self.target, ABI=self.abi))
+            print(
+                "Generating function {Function} for microarchitecture {Microarchitecture} and ABI {ABI}".format(
+                    Function=self.name, Microarchitecture=self.target, ABI=self.abi
+                )
+            )
             print("\tParsing source", end="")
             self.ticks = time.time()
         return self
@@ -137,25 +167,63 @@ class Function(object):
                 self.determine_live_registers(exclude_parameter_loads=True)
 
                 if self.dump_intermediate_assembly:
-                    with open('%s.S' % self.symbol_name, "w") as intermediate_assembly_file:
+                    with open(
+                        "%s.S" % self.symbol_name, "w"
+                    ) as intermediate_assembly_file:
                         for instruction in self.instructions:
                             if isinstance(instruction, Instruction):
-                                consumed_registers = ", ".join(sorted(map(str, list(instruction.get_input_registers_list()))))
-                                produced_registers = ", ".join(sorted(map(str, list(instruction.get_output_registers_list()))))
-                                available_registers = ", ".join(sorted(map(str, list(instruction.available_registers))))
-                                live_registers = ", ".join(sorted(map(str, list(instruction.live_registers))))
-                                intermediate_assembly_file.write(str(instruction) + "\n")
-                                intermediate_assembly_file.write("\tConsumed registers: " + consumed_registers + "\n")
+                                consumed_registers = ", ".join(
+                                    sorted(
+                                        map(
+                                            str,
+                                            list(
+                                                instruction.get_input_registers_list()
+                                            ),
+                                        )
+                                    )
+                                )
+                                produced_registers = ", ".join(
+                                    sorted(
+                                        map(
+                                            str,
+                                            list(
+                                                instruction.get_output_registers_list()
+                                            ),
+                                        )
+                                    )
+                                )
+                                available_registers = ", ".join(
+                                    sorted(
+                                        map(str, list(instruction.available_registers))
+                                    )
+                                )
+                                live_registers = ", ".join(
+                                    sorted(map(str, list(instruction.live_registers)))
+                                )
                                 intermediate_assembly_file.write(
-                                    "\tProduced registers: " + produced_registers + "\n")
-                                intermediate_assembly_file.write("\tLive registers: " + live_registers + "\n")
+                                    str(instruction) + "\n"
+                                )
+                                intermediate_assembly_file.write(
+                                    "\tConsumed registers: " + consumed_registers + "\n"
+                                )
+                                intermediate_assembly_file.write(
+                                    "\tProduced registers: " + produced_registers + "\n"
+                                )
+                                intermediate_assembly_file.write(
+                                    "\tLive registers: " + live_registers + "\n"
+                                )
                                 if instruction.line_number:
                                     intermediate_assembly_file.write(
-                                        "\tLine: " + str(instruction.line_number) + "\n")
+                                        "\tLine: " + str(instruction.line_number) + "\n"
+                                    )
                                 if instruction.source_code:
-                                    intermediate_assembly_file.write("\tCode: " + instruction.source_code + "\n")
+                                    intermediate_assembly_file.write(
+                                        "\tCode: " + instruction.source_code + "\n"
+                                    )
                             else:
-                                intermediate_assembly_file.write(str(instruction) + "\n")
+                                intermediate_assembly_file.write(
+                                    str(instruction) + "\n"
+                                )
 
                 if self.report_generation:
                     elapsed = time.time() - self.ticks
@@ -180,7 +248,6 @@ class Function(object):
                 if self.validate_stack_alignment:
                     self.validate_stack_alignment_check()
 
-
                 self.generate_constant_loads()
                 self.optimize_instructions()
                 if self.report_generation:
@@ -194,21 +261,31 @@ class Function(object):
 
     def find_argument(self, argument_target):
         from nervapy import Argument
-        assert isinstance(argument_target, (Argument, str)), \
-            "Either Argument object or argument name expected"
+
+        assert isinstance(
+            argument_target, (Argument, str)
+        ), "Either Argument object or argument name expected"
         if isinstance(argument_target, Argument):
             if argument_target in self.arguments:
                 return argument_target
             else:
                 return None
         else:
-            return next((argument for argument in self.arguments if argument.name == argument_target), None)
+            return next(
+                (
+                    argument
+                    for argument in self.arguments
+                    if argument.name == argument_target
+                ),
+                None,
+            )
 
     def detach(self):
         import nervapy.stream
+
         global active_function
         if active_function is None:
-            raise ValueError('Trying to detach a function while no function is active')
+            raise ValueError("Trying to detach a function while no function is active")
         active_function = None
         nervapy.stream.active_stream = None
         return self
@@ -217,6 +294,7 @@ class Function(object):
     def assembly(self):
         """Generate assembly code in the specified format."""
         from nervapy.arm.formats import AssemblyFormat
+
         if self.assembly_format == AssemblyFormat.ARMCC:
             return self._generate_armcc_assembly()
         else:  # Default to GAS format
@@ -247,44 +325,64 @@ class Function(object):
         function_label = self.name
         constants_label = self.name + "_constants"
         assembly = ""
-        assembly += '\t.syntax unified' + os.linesep
+        assembly += "\t.syntax unified" + os.linesep
         if self.is_thumb:
             assembly += "\t.thumb" + os.linesep
         assembly += "\t" + self.gnu_arch_spec + os.linesep
         if len(self.constants) > 0:
-            assembly += 'section .rodata.{Microarchitecture} progbits alloc noexec nowrite align={Alignment}'\
-                .format(Microarchitecture=self.target.id, Alignment=32) + os.linesep
-            assembly += constants_label + ':' + os.linesep
+            assembly += (
+                "section .rodata.{Microarchitecture} progbits alloc noexec nowrite align={Alignment}".format(
+                    Microarchitecture=self.target.id, Alignment=32
+                )
+                + os.linesep
+            )
+            assembly += constants_label + ":" + os.linesep
             data_declaration_map = {8: "DB", 16: "DW", 32: "DD", 64: "DQ", 128: "DO"}
             need_alignment = False
             for constant_bucket in self.constants:
                 if need_alignment:
-                    assembly += "\tALIGN {Alignment}".format(Alignment=constant_bucket.capacity) + os.linesep
+                    assembly += (
+                        "\tALIGN {Alignment}".format(Alignment=constant_bucket.capacity)
+                        + os.linesep
+                    )
                 for constant in constant_bucket.constants:
-                    assembly += "\t.{Label}: {Declaration} {Value}"\
-                        .format(Label=constant.label,
-                                Declaration=data_declaration_map[constant.size],
-                                Value=", ".join([str(constant)] * constant.repeats)) + os.linesep
+                    assembly += (
+                        "\t.{Label}: {Declaration} {Value}".format(
+                            Label=constant.label,
+                            Declaration=data_declaration_map[constant.size],
+                            Value=", ".join([str(constant)] * constant.repeats),
+                        )
+                        + os.linesep
+                    )
                 need_alignment = not constant_bucket.is_full()
             assembly += os.linesep
 
-        if hasattr(self, 'external_functions') and len(self.external_functions) > 0:
+        if hasattr(self, "external_functions") and len(self.external_functions) > 0:
             for func_name in sorted(self.external_functions):
-                assembly += '.extern {0}'.format(func_name) + os.linesep
+                assembly += ".extern {0}".format(func_name) + os.linesep
             assembly += os.linesep
 
-        assembly += '\n\t.text\n' + os.linesep
-        assembly += '.global {Function}'.format(Function=function_label) + os.linesep
-        assembly += '.type {Function}, %function'.format(Function=function_label) + os.linesep
+        assembly += "\n\t.text\n" + os.linesep
+        assembly += ".global {Function}".format(Function=function_label) + os.linesep
+        assembly += (
+            ".type {Function}, %function".format(Function=function_label) + os.linesep
+        )
         if self.alignment > 0:
-            assembly += '.align {Alignment}'.format(Alignment=self.alignment) + os.linesep
+            assembly += (
+                ".align {Alignment}".format(Alignment=self.alignment) + os.linesep
+            )
         assembly += function_label + ":" + os.linesep
         if self.gnu_fpu_spec:
             assembly += "\t" + self.gnu_fpu_spec + os.linesep
         for instruction in self.instructions:
             if isinstance(instruction, BranchInstruction):
-                assembly += "\t" + "{0} L{1}.{2}"\
-                    .format(instruction.name, self.name, instruction.operands[0].label) + os.linesep
+                assembly += (
+                    "\t"
+                    + "{0} L{1}.{2}".format(
+                        instruction.name, self.name, instruction.operands[0].label
+                    )
+                    + os.linesep
+                )
             elif isinstance(instruction, Instruction):
                 constant = instruction.get_constant()
                 if constant is not None:
@@ -316,13 +414,23 @@ class Function(object):
         if len(self.constants) > 0:
             assembly += "        AREA    ||.constdata||, DATA, READONLY" + os.linesep
             assembly += constants_label + os.linesep
-            data_declaration_map = {8: "DCB", 16: "DCW", 32: "DCD", 64: "DCDU", 128: "DCDU"}
+            data_declaration_map = {
+                8: "DCB",
+                16: "DCW",
+                32: "DCD",
+                64: "DCDU",
+                128: "DCDU",
+            }
             for constant_bucket in self.constants:
                 for constant in constant_bucket.constants:
-                    assembly += "{Label}    {Declaration}    {Value}"\
-                        .format(Label=constant.label,
-                                Declaration=data_declaration_map[constant.size],
-                                Value=", ".join([str(constant)] * constant.repeats)) + os.linesep
+                    assembly += (
+                        "{Label}    {Declaration}    {Value}".format(
+                            Label=constant.label,
+                            Declaration=data_declaration_map[constant.size],
+                            Value=", ".join([str(constant)] * constant.repeats),
+                        )
+                        + os.linesep
+                    )
             assembly += os.linesep
 
         # ARMCC code section
@@ -335,20 +443,25 @@ class Function(object):
         if self.armcc_fpu_spec:
             assembly += "        " + self.armcc_fpu_spec + os.linesep
         assembly += os.linesep
-        
+
         # Add IMPORT statements for external functions
-        if hasattr(self, 'external_functions') and len(self.external_functions) > 0:
+        if hasattr(self, "external_functions") and len(self.external_functions) > 0:
             for func_name in sorted(self.external_functions):
                 assembly += "        IMPORT  " + func_name + os.linesep
             assembly += os.linesep
-        
+
         assembly += function_label + "    PROC" + os.linesep
         assembly += "        EXPORT  " + function_label + os.linesep
 
         for instruction in self.instructions:
             if isinstance(instruction, BranchInstruction):
-                assembly += "        " + "{0} {1}_{2}"\
-                    .format(instruction.name, self.name, instruction.operands[0].label) + os.linesep
+                assembly += (
+                    "        "
+                    + "{0} {1}_{2}".format(
+                        instruction.name, self.name, instruction.operands[0].label
+                    )
+                    + os.linesep
+                )
             elif isinstance(instruction, Instruction):
                 constant = instruction.get_constant()
                 if constant is not None:
@@ -366,6 +479,7 @@ class Function(object):
     @property
     def gnu_arch_spec(self):
         from nervapy.arm.isa import Extension
+
         isa_extensions = self.isa_extensions
         if Extension.V8_1MMain in isa_extensions:
             return ".arch armv8.1-m.main"
@@ -393,11 +507,15 @@ class Function(object):
     @property
     def gnu_fpu_spec(self):
         from nervapy.arm.isa import Extension
+
         isa_extensions = self.isa_extensions
         if Extension.NEON2 in isa_extensions or Extension.VFP4 in isa_extensions:
             return ".fpu neon-vfpv4"
-        elif Extension.NEONHP in isa_extensions or \
-                Extension.VFPHP in isa_extensions and Extension.NEON in isa_extensions:
+        elif (
+            Extension.NEONHP in isa_extensions
+            or Extension.VFPHP in isa_extensions
+            and Extension.NEON in isa_extensions
+        ):
             return ".fpu neon-fp16"
         elif Extension.NEON in isa_extensions:
             return ".fpu neon"
@@ -422,6 +540,7 @@ class Function(object):
     def armcc_arch_spec(self):
         """Generate ARMCC-compatible architecture specification."""
         from nervapy.arm.isa import Extension
+
         isa_extensions = self.isa_extensions
         if Extension.V7M in isa_extensions:
             return "ARM"
@@ -442,11 +561,15 @@ class Function(object):
     def armcc_fpu_spec(self):
         """Generate ARMCC-compatible FPU specification."""
         from nervapy.arm.isa import Extension
+
         isa_extensions = self.isa_extensions
         if Extension.NEON2 in isa_extensions or Extension.VFP4 in isa_extensions:
             return "REQUIRE VFPv4"
-        elif Extension.NEONHP in isa_extensions or \
-                Extension.VFPHP in isa_extensions and Extension.NEON in isa_extensions:
+        elif (
+            Extension.NEONHP in isa_extensions
+            or Extension.VFPHP in isa_extensions
+            and Extension.NEON in isa_extensions
+        ):
             return "REQUIRE VFPv3_FP16"
         elif Extension.NEON in isa_extensions:
             return "REQUIRE VFPv3"
@@ -461,12 +584,17 @@ class Function(object):
 
     def add_instruction(self, instruction):
         from nervapy.arm.instructions import Instruction
+
         if instruction is None:
             return
         if isinstance(instruction, Instruction):
             for extension in instruction.isa_extensions:
                 if extension not in self.target.extensions:
-                    raise ValueError("{0} is not supported on the target microarchitecture".format(extension))
+                    raise ValueError(
+                        "{0} is not supported on the target microarchitecture".format(
+                            extension
+                        )
+                    )
             local_variable = instruction.get_local_variable()
             if local_variable is not None:
                 self.stack_frame.add_variable(local_variable.get_root())
@@ -479,6 +607,7 @@ class Function(object):
 
     def decompose_instructions(self):
         from nervapy.arm.pseudo import ReturnInstruction
+
         new_instructions = list()
         for instruction in self.instructions:
             if isinstance(instruction, ReturnInstruction):
@@ -490,13 +619,14 @@ class Function(object):
     def generate_prolog_and_epilog(self):
         from nervapy.arm.generic import BranchExchangeInstruction
         from nervapy.arm.pseudo import LabelQuasiInstruction
+
         prologue_instructions = self.stack_frame.generate_prologue()
         epilogue_instructions = self.stack_frame.generate_epilogue()
         new_instructions = list()
         for instruction in self.instructions:
             if isinstance(instruction, LabelQuasiInstruction):
                 new_instructions.append(instruction)
-                if instruction.name == 'ENTRY':
+                if instruction.name == "ENTRY":
                     new_instructions.extend(prologue_instructions)
             elif isinstance(instruction, BranchExchangeInstruction):
                 new_instructions.extend(epilogue_instructions)
@@ -508,15 +638,17 @@ class Function(object):
     def generate_labels(self):
         from nervapy.arm.instructions import Operand
         from nervapy.arm.pseudo import LabelQuasiInstruction
+
         for instruction in self.instructions:
             if isinstance(instruction, LabelQuasiInstruction):
-                if instruction.name == 'ENTRY':
+                if instruction.name == "ENTRY":
                     break
         else:
             self.instructions.insert(0, LabelQuasiInstruction(Operand("ENTRY")))
 
     def get_label_table(self):
         from nervapy.arm.pseudo import LabelQuasiInstruction
+
         label_table = dict()
         for index, instruction in enumerate(self.instructions):
             if isinstance(instruction, LabelQuasiInstruction):
@@ -525,14 +657,16 @@ class Function(object):
 
     def find_entry_label(self):
         from nervapy.arm.pseudo import LabelQuasiInstruction
+
         for index, instruction in enumerate(self.instructions):
             if isinstance(instruction, LabelQuasiInstruction):
-                if instruction.name == 'ENTRY':
+                if instruction.name == "ENTRY":
                     return index
-        raise ValueError('Instruction stream does not contain the ENTRY label')
+        raise ValueError("Instruction stream does not contain the ENTRY label")
 
     def find_exit_points(self):
         from nervapy.arm.generic import BranchExchangeInstruction
+
         ret_instructions = list()
         for index, instruction in enumerate(self.instructions):
             if isinstance(instruction, BranchExchangeInstruction):
@@ -542,6 +676,7 @@ class Function(object):
     def determine_branches(self):
         from nervapy.arm.generic import BranchInstruction
         from nervapy.arm.pseudo import LabelQuasiInstruction
+
         label_table = self.get_label_table()
         for instruction in self.instructions:
             if isinstance(instruction, LabelQuasiInstruction):
@@ -559,6 +694,7 @@ class Function(object):
     def determine_available_registers(self):
         from nervapy.arm.generic import BranchInstruction
         from nervapy.arm.instructions import Instruction
+
         processed_branches = set()
         label_table = self.get_label_table()
 
@@ -573,11 +709,15 @@ class Function(object):
                             target_label = instruction.operands[0].label
                             target_index = label_table[target_label]
                             processed_branches.add(i)
-                            mark_available_registers(instructions, target_index, available_registers)
+                            mark_available_registers(
+                                instructions, target_index, available_registers
+                            )
                         if not instruction.is_conditional():
                             return
                     else:
-                        available_registers |= set(instruction.get_output_registers_list())
+                        available_registers |= set(
+                            instruction.get_output_registers_list()
+                        )
 
         current_index = self.find_entry_label()
         mark_available_registers(self.instructions, current_index, set())
@@ -588,6 +728,7 @@ class Function(object):
         from nervapy.arm.pseudo import (LabelQuasiInstruction,
                                         LoadArgumentPseudoInstruction)
         from nervapy.arm.registers import Register
+
         self.determine_branches()
         for instruction in self.instructions:
             if isinstance(instruction, Instruction):
@@ -600,7 +741,11 @@ class Function(object):
             # Walk from the bottom to top of the linear block
             for i in range(exit_point, -1, -1):
                 instruction = instructions[i]
-                if isinstance(instruction, BranchInstruction) and not instruction.is_conditional and i != exit_point:
+                if (
+                    isinstance(instruction, BranchInstruction)
+                    and not instruction.is_conditional
+                    and i != exit_point
+                ):
                     return
                 elif isinstance(instruction, Instruction):
                     # First mark registers which are written to by this instruction as non-live
@@ -613,7 +758,10 @@ class Function(object):
                             if live_registers[register_id] == 0:
                                 del live_registers[register_id]
 
-                    if not (exclude_parameter_loads and isinstance(instruction, LoadArgumentPseudoInstruction)):
+                    if not (
+                        exclude_parameter_loads
+                        and isinstance(instruction, LoadArgumentPseudoInstruction)
+                    ):
                         for input_register in instruction.get_input_registers_list():
                             register_id = input_register.id
                             register_mask = input_register.mask
@@ -625,17 +773,27 @@ class Function(object):
                     # Merge with previously determined as live registers
                     for instruction_live_register in instruction.live_registers:
                         if instruction_live_register.id in live_registers:
-                            live_registers[instruction_live_register.id] |= instruction_live_register.mask
+                            live_registers[
+                                instruction_live_register.id
+                            ] |= instruction_live_register.mask
                         else:
-                            live_registers[instruction_live_register.id] = instruction_live_register.mask
+                            live_registers[instruction_live_register.id] = (
+                                instruction_live_register.mask
+                            )
 
-                    instruction.live_registers = set([Register.from_parts(id, mask, expand=True)
-                                                      for (id, mask) in live_registers.items()])
+                    instruction.live_registers = set(
+                        [
+                            Register.from_parts(id, mask, expand=True)
+                            for (id, mask) in live_registers.items()
+                        ]
+                    )
                 elif isinstance(instruction, LabelQuasiInstruction):
                     for entry_point in instruction.input_branches:
                         if not instructions[entry_point].is_visited:
                             instructions[entry_point].is_visited = True
-                            mark_live_registers(instructions, entry_point, live_registers)
+                            mark_live_registers(
+                                instructions, entry_point, live_registers
+                            )
 
         exit_points = self.find_exit_points()
         for exit_point in exit_points:
@@ -665,9 +823,17 @@ class Function(object):
                                            SRegister)
         from nervapy.arm.vfpneon import (NeonLoadStoreInstruction,
                                          VFPLoadStoreMultipleInstruction)
-        all_registers = self.abi.volatile_registers + list(
-            reversed(self.abi.argument_registers)) + self.abi.callee_save_registers
-        available_registers = {Register.GPType: list(), Register.WMMXType: list(), Register.VFPType: list()}
+
+        all_registers = (
+            self.abi.volatile_registers
+            + list(reversed(self.abi.argument_registers))
+            + self.abi.callee_save_registers
+        )
+        available_registers = {
+            Register.GPType: list(),
+            Register.WMMXType: list(),
+            Register.VFPType: list(),
+        }
         for register in all_registers:
             if register.type == Register.GPType or register.type == Register.WMMXType:
                 register_bitboard = 0x1 << register.get_physical_number()
@@ -675,7 +841,11 @@ class Function(object):
                     available_registers[register.type].append(register_bitboard)
         for instruction in self.instructions:
             if isinstance(instruction, Instruction):
-                virtual_live_registers = [register for register in instruction.live_registers if register.is_virtual]
+                virtual_live_registers = [
+                    register
+                    for register in instruction.live_registers
+                    if register.is_virtual
+                ]
                 for registerX in virtual_live_registers:
                     if registerX.type == Register.VFPType:
                         if isinstance(registerX, SRegister) and registerX.parent:
@@ -684,17 +854,27 @@ class Function(object):
                             registerX = registerX.parent
                         if registerX.get_id() not in self.allocation_options:
                             if isinstance(registerX, SRegister):
-                                self.allocation_options[registerX.id] = [(0x1 << n) for n in range(32)]
+                                self.allocation_options[registerX.id] = [
+                                    (0x1 << n) for n in range(32)
+                                ]
                             elif isinstance(registerX, DRegister):
                                 if self.target.has_vfpd32:
-                                    self.allocation_options[registerX.id] = [(0x3 << n) for n in range(0, 64, 2)]
+                                    self.allocation_options[registerX.id] = [
+                                        (0x3 << n) for n in range(0, 64, 2)
+                                    ]
                                 else:
-                                    self.allocation_options[registerX.id] = [(0x3 << n) for n in range(0, 32, 2)]
+                                    self.allocation_options[registerX.id] = [
+                                        (0x3 << n) for n in range(0, 32, 2)
+                                    ]
                             else:
-                                self.allocation_options[registerX.id] = [(0xF << n) for n in range(0, 64, 4)]
+                                self.allocation_options[registerX.id] = [
+                                    (0xF << n) for n in range(0, 64, 4)
+                                ]
                     else:
                         if registerX.id not in self.allocation_options:
-                            self.allocation_options[registerX.id] = list(available_registers[registerX.type])
+                            self.allocation_options[registerX.id] = list(
+                                available_registers[registerX.type]
+                            )
 
                     self.unallocated_registers.append((registerX.id, registerX.type))
 
@@ -703,31 +883,49 @@ class Function(object):
                         self.conflicting_registers[registerX.id] = set()
                     for registerY in virtual_live_registers:
                         # VFP registers have a conflict even they are of different size
-                        if registerX.id != registerY.id and registerX.type == registerY.type:
+                        if (
+                            registerX.id != registerY.id
+                            and registerX.type == registerY.type
+                        ):
                             self.conflicting_registers[registerX.id].add(registerY.id)
 
         # Mark available physical registers for each virtual register
         for instruction in self.instructions:
             if isinstance(instruction, Instruction):
-                virtual_live_registers = [register for register in instruction.live_registers if register.is_virtual]
+                virtual_live_registers = [
+                    register
+                    for register in instruction.live_registers
+                    if register.is_virtual
+                ]
                 # If a physical register is live at some point, it can not be allocated for a virtual register
-                physical_live_registers = [register for register in instruction.live_registers if
-                                           not register.is_virtual]
+                physical_live_registers = [
+                    register
+                    for register in instruction.live_registers
+                    if not register.is_virtual
+                ]
                 for virtual_register in virtual_live_registers:
                     for physical_register in physical_live_registers:
                         if virtual_register.type == physical_register.type:
                             virtual_register_id = virtual_register.id
                             physical_register_bitboard = physical_register.bitboard
-                            self.allocation_options[virtual_register_id][:] = \
-                                [possible_register_bitboard for possible_register_bitboard in
-                                    self.allocation_options[virtual_register_id]
-                                        if (possible_register_bitboard & physical_register_bitboard) == 0]
+                            self.allocation_options[virtual_register_id][:] = [
+                                possible_register_bitboard
+                                for possible_register_bitboard in self.allocation_options[
+                                    virtual_register_id
+                                ]
+                                if (
+                                    possible_register_bitboard
+                                    & physical_register_bitboard
+                                )
+                                == 0
+                            ]
 
         # Detect group constraints
         constraints = dict()
         for instruction in self.instructions:
-            if isinstance(instruction, NeonLoadStoreInstruction) or isinstance(instruction,
-                                                                               VFPLoadStoreMultipleInstruction):
+            if isinstance(instruction, NeonLoadStoreInstruction) or isinstance(
+                instruction, VFPLoadStoreMultipleInstruction
+            ):
                 if isinstance(instruction, NeonLoadStoreInstruction):
                     register_list = instruction.operands[0].get_registers_list()
                     physical_registers_count = 32
@@ -735,7 +933,9 @@ class Function(object):
                     register_list = instruction.operands[1].get_registers_list()
                     physical_registers_count = 32 if self.target.has_vfpd32 else 16
                 if len(register_list) > 1:
-                    if all(isinstance(register, DRegister) for register in register_list):
+                    if all(
+                        isinstance(register, DRegister) for register in register_list
+                    ):
                         register_id_list = list()
                         for register in register_list:
                             register_id = register.get_id()
@@ -745,20 +945,36 @@ class Function(object):
                         # Iterate possible allocations for this register list
                         # For VLD1/VST1 instructions all registers must be allocated to sequential physical registers
                         options = list()
-                        for sequence_bitboard_position in range(0, 2 * physical_registers_count - 2 * len(
-                                register_list) + 2, 2):
-                            register_bitboards = [0x3 << (sequence_bitboard_position + 2 * i) for i in
-                                                  range(len(register_list))]
-                            for i, (bitboard, register) in enumerate(zip(register_bitboards, register_list)):
-                                register_bitboards[i] = register.extend_bitboard(bitboard)
+                        for sequence_bitboard_position in range(
+                            0,
+                            2 * physical_registers_count - 2 * len(register_list) + 2,
+                            2,
+                        ):
+                            register_bitboards = [
+                                0x3 << (sequence_bitboard_position + 2 * i)
+                                for i in range(len(register_list))
+                            ]
+                            for i, (bitboard, register) in enumerate(
+                                zip(register_bitboards, register_list)
+                            ):
+                                register_bitboards[i] = register.extend_bitboard(
+                                    bitboard
+                                )
                             # Check that bitboard is available for allocation
-                            for register, bitboard in zip(register_list, register_bitboards):
-                                if bitboard not in self.allocation_options[register.get_id()]:
+                            for register, bitboard in zip(
+                                register_list, register_bitboards
+                            ):
+                                if (
+                                    bitboard
+                                    not in self.allocation_options[register.get_id()]
+                                ):
                                     break
                             else:
                                 # Check that if registers with the same id use the same bitboard in this allocation
                                 register_id_map = dict()
-                                for register, bitboard in zip(register_list, register_bitboards):
+                                for register, bitboard in zip(
+                                    register_list, register_bitboards
+                                ):
                                     register_id = register.get_id()
                                     if register_id in register_id_map:
                                         if register_id_map[register_id] != bitboard:
@@ -774,21 +990,31 @@ class Function(object):
                                         else:
                                             break
                                     else:
-                                        ordered_bitboard_list = [register_id_map[register_id] for register_id in
-                                                                 register_id_list]
+                                        ordered_bitboard_list = [
+                                            register_id_map[register_id]
+                                            for register_id in register_id_list
+                                        ]
                                         options.append(tuple(ordered_bitboard_list))
                         if options:
                             if len(register_id_list) > 1:
                                 if register_id_list in constraints:
                                     constraints[register_id_list] = tuple(
-                                        [option for option in constraints[register_id_list] if option in options])
+                                        [
+                                            option
+                                            for option in constraints[register_id_list]
+                                            if option in options
+                                        ]
+                                    )
                                 else:
                                     constraints[register_id_list] = tuple(options)
                         else:
-                            raise RegisterAllocationError("Impossible virtual register combination in instruction %s"
-                                                          % instruction)
-                    elif all(isinstance(register, SRegister) for register in register_list) and \
-                            isinstance(instruction, VFPLoadStoreMultipleInstruction):
+                            raise RegisterAllocationError(
+                                "Impossible virtual register combination in instruction %s"
+                                % instruction
+                            )
+                    elif all(
+                        isinstance(register, SRegister) for register in register_list
+                    ) and isinstance(instruction, VFPLoadStoreMultipleInstruction):
                         register_id_list = list()
                         for register in register_list:
                             register_id = register.id
@@ -798,19 +1024,31 @@ class Function(object):
                         # Iterate possible allocations for this register list
                         # For VLDM/VSTM instructions all registers must be allocated to sequential physical registers
                         options = list()
-                        for sequence_bitboard_position in range(0, 32 - len(register_list) + 1):
-                            register_bitboards = [0x1 << (sequence_bitboard_position + i) for i in
-                                                  range(len(register_list))]
-                            for i, (bitboard, register) in enumerate(zip(register_bitboards, register_list)):
-                                register_bitboards[i] = register.extend_bitboard(bitboard)
+                        for sequence_bitboard_position in range(
+                            0, 32 - len(register_list) + 1
+                        ):
+                            register_bitboards = [
+                                0x1 << (sequence_bitboard_position + i)
+                                for i in range(len(register_list))
+                            ]
+                            for i, (bitboard, register) in enumerate(
+                                zip(register_bitboards, register_list)
+                            ):
+                                register_bitboards[i] = register.extend_bitboard(
+                                    bitboard
+                                )
                             # Check that bitboard is available for allocation
-                            for register, bitboard in zip(register_list, register_bitboards):
+                            for register, bitboard in zip(
+                                register_list, register_bitboards
+                            ):
                                 if bitboard not in self.allocation_options[register.id]:
                                     break
                             else:
                                 # Check that if registers with the same id use the same bitboard in this allocation
                                 register_id_map = dict()
-                                for register, bitboard in zip(register_list, register_bitboards):
+                                for register, bitboard in zip(
+                                    register_list, register_bitboards
+                                ):
                                     register_id = register.id
                                     if register_id in register_id_map:
                                         if register_id_map[register_id] != bitboard:
@@ -826,24 +1064,33 @@ class Function(object):
                                         else:
                                             break
                                     else:
-                                        ordered_bitboard_list = [register_id_map[register_id] for register_id in
-                                                                 register_id_list]
+                                        ordered_bitboard_list = [
+                                            register_id_map[register_id]
+                                            for register_id in register_id_list
+                                        ]
                                         options.append(tuple(ordered_bitboard_list))
                         if options:
                             if len(register_id_list) > 1:
                                 if register_id_list in constraints:
                                     constraints[register_id_list] = tuple(
-                                        [option for option in constraints[register_id_list] if option in options])
+                                        [
+                                            option
+                                            for option in constraints[register_id_list]
+                                            if option in options
+                                        ]
+                                    )
                                 else:
                                     constraints[register_id_list] = tuple(options)
                         else:
                             raise RegisterAllocationError(
-                                "Impossible virtual register combination in instruction %s" % instruction)
+                                "Impossible virtual register combination in instruction %s"
+                                % instruction
+                            )
                     else:
                         assert False
         report_register_constraints = False
         if report_register_constraints:
-            for (register_list, options) in constraints.items():
+            for register_list, options in constraints.items():
                 print("REGISTER CONSTRAINTS: ", map(str, register_list))
                 for option in options:
                     print("\t", map(lambda t: "%016X" % t, option))
@@ -851,9 +1098,14 @@ class Function(object):
         # Merging of different groups sharing a register will be implemented here sometime
 
         # Check that each register id appears only once
-        constrained_register_id_list = [register_id for register_id_list in constraints.keys() for register_id in
-                                        register_id_list]
-        assert (len(constrained_register_id_list) == len(set(constrained_register_id_list)))
+        constrained_register_id_list = [
+            register_id
+            for register_id_list in constraints.keys()
+            for register_id in register_id_list
+        ]
+        assert len(constrained_register_id_list) == len(
+            set(constrained_register_id_list)
+        )
         constrained_register_id_set = set(constrained_register_id_list)
 
         # Create a map from constrained register to constrained register group
@@ -864,8 +1116,13 @@ class Function(object):
 
         # Remove individual registers from the set of unallocated registers and add the register group instead
         for constrained_register_id in constrained_register_id_list:
-            while (constrained_register_id, Register.VFPType) in self.unallocated_registers:
-                self.unallocated_registers.remove((constrained_register_id, Register.VFPType))
+            while (
+                constrained_register_id,
+                Register.VFPType,
+            ) in self.unallocated_registers:
+                self.unallocated_registers.remove(
+                    (constrained_register_id, Register.VFPType)
+                )
         for register_id_list in constraints.keys():
             self.unallocated_registers.append((register_id_list, Register.VFPType))
 
@@ -897,32 +1154,51 @@ class Function(object):
 
         # Map from virtual register id to physical register
         register_allocation = dict()
-        for (virtual_register_id, virtual_register_type) in self.unallocated_registers:
+        for virtual_register_id, virtual_register_type in self.unallocated_registers:
             register_allocation[virtual_register_id] = None
 
         def bind_register(virtual_register_id, physical_register):
             # Remove option to allocate any conflicting virtual register to the same physical register or its enclosing register
             physical_register_bitboard = physical_register.bitboard
-            for conflicting_register_id in self.conflicting_registers[virtual_register_id]:
+            for conflicting_register_id in self.conflicting_registers[
+                virtual_register_id
+            ]:
                 if conflicting_register_id in self.allocation_options:
-                    for allocation_bitboard in self.allocation_options[conflicting_register_id]:
+                    for allocation_bitboard in self.allocation_options[
+                        conflicting_register_id
+                    ]:
                         if (allocation_bitboard & physical_register_bitboard) != 0:
-                            self.allocation_options[conflicting_register_id].remove(allocation_bitboard)
+                            self.allocation_options[conflicting_register_id].remove(
+                                allocation_bitboard
+                            )
             register_allocation[virtual_register_id] = physical_register
 
         def bind_registers(virtual_register_id_list, physical_register_id_list):
             # Remove option to allocate any conflicting virtual register to the same physical register or its enclosing register
-            physical_register_bitboard_list = [physical_register.get_bitboard() for physical_register in
-                                               physical_register_id_list]
-            for virtual_register_id, physical_register_bitboard in zip(virtual_register_id_list,
-                                                                       physical_register_bitboard_list):
-                for conflicting_register_id in self.conflicting_registers[virtual_register_id]:
-                    for allocation_key, allocation_option in self.allocation_options.items():
+            physical_register_bitboard_list = [
+                physical_register.get_bitboard()
+                for physical_register in physical_register_id_list
+            ]
+            for virtual_register_id, physical_register_bitboard in zip(
+                virtual_register_id_list, physical_register_bitboard_list
+            ):
+                for conflicting_register_id in self.conflicting_registers[
+                    virtual_register_id
+                ]:
+                    for (
+                        allocation_key,
+                        allocation_option,
+                    ) in self.allocation_options.items():
                         if isinstance(allocation_key, tuple):
                             if conflicting_register_id in allocation_key:
-                                conflicting_register_index = allocation_key.index(conflicting_register_id)
+                                conflicting_register_index = allocation_key.index(
+                                    conflicting_register_id
+                                )
                                 for bitboard_list in allocation_option:
-                                    if (bitboard_list[conflicting_register_index] & physical_register_bitboard) != 0:
+                                    if (
+                                        bitboard_list[conflicting_register_index]
+                                        & physical_register_bitboard
+                                    ) != 0:
                                         allocation_option.remove(bitboard_list)
                         else:
                             if conflicting_register_id == allocation_key:
@@ -930,9 +1206,10 @@ class Function(object):
                                     if (bitboard & physical_register_bitboard) != 0:
                                         allocation_option.remove(bitboard)
 
-            for virtual_register_id, physical_register_id in zip(virtual_register_id_list, physical_register_id_list):
+            for virtual_register_id, physical_register_id in zip(
+                virtual_register_id_list, physical_register_id_list
+            ):
                 register_allocation[virtual_register_id] = physical_register_id
-
 
         def is_allocated(virtual_register_id):
             return bool(register_allocation[virtual_register_id])
@@ -943,28 +1220,50 @@ class Function(object):
                 if instruction.argument.register:
                     if instruction.destination.register.is_virtual:
                         if not is_allocated(instruction.destination.register.id):
-                            if instruction.argument.register.bitboard in self.allocation_options[
-                                instruction.destination.register.id]:
-                                bind_register(instruction.destination.register.id, instruction.argument.register)
+                            if (
+                                instruction.argument.register.bitboard
+                                in self.allocation_options[
+                                    instruction.destination.register.id
+                                ]
+                            ):
+                                bind_register(
+                                    instruction.destination.register.id,
+                                    instruction.argument.register,
+                                )
 
         # Now allocate registers with special restrictions
-        for virtual_register_id_list, virtual_register_type in self.unallocated_registers:
+        for (
+            virtual_register_id_list,
+            virtual_register_type,
+        ) in self.unallocated_registers:
             if isinstance(virtual_register_id_list, tuple):
-            # 				print "REGLIST: ", map(str, virtual_register_id_list)
+                # 				print "REGLIST: ", map(str, virtual_register_id_list)
                 assert self.allocation_options[virtual_register_id_list]
-                physical_register_bitboard_list = self.allocation_options[virtual_register_id_list][0]
-                physcial_registers_list = [Register.from_bitboard(physical_register_bitboard, virtual_register_type) for
-                                           physical_register_bitboard in physical_register_bitboard_list]
+                physical_register_bitboard_list = self.allocation_options[
+                    virtual_register_id_list
+                ][0]
+                physcial_registers_list = [
+                    Register.from_bitboard(
+                        physical_register_bitboard, virtual_register_type
+                    )
+                    for physical_register_bitboard in physical_register_bitboard_list
+                ]
                 bind_registers(virtual_register_id_list, physcial_registers_list)
 
         # Now allocate all other registers
         while self.unallocated_registers:
-            virtual_register_id, virtual_register_type = self.unallocated_registers.pop(0)
+            virtual_register_id, virtual_register_type = self.unallocated_registers.pop(
+                0
+            )
             if not isinstance(virtual_register_id, tuple):
                 if not is_allocated(virtual_register_id):
                     assert self.allocation_options[virtual_register_id]
-                    physical_register_bitboard = self.allocation_options[virtual_register_id][0]
-                    physical_register = Register.from_bitboard(physical_register_bitboard, virtual_register_type)
+                    physical_register_bitboard = self.allocation_options[
+                        virtual_register_id
+                    ][0]
+                    physical_register = Register.from_bitboard(
+                        physical_register_bitboard, virtual_register_type
+                    )
                     bind_register(virtual_register_id, physical_register)
 
         for instruction in self.instructions:
@@ -975,17 +1274,23 @@ class Function(object):
                 for output_register in instruction.get_output_registers_list():
                     if output_register.is_virtual:
                         if output_register.id in register_allocation:
-                            output_register.bind(register_allocation[output_register.id])
+                            output_register.bind(
+                                register_allocation[output_register.id]
+                            )
 
     # Updates information about registers to be saved/restored in the function prologue/epilogue
     def update_stack_frame(self):
         from nervapy.arm.instructions import Instruction
+
         for instruction in self.instructions:
             if isinstance(instruction, Instruction):
-                self.stack_frame.preserve_registers(instruction.get_output_registers_list())
+                self.stack_frame.preserve_registers(
+                    instruction.get_output_registers_list()
+                )
 
     def remove_assume_statements(self):
         from nervapy.arm.pseudo import AssumeInitializedPseudoInstruction
+
         new_instructions = list()
         for instruction in self.instructions:
             if isinstance(instruction, AssumeInitializedPseudoInstruction):
@@ -998,6 +1303,7 @@ class Function(object):
         from nervapy.arm.generic import LDR, MOV
         from nervapy.arm.pseudo import LoadArgumentPseudoInstruction
         from nervapy.arm.registers import sp
+
         new_instructions = list()
         for instruction in self.instructions:
             if isinstance(instruction, LoadArgumentPseudoInstruction):
@@ -1006,18 +1312,29 @@ class Function(object):
                     # If parameter is in a register, use register-register move:
                     if instruction.destination.register != parameter.register:
                         # Parameter is in a different register than instruction destination, generate move:
-                        new_instruction = MOV(instruction.destination.register, parameter.register)
+                        new_instruction = MOV(
+                            instruction.destination.register, parameter.register
+                        )
                         new_instruction.live_registers = instruction.live_registers
-                        new_instruction.available_registers = instruction.available_registers
+                        new_instruction.available_registers = (
+                            instruction.available_registers
+                        )
                         new_instructions.append(new_instruction)
                     # If parameter is in the same register as instruction destination, no instruction needed:
                     #   MOV( instruction.destination == parameter.register_location, parameter.register_location )
                     # is a no-op
                 else:
-                    parameter_address = self.stack_frame.get_parameters_offset() + parameter.stack_offset
-                    new_instruction = LDR(instruction.destination.register, [sp, parameter_address])
+                    parameter_address = (
+                        self.stack_frame.get_parameters_offset()
+                        + parameter.stack_offset
+                    )
+                    new_instruction = LDR(
+                        instruction.destination.register, [sp, parameter_address]
+                    )
                     new_instruction.live_registers = instruction.live_registers
-                    new_instruction.available_registers = instruction.available_registers
+                    new_instruction.available_registers = (
+                        instruction.available_registers
+                    )
                     new_instructions.append(new_instruction)
             else:
                 new_instructions.append(instruction)
@@ -1027,6 +1344,7 @@ class Function(object):
         from nervapy import ConstantBucket
         from nervapy.arm.instructions import Instruction
         from nervapy.arm.pseudo import LoadConstantPseudoInstruction
+
         max_alignment = 0
         for instruction in self.instructions:
             if isinstance(instruction, Instruction):
@@ -1079,15 +1397,20 @@ class Function(object):
         This method tracks stack pointer changes and validates alignment before
         BL and BLX instructions.
         """
-        from nervapy.arm.generic import (BranchWithLinkInstruction, BranchLinkExchangeInstruction,
-                                         PushPopInstruction, StoreMultipleInstruction,
-                                         ArithmeticInstruction)
+        from nervapy.arm.generic import (ArithmeticInstruction,
+                                         BranchLinkExchangeInstruction,
+                                         BranchWithLinkInstruction,
+                                         PushPopInstruction,
+                                         StoreMultipleInstruction)
         from nervapy.arm.instructions import Instruction
         from nervapy.arm.isa import Extension
         from nervapy.arm.registers import sp
 
         # Enforce for ARMv7-M and ARMv8-M architectures (V8MMain implies V7M via prerequisites)
-        if Extension.V7M not in self.target.extensions and Extension.V8MBase not in self.target.extensions:
+        if (
+            Extension.V7M not in self.target.extensions
+            and Extension.V8MBase not in self.target.extensions
+        ):
             return
 
         # Track stack offset from initial 8-byte aligned position
@@ -1104,29 +1427,32 @@ class Function(object):
         for instruction in self.instructions:
             if not isinstance(instruction, Instruction):
                 continue
-            
+
             # Skip prologue instructions (PUSH/VPUSH/STMDB at start of function)
             if prologue_instructions_seen < prologue_size:
-                if isinstance(instruction, PushPopInstruction) and instruction.name in ('PUSH', 'PUSH.W'):
+                if isinstance(instruction, PushPopInstruction) and instruction.name in (
+                    "PUSH",
+                    "PUSH.W",
+                ):
                     prologue_instructions_seen += 1
                     continue
                 # Also check for VPUSH (VFP register saves)
-                elif instruction.__class__.__name__ == 'VfpNeonPushPopInstruction':
+                elif instruction.__class__.__name__ == "VfpNeonPushPopInstruction":
                     prologue_instructions_seen += 1
                     continue
                 # Also check for STMDB (used with high registers)
                 elif isinstance(instruction, StoreMultipleInstruction):
-                    if instruction.writeback and instruction.name.startswith('STM'):
+                    if instruction.writeback and instruction.name.startswith("STM"):
                         prologue_instructions_seen += 1
                         continue
 
             # Track PUSH instructions (user code)
             if isinstance(instruction, PushPopInstruction):
-                if instruction.name in ('PUSH', 'PUSH.W'):
+                if instruction.name in ("PUSH", "PUSH.W"):
                     # Each register pushes 4 bytes
                     num_registers = len(instruction.operands[0].get_registers_list())
                     stack_offset += num_registers * 4
-                elif instruction.name in ('POP', 'POP.W'):
+                elif instruction.name in ("POP", "POP.W"):
                     # Each register pops 4 bytes
                     num_registers = len(instruction.operands[0].get_registers_list())
                     stack_offset -= num_registers * 4
@@ -1136,11 +1462,13 @@ class Function(object):
                 if instruction.writeback:
                     base_reg = instruction.operands[0]
                     # Check if base register is SP
-                    if hasattr(base_reg, 'register') and base_reg.register == sp:
-                        num_registers = len(instruction.operands[1].get_registers_list())
-                        if instruction.name.startswith('STM'):
+                    if hasattr(base_reg, "register") and base_reg.register == sp:
+                        num_registers = len(
+                            instruction.operands[1].get_registers_list()
+                        )
+                        if instruction.name.startswith("STM"):
                             stack_offset += num_registers * 4
-                        elif instruction.name.startswith('LDM'):
+                        elif instruction.name.startswith("LDM"):
                             stack_offset -= num_registers * 4
 
             # Track SUB/ADD with SP
@@ -1151,37 +1479,46 @@ class Function(object):
                     src2 = instruction.operands[2]
 
                     # Check if destination is SP
-                    if (hasattr(dest, 'register') and dest.register == sp and
-                        hasattr(src1, 'register') and src1.register == sp):
-                        
+                    if (
+                        hasattr(dest, "register")
+                        and dest.register == sp
+                        and hasattr(src1, "register")
+                        and src1.register == sp
+                    ):
+
                         # Get immediate value (check both 'immediate' and 'value')
                         imm_value = None
-                        if hasattr(src2, 'immediate'):
+                        if hasattr(src2, "immediate"):
                             imm_value = src2.immediate
-                        elif hasattr(src2, 'value'):
+                        elif hasattr(src2, "value"):
                             imm_value = src2.value
-                        
+
                         if imm_value is not None:
-                            if instruction.name.startswith('SUB'):
+                            if instruction.name.startswith("SUB"):
                                 # SUB sp, sp, #imm - allocates stack space
                                 stack_offset += imm_value
-                            elif instruction.name.startswith('ADD'):
+                            elif instruction.name.startswith("ADD"):
                                 # ADD sp, sp, #imm - deallocates stack space
                                 stack_offset -= imm_value
 
             # Check alignment before BL/BLX
-            elif isinstance(instruction, (BranchWithLinkInstruction, BranchLinkExchangeInstruction)):
+            elif isinstance(
+                instruction, (BranchWithLinkInstruction, BranchLinkExchangeInstruction)
+            ):
                 if stack_offset % 8 != 0:
                     raise ValueError(
                         "Stack is not 8-byte aligned before {0} instruction.\n"
                         "Current stack offset: {1} bytes (misaligned by {2} bytes).\n"
                         "ARMv7-M/ARMv8-M requires 8-byte stack alignment at function calls (AAPCS requirement).\n"
-                        "Add a dummy register to PUSH instructions or adjust stack manually to maintain alignment."
-                        .format(instruction.name, stack_offset, stack_offset % 8))
+                        "Add a dummy register to PUSH instructions or adjust stack manually to maintain alignment.".format(
+                            instruction.name, stack_offset, stack_offset % 8
+                        )
+                    )
 
     def optimize_instructions(self):
         from nervapy.arm.generic import MovInstruction
         from nervapy.arm.vfpneon import VfpNeonMovInstruction
+
         new_instructions = list()
         for instruction in self.instructions:
             # Remove moves where source and destination are the same
@@ -1208,40 +1545,47 @@ class Function(object):
             if isinstance(instruction, Instruction):
                 for extension in instruction.isa_extensions:
                     isa_extensions += extension
-                if any(isinstance(register, QRegister) or
-                        isinstance(register, DRegister) and register.is_extended for
-                        register in instruction.get_registers_list()):
+                if any(
+                    isinstance(register, QRegister)
+                    or isinstance(register, DRegister)
+                    and register.is_extended
+                    for register in instruction.get_registers_list()
+                ):
                     isa_extensions += Extension.VFPd32
         return isa_extensions
 
     def get_yeppp_isa_extensions(self):
-        isa_extensions_map = {'V4': ('V4', None, None),
-                              'V5': ( 'V5', None, None),
-                              'V5E': ( 'V5E', None, None),
-                              'V6': ( 'V6', None, None),
-                              'V6K': ( 'V6K', None, None),
-                              'V7': ( 'V7', None, None),
-                              'V7MP': ( 'V7MP', None, None),
-                              'Div': ( 'Div', None, None),
-                              'Thumb': ( 'Thumb', None, None),
-                              'Thumb2': ( 'Thumb2', None, None),
-                              'VFP': ( 'VFP', None, None),
-                              'VFP2': ( 'VFP2', None, None),
-                              'VFP3': ( 'VFP3', None, None),
-                              'VFPd32': ( 'VFPd32', None, None),
-                              'VFP3HP': ( 'VFP3HP', None, None),
-                              'VFP4': ( 'VFP4', None, None),
-                              'VFPVectorMode': ( None, None, 'VFPVectorMode'),
-                              'XScale': ( None, 'XScale', None),
-                              'WMMX': ( None, 'WMMX', None),
-                              'WMMX2': ( None, 'WMMX2', None),
-                              'NEON': ( None, 'NEON', None),
-                              'NEONHP': ( None, 'NEONHP', None),
-                              'NEON2': ( None, 'NEON2', None)}
-        (isa_extensions, simd_extensions, system_extensions) = (set(), set(), set())
+        isa_extensions_map = {
+            "V4": ("V4", None, None),
+            "V5": ("V5", None, None),
+            "V5E": ("V5E", None, None),
+            "V6": ("V6", None, None),
+            "V6K": ("V6K", None, None),
+            "V7": ("V7", None, None),
+            "V7MP": ("V7MP", None, None),
+            "Div": ("Div", None, None),
+            "Thumb": ("Thumb", None, None),
+            "Thumb2": ("Thumb2", None, None),
+            "VFP": ("VFP", None, None),
+            "VFP2": ("VFP2", None, None),
+            "VFP3": ("VFP3", None, None),
+            "VFPd32": ("VFPd32", None, None),
+            "VFP3HP": ("VFP3HP", None, None),
+            "VFP4": ("VFP4", None, None),
+            "VFPVectorMode": (None, None, "VFPVectorMode"),
+            "XScale": (None, "XScale", None),
+            "WMMX": (None, "WMMX", None),
+            "WMMX2": (None, "WMMX2", None),
+            "NEON": (None, "NEON", None),
+            "NEONHP": (None, "NEONHP", None),
+            "NEON2": (None, "NEON2", None),
+        }
+        isa_extensions, simd_extensions, system_extensions = (set(), set(), set())
         for isa_extension in self.get_isa_extensions():
             if isa_extension is not None:
-                (isa_extension, simd_extension, system_extension) = isa_extensions_map[isa_extension]
+                isa_extension, simd_extension, system_extension = isa_extensions_map[
+                    isa_extension
+                ]
                 if isa_extension is not None:
                     isa_extensions.add(isa_extension)
                 if simd_extension is not None:
@@ -1254,7 +1598,9 @@ class Function(object):
         simd_extensions = map(lambda id: "YepARMSimdFeature" + id, simd_extensions)
         if not simd_extensions:
             simd_extensions = ["YepSimdFeaturesDefault"]
-        system_extensions = map(lambda id: "YepARMSystemFeature" + id, system_extensions)
+        system_extensions = map(
+            lambda id: "YepARMSystemFeature" + id, system_extensions
+        )
         if not system_extensions:
             system_extensions = ["YepSystemFeaturesDefault"]
         return (isa_extensions, simd_extensions, system_extensions)
@@ -1288,6 +1634,7 @@ class LocalVariable(object):
     def __init__(self, register_type):
         from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
                                            QRegister, SRegister, WMMXRegister)
+
         super(LocalVariable, self).__init__()
         if isinstance(register_type, int):
             self.size = register_type
@@ -1302,7 +1649,7 @@ class LocalVariable(object):
         elif register_type == QRegister:
             self.size = 16
         else:
-            raise ValueError('Unsupported register type {0}'.format(register_type))
+            raise ValueError("Unsupported register type {0}".format(register_type))
         self.id = active_function.allocate_local_variable()
         self.address = None
         self.offset = 0
@@ -1379,6 +1726,7 @@ class StackFrame(object):
     def preserve_register(self, register):
         from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
                                            QRegister, SRegister)
+
         if isinstance(register, GeneralPurposeRegister):
             if not register in self.general_purpose_registers:
                 if register in self.abi.callee_save_registers:
@@ -1428,6 +1776,7 @@ class StackFrame(object):
         from nervapy.arm.registers import r3, sp
         from nervapy.arm.vfpneon import VPUSH
         from nervapy.stream import InstructionStream
+
         with InstructionStream() as instructions:
             if self.general_purpose_registers:
                 general_purpose_registers = list(self.general_purpose_registers)
@@ -1438,39 +1787,93 @@ class StackFrame(object):
 
                 if is_armv7m:
                     # Separate low registers (r0-r7) from high registers (r8-r15)
-                    low_registers = [reg for reg in general_purpose_registers if reg.get_physical_number() <= 7]
-                    high_registers = [reg for reg in general_purpose_registers if reg.get_physical_number() > 7]
+                    low_registers = [
+                        reg
+                        for reg in general_purpose_registers
+                        if reg.get_physical_number() <= 7
+                    ]
+                    high_registers = [
+                        reg
+                        for reg in general_purpose_registers
+                        if reg.get_physical_number() > 7
+                    ]
 
                     # Handle low registers with standard PUSH (16-bit encoding)
                     if low_registers:
                         # Ensure even number of registers for stack alignment
                         if len(low_registers) % 2 == 1:
                             low_registers.append(r3)
-                        PUSH(tuple(sorted(low_registers, key=lambda reg: reg.get_physical_number())))
+                        PUSH(
+                            tuple(
+                                sorted(
+                                    low_registers,
+                                    key=lambda reg: reg.get_physical_number(),
+                                )
+                            )
+                        )
 
                     # Handle high registers based on strategy
                     if high_registers:
                         strategy = function.high_register_strategy
 
-                        if strategy == HighRegisterStrategy.PUSH_W or \
-                           (strategy == HighRegisterStrategy.AUTO and function.assembly_format.name == "GAS"):
+                        if strategy == HighRegisterStrategy.PUSH_W or (
+                            strategy == HighRegisterStrategy.AUTO
+                            and function.assembly_format.name == "GAS"
+                        ):
                             # Use PUSH.W for high registers (modern Thumb-2)
-                            PUSH_W(tuple(sorted(high_registers, key=lambda reg: reg.get_physical_number())))
-                        elif strategy == HighRegisterStrategy.STMDB or \
-                             (strategy == HighRegisterStrategy.AUTO and function.assembly_format.name == "ARMCC"):
+                            PUSH_W(
+                                tuple(
+                                    sorted(
+                                        high_registers,
+                                        key=lambda reg: reg.get_physical_number(),
+                                    )
+                                )
+                            )
+                        elif strategy == HighRegisterStrategy.STMDB or (
+                            strategy == HighRegisterStrategy.AUTO
+                            and function.assembly_format.name == "ARMCC"
+                        ):
                             # Use STMDB for maximum compatibility
-                            STMDB(sp, tuple(sorted(high_registers, key=lambda reg: reg.get_physical_number())))
+                            STMDB(
+                                sp,
+                                tuple(
+                                    sorted(
+                                        high_registers,
+                                        key=lambda reg: reg.get_physical_number(),
+                                    )
+                                ),
+                            )
                         else:
                             # Fallback to PUSH.W
-                            PUSH_W(tuple(sorted(high_registers, key=lambda reg: reg.get_physical_number())))
+                            PUSH_W(
+                                tuple(
+                                    sorted(
+                                        high_registers,
+                                        key=lambda reg: reg.get_physical_number(),
+                                    )
+                                )
+                            )
                 else:
                     # Standard ARM (non-Cortex-M) handling
                     if len(general_purpose_registers) % 2 == 1:
                         general_purpose_registers.append(r3)
-                    PUSH(tuple(sorted(general_purpose_registers, key=lambda reg: reg.get_physical_number())))
+                    PUSH(
+                        tuple(
+                            sorted(
+                                general_purpose_registers,
+                                key=lambda reg: reg.get_physical_number(),
+                            )
+                        )
+                    )
 
             if self.d_registers:
-                VPUSH(tuple(sorted(self.d_registers, key=lambda reg: reg.get_physical_number())))
+                VPUSH(
+                    tuple(
+                        sorted(
+                            self.d_registers, key=lambda reg: reg.get_physical_number()
+                        )
+                    )
+                )
         return list(iter(instructions))
 
     def generate_epilogue(self):
@@ -1480,9 +1883,16 @@ class StackFrame(object):
         from nervapy.arm.registers import r3, sp
         from nervapy.arm.vfpneon import VPOP
         from nervapy.stream import InstructionStream
+
         with InstructionStream() as instructions:
             if self.d_registers:
-                VPOP(tuple(sorted(self.d_registers, key=lambda reg: reg.get_physical_number())))
+                VPOP(
+                    tuple(
+                        sorted(
+                            self.d_registers, key=lambda reg: reg.get_physical_number()
+                        )
+                    )
+                )
 
             if self.general_purpose_registers:
                 general_purpose_registers = list(self.general_purpose_registers)
@@ -1493,41 +1903,88 @@ class StackFrame(object):
 
                 if is_armv7m:
                     # Separate low registers (r0-r7) from high registers (r8-r15)
-                    low_registers = [reg for reg in general_purpose_registers if reg.get_physical_number() <= 7]
-                    high_registers = [reg for reg in general_purpose_registers if reg.get_physical_number() > 7]
+                    low_registers = [
+                        reg
+                        for reg in general_purpose_registers
+                        if reg.get_physical_number() <= 7
+                    ]
+                    high_registers = [
+                        reg
+                        for reg in general_purpose_registers
+                        if reg.get_physical_number() > 7
+                    ]
 
                     # Handle high registers first (reverse order of prologue)
                     if high_registers:
                         strategy = function.high_register_strategy
 
-                        if strategy == HighRegisterStrategy.PUSH_W or \
-                           (strategy == HighRegisterStrategy.AUTO and function.assembly_format.name == "GAS"):
+                        if strategy == HighRegisterStrategy.PUSH_W or (
+                            strategy == HighRegisterStrategy.AUTO
+                            and function.assembly_format.name == "GAS"
+                        ):
                             # Use POP.W for high registers
-                            POP_W(tuple(sorted(high_registers, key=lambda reg: reg.get_physical_number())))
-                        elif strategy == HighRegisterStrategy.STMDB or \
-                             (strategy == HighRegisterStrategy.AUTO and function.assembly_format.name == "ARMCC"):
+                            POP_W(
+                                tuple(
+                                    sorted(
+                                        high_registers,
+                                        key=lambda reg: reg.get_physical_number(),
+                                    )
+                                )
+                            )
+                        elif strategy == HighRegisterStrategy.STMDB or (
+                            strategy == HighRegisterStrategy.AUTO
+                            and function.assembly_format.name == "ARMCC"
+                        ):
                             # Use LDMIA for compatibility
-                            LDMIA(sp, tuple(sorted(high_registers, key=lambda reg: reg.get_physical_number())))
+                            LDMIA(
+                                sp,
+                                tuple(
+                                    sorted(
+                                        high_registers,
+                                        key=lambda reg: reg.get_physical_number(),
+                                    )
+                                ),
+                            )
                         else:
                             # Fallback to POP.W
-                            POP_W(tuple(sorted(high_registers, key=lambda reg: reg.get_physical_number())))
+                            POP_W(
+                                tuple(
+                                    sorted(
+                                        high_registers,
+                                        key=lambda reg: reg.get_physical_number(),
+                                    )
+                                )
+                            )
 
                     # Handle low registers with standard POP (16-bit encoding)
                     if low_registers:
                         # Ensure even number of registers for stack alignment
                         if len(low_registers) % 2 == 1:
                             low_registers.append(r3)
-                        POP(tuple(sorted(low_registers, key=lambda reg: reg.get_physical_number())))
+                        POP(
+                            tuple(
+                                sorted(
+                                    low_registers,
+                                    key=lambda reg: reg.get_physical_number(),
+                                )
+                            )
+                        )
                 else:
                     # Standard ARM (non-Cortex-M) handling
                     if len(general_purpose_registers) % 2 == 1:
                         general_purpose_registers.append(r3)
-                    POP(tuple(sorted(general_purpose_registers, key=lambda reg: reg.get_physical_number())))
+                    POP(
+                        tuple(
+                            sorted(
+                                general_purpose_registers,
+                                key=lambda reg: reg.get_physical_number(),
+                            )
+                        )
+                    )
         return list(iter(instructions))
 
     def get_function(self):
         """Get the active function that owns this stack frame."""
         from nervapy.arm.function import active_function
+
         return active_function
-
-

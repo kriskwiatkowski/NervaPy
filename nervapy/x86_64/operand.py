@@ -13,6 +13,7 @@ def check_operand(operand):
     from nervapy.x86_64.function import LocalVariable
     from nervapy.x86_64.pseudo import Label
     from nervapy.x86_64.registers import MaskedRegister, Register
+
     if isinstance(operand, Register):
         return copy(operand)
     elif isinstance(operand, (MaskedRegister, MemoryOperand)):
@@ -21,25 +22,35 @@ def check_operand(operand):
         return operand
     elif is_int(operand):
         if not is_int64(operand):
-            raise ValueError("The immediate operand %d is not representable as a 64-bit value")
+            raise ValueError(
+                "The immediate operand %d is not representable as a 64-bit value"
+            )
         return operand
     elif isinstance(operand, list):
         if len(operand) != 1:
-            raise ValueError("Memory operands must be represented by a list with only one element")
+            raise ValueError(
+                "Memory operands must be represented by a list with only one element"
+            )
         return MemoryOperand(operand[0])
     elif isinstance(operand, Constant):
         from copy import copy, deepcopy
+
         operand = copy(operand)
         import nervapy.common.function
+
         if nervapy.common.function.active_function:
-            operand.name = deepcopy(operand.name, nervapy.common.function.active_function._names_memo)
+            operand.name = deepcopy(
+                operand.name, nervapy.common.function.active_function._names_memo
+            )
         return MemoryOperand(operand)
     elif isinstance(operand, LocalVariable):
         return MemoryOperand(operand)
     elif isinstance(operand, set):
         if len(operand) != 1:
-            raise ValueError("Rounding control & suppress-all-errors operands must be represented by a set "
-                             "with only one element")
+            raise ValueError(
+                "Rounding control & suppress-all-errors operands must be represented by a set "
+                "with only one element"
+            )
         return next(iter(operand))
     else:
         raise TypeError("Unsupported operand: %s" % str(operand))
@@ -49,11 +60,14 @@ def get_operand_registers(operand):
     """Returns a set of registers that comprise the operand"""
 
     from nervapy.x86_64.registers import MaskedRegister, Register
+
     if isinstance(operand, Register):
         return [operand]
     elif isinstance(operand, MaskedRegister):
         return [operand.register, operand.mask.mask_register]
-    elif isinstance(operand, MemoryOperand) and isinstance(operand.address, MemoryAddress):
+    elif isinstance(operand, MemoryOperand) and isinstance(
+        operand.address, MemoryAddress
+    ):
         registers = list()
         if operand.address.base is not None:
             registers.append(operand.address.base)
@@ -65,17 +79,17 @@ def get_operand_registers(operand):
 
 
 def format_operand(operand, assembly_format):
-    assert assembly_format in {"peachpy", "gas", "nasm", "go"}, \
-        "Supported assembly formats are 'peachpy', 'gas', 'nasm', 'go'"
+    assert assembly_format in {
+        "peachpy",
+        "gas",
+        "nasm",
+        "go",
+    }, "Supported assembly formats are 'peachpy', 'gas', 'nasm', 'go'"
 
-    immediate_prefix_map = {
-        "peachpy": "",
-        "gas": "$",
-        "nasm": "",
-        "go": "$"
-    }
+    immediate_prefix_map = {"peachpy": "", "gas": "$", "nasm": "", "go": "$"}
 
     from nervapy.util import is_int64
+
     if is_int64(operand):
         return immediate_prefix_map[assembly_format] + str(operand)
     else:
@@ -94,6 +108,7 @@ def format_operand_type(operand):
                                           XMMRegister, YMMRegister,
                                           ZMMRegister, al, ax, cl, eax, rax,
                                           xmm0)
+
     if is_int8(operand):
         return "imm8"
     elif is_int16(operand):
@@ -167,23 +182,35 @@ class MemoryAddress:
         # Check individual arguments
         if base is not None and not isinstance(base, GeneralPurposeRegister64):
             raise TypeError("Base register must be a 64-bit general-purpose register")
-        if index is not None and \
-            not isinstance(index, (GeneralPurposeRegister64, XMMRegister, YMMRegister, ZMMRegister)) and not \
-            (isinstance(index, MaskedRegister) and
-                isinstance(index.register, (XMMRegister, YMMRegister, ZMMRegister)) and
-                not index.mask.is_zeroing):
-            raise TypeError("Index register must be a 64-bit general-purpose register or an XMM/YMM/ZMM register")
+        if (
+            index is not None
+            and not isinstance(
+                index, (GeneralPurposeRegister64, XMMRegister, YMMRegister, ZMMRegister)
+            )
+            and not (
+                isinstance(index, MaskedRegister)
+                and isinstance(index.register, (XMMRegister, YMMRegister, ZMMRegister))
+                and not index.mask.is_zeroing
+            )
+        ):
+            raise TypeError(
+                "Index register must be a 64-bit general-purpose register or an XMM/YMM/ZMM register"
+            )
         if scale is not None and not is_int(scale):
             raise TypeError("Scale must be an integer")
         if scale is not None and int(scale) not in {1, 2, 4, 8}:
             raise TypeError("Scale must be 1, 2, 4, or 8")
         if not is_sint32(displacement):
-            raise ValueError("Displacement value (%s) is not representable as a signed 32-bit integer" %
-                             str(displacement))
+            raise ValueError(
+                "Displacement value (%s) is not representable as a signed 32-bit integer"
+                % str(displacement)
+            )
 
         # Check relations of arguments
         if scale is not None and index is None or scale is None and index is not None:
-            raise ValueError("Either both of neither of scale and index must be defined")
+            raise ValueError(
+                "Either both of neither of scale and index must be defined"
+            )
         if index is None and base is None:
             raise ValueError("Either base or index * scale must be specified")
 
@@ -195,35 +222,60 @@ class MemoryAddress:
     def __add__(self, addend):
         from nervapy.util import is_int, is_sint32
         from nervapy.x86_64.registers import GeneralPurposeRegister64
+
         if is_int(addend):
             if not is_sint32(addend):
-                raise ValueError("The addend value (%d) is not representable as a signed 32-bit integer" % addend)
-            return MemoryAddress(self.base, self.index, self.scale, self.displacement + addend)
+                raise ValueError(
+                    "The addend value (%d) is not representable as a signed 32-bit integer"
+                    % addend
+                )
+            return MemoryAddress(
+                self.base, self.index, self.scale, self.displacement + addend
+            )
         elif isinstance(addend, GeneralPurposeRegister64):
             if self.base is not None:
-                raise TypeError("Can not add a general-purpose register to a memory operand with existing base")
+                raise TypeError(
+                    "Can not add a general-purpose register to a memory operand with existing base"
+                )
             if self.index.size != addend.size:
-                raise TypeError("Index (%s) and addend (%s) registers have different size" %
-                                (str(self.index), str(addend)))
+                raise TypeError(
+                    "Index (%s) and addend (%s) registers have different size"
+                    % (str(self.index), str(addend))
+                )
             return MemoryAddress(addend, self.index, self.scale, self.displacement)
         elif isinstance(addend, MemoryAddress):
             if self.base is not None and addend.base is not None:
-                raise ValueError("Can not add memory address: both address expressions use base registers")
+                raise ValueError(
+                    "Can not add memory address: both address expressions use base registers"
+                )
             if self.index is not None and addend.index is not None:
-                raise ValueError("Can not add memory address: both address expressions use index registers")
+                raise ValueError(
+                    "Can not add memory address: both address expressions use index registers"
+                )
             sum_base = self.base if self.base is not None else addend.base
-            (sum_index, sum_scale) = (self.index, self.scale) \
-                if self.index is not None else (addend.index, addend.scale)
-            return MemoryAddress(sum_base, sum_index, sum_scale, self.displacement + addend.displacement)
+            sum_index, sum_scale = (
+                (self.index, self.scale)
+                if self.index is not None
+                else (addend.index, addend.scale)
+            )
+            return MemoryAddress(
+                sum_base, sum_index, sum_scale, self.displacement + addend.displacement
+            )
         else:
             raise TypeError("Can not add %s: unsupported addend type" % str(addend))
 
     def __sub__(self, minuend):
         from nervapy.util import is_int, is_sint32
+
         if is_int(minuend):
             if not is_sint32(-minuend):
-                raise ValueError("The addend value (%d) is not representable as a signed 32-bit integer" % minuend)
-            return MemoryAddress(self.base, self.index, self.scale, self.displacement - minuend)
+                raise ValueError(
+                    "The addend value (%d) is not representable as a signed 32-bit integer"
+                    % minuend
+                )
+            return MemoryAddress(
+                self.base, self.index, self.scale, self.displacement - minuend
+            )
         else:
             raise TypeError("Can not add %s: unsupported addend type" % str(minuend))
 
@@ -251,16 +303,35 @@ class MemoryOperand:
         from nervapy.x86_64.registers import (GeneralPurposeRegister64,
                                               MaskedRegister, XMMRegister,
                                               YMMRegister, ZMMRegister)
-        assert isinstance(address, (GeneralPurposeRegister64, XMMRegister, YMMRegister, ZMMRegister,
-                                    MemoryAddress, Constant, LocalVariable, RIPRelativeOffset)) or \
-            isinstance(address, MaskedRegister) and \
-            isinstance(address.register, (XMMRegister, YMMRegister, ZMMRegister)) and \
-            not address.mask.is_zeroing, \
-            "Only MemoryAddress, 64-bit general-purpose registers, RIP-Relative addresses, XMM/YMM/ZMM registers, " \
+
+        assert (
+            isinstance(
+                address,
+                (
+                    GeneralPurposeRegister64,
+                    XMMRegister,
+                    YMMRegister,
+                    ZMMRegister,
+                    MemoryAddress,
+                    Constant,
+                    LocalVariable,
+                    RIPRelativeOffset,
+                ),
+            )
+            or isinstance(address, MaskedRegister)
+            and isinstance(address.register, (XMMRegister, YMMRegister, ZMMRegister))
+            and not address.mask.is_zeroing
+        ), (
+            "Only MemoryAddress, 64-bit general-purpose registers, RIP-Relative addresses, XMM/YMM/ZMM registers, "
             "and merge-masked XMM/YMM/ZMM registers may be specified as an address"
+        )
         from nervapy.util import is_int
-        assert size is None or is_int(size) and int(size) in SizeSpecification._size_name_map, \
-            "Unsupported size: %d" % size
+
+        assert (
+            size is None
+            or is_int(size)
+            and int(size) in SizeSpecification._size_name_map
+        ), ("Unsupported size: %d" % size)
 
         self.symbol = None
         self.size = size
@@ -269,14 +340,23 @@ class MemoryOperand:
 
         if isinstance(address, MemoryAddress):
             if isinstance(address.index, MaskedRegister):
-                self.address = MemoryAddress(address.base, address.index.register, address.scale, address.displacement)
-                assert mask is None, "Mask argument can't be used when address index is a masked XMM/YMM/ZMM register"
+                self.address = MemoryAddress(
+                    address.base,
+                    address.index.register,
+                    address.scale,
+                    address.displacement,
+                )
+                assert (
+                    mask is None
+                ), "Mask argument can't be used when address index is a masked XMM/YMM/ZMM register"
                 self.mask = address.index.mask
             else:
                 self.address = address
         elif isinstance(address, MaskedRegister):
             self.address = MemoryAddress(index=address.register, scale=1)
-            assert mask is None, "Mask argument can't be used when address is a masked XMM/YMM/ZMM register"
+            assert (
+                mask is None
+            ), "Mask argument can't be used when address is a masked XMM/YMM/ZMM register"
             self.mask = address.mask
         elif isinstance(address, Constant):
             self.address = RIPRelativeOffset(0)
@@ -284,6 +364,7 @@ class MemoryOperand:
             self.size = address.size
         elif isinstance(address, LocalVariable):
             from nervapy.x86_64.registers import rsp
+
             self.address = MemoryAddress(rsp, displacement=address.offset)
             self.symbol = address
             self.size = address.size
@@ -297,31 +378,48 @@ class MemoryOperand:
         if self.size is None:
             return "[" + str(self.address) + "]"
         else:
-            return SizeSpecification._size_name_map[self.size] + " [" + str(self.address) + "]"
+            return (
+                SizeSpecification._size_name_map[self.size]
+                + " ["
+                + str(self.address)
+                + "]"
+            )
 
     def __repr__(self):
         return str(self)
 
     def __call__(self, mask):
         from nervapy.x86_64.registers import KRegister, RegisterMask
+
         if not isinstance(mask, (KRegister, RegisterMask)):
-            raise SyntaxError("zmm(mask) syntax requires mask to be a KRegister or KRegister.z")
+            raise SyntaxError(
+                "zmm(mask) syntax requires mask to be a KRegister or KRegister.z"
+            )
         if self.broadcast:
-            raise ValueError("mask can not be applied to memory operands with broadcasting")
+            raise ValueError(
+                "mask can not be applied to memory operands with broadcasting"
+            )
         if isinstance(mask, KRegister):
             mask = RegisterMask(mask)
         return MemoryOperand(self.address, self.size, mask)
 
     def format(self, assembly_format):
-        assert assembly_format in {"peachpy", "gas", "nasm", "go"}, \
-            "Supported assembly formats are 'peachpy', 'gas', 'nasm', 'go'"
+        assert assembly_format in {
+            "peachpy",
+            "gas",
+            "nasm",
+            "go",
+        }, "Supported assembly formats are 'peachpy', 'gas', 'nasm', 'go'"
 
         if assembly_format == "go":
             text = str(self.address.displacement)
             if self.address.base is not None:
                 text += "(" + self.address.base.format(assembly_format) + ")"
             if self.address.index is not None:
-                text += "(%s*%d)" % (self.address.index.format(assembly_format), self.address.scale)
+                text += "(%s*%d)" % (
+                    self.address.index.format(assembly_format),
+                    self.address.scale,
+                )
             return text
         elif assembly_format == "gas":
             if isinstance(self.address, RIPRelativeOffset):
@@ -331,13 +429,15 @@ class MemoryOperand:
                 if self.address.index is None:
                     return "{displacement}({base})".format(
                         displacement=self.address.displacement,
-                        base=base.format(assembly_format))
+                        base=base.format(assembly_format),
+                    )
                 else:
                     return "{displacement}({base},{index},{scale})".format(
                         displacement=self.address.displacement,
                         base="" if base is None else base.format(assembly_format),
                         index=self.address.index.format(assembly_format),
-                        scale=self.address.scale)
+                        scale=self.address.scale,
+                    )
         else:
             return str(self)
 
@@ -369,13 +469,15 @@ class SizeSpecification:
         10: "tword",
         16: "oword",
         32: "hword",
-        64: "zword"
+        64: "zword",
     }
 
     def __init__(self, size):
         from nervapy.util import is_int
-        assert is_int(size) and int(size) in SizeSpecification._size_name_map, \
+
+        assert is_int(size) and int(size) in SizeSpecification._size_name_map, (
             "Unsupported size: %d" % size
+        )
         self.size = size
 
     def __str__(self):
@@ -387,25 +489,33 @@ class SizeSpecification:
     @property
     def to2(self):
         if self.size not in [4, 8]:
-            raise ValueError("{1to2} broadcasting is only supported for dword and qword memory locations")
+            raise ValueError(
+                "{1to2} broadcasting is only supported for dword and qword memory locations"
+            )
         return BroadcastSpecification(self.size, 2)
 
     @property
     def to4(self):
         if self.size not in [4, 8]:
-            raise ValueError("{1to4} broadcasting is only supported for dword and qword memory locations")
+            raise ValueError(
+                "{1to4} broadcasting is only supported for dword and qword memory locations"
+            )
         return BroadcastSpecification(self.size, 4)
 
     @property
     def to8(self):
         if self.size not in [4, 8]:
-            raise ValueError("{1to8} broadcasting is only supported for dword and qword memory locations")
+            raise ValueError(
+                "{1to8} broadcasting is only supported for dword and qword memory locations"
+            )
         return BroadcastSpecification(self.size, 8)
 
     @property
     def to16(self):
         if self.size != 4:
-            raise ValueError("{1to16} broadcasting is only supported for dword memory locations")
+            raise ValueError(
+                "{1to16} broadcasting is only supported for dword memory locations"
+            )
         return BroadcastSpecification(self.size, 16)
 
 
@@ -427,6 +537,7 @@ class BroadcastSpecification:
 class RIPRelativeOffset:
     def __init__(self, offset):
         import nervapy.util
+
         if not nervapy.util.is_sint32(offset):
             raise ValueError("RIP-relative offset must be a 32-bit signed integer")
         self.offset = offset
@@ -451,163 +562,227 @@ class RIPRelativeOffset:
 
 def is_al(operand):
     from nervapy.x86_64.registers import GeneralPurposeRegister8, al
-    return isinstance(operand, GeneralPurposeRegister8) and (operand.is_virtual or operand == al)
+
+    return isinstance(operand, GeneralPurposeRegister8) and (
+        operand.is_virtual or operand == al
+    )
 
 
 def is_cl(operand):
     from nervapy.x86_64.registers import GeneralPurposeRegister8, cl
-    return isinstance(operand, GeneralPurposeRegister8) and (operand.is_virtual or operand == cl)
+
+    return isinstance(operand, GeneralPurposeRegister8) and (
+        operand.is_virtual or operand == cl
+    )
 
 
 def is_ax(operand):
     from nervapy.x86_64.registers import GeneralPurposeRegister16, ax
-    return isinstance(operand, GeneralPurposeRegister16) and (operand.is_virtual or operand == ax)
+
+    return isinstance(operand, GeneralPurposeRegister16) and (
+        operand.is_virtual or operand == ax
+    )
 
 
 def is_eax(operand):
     from nervapy.x86_64.registers import GeneralPurposeRegister32, eax
-    return isinstance(operand, GeneralPurposeRegister32) and (operand.is_virtual or operand == eax)
+
+    return isinstance(operand, GeneralPurposeRegister32) and (
+        operand.is_virtual or operand == eax
+    )
 
 
 def is_rax(operand):
     from nervapy.x86_64.registers import GeneralPurposeRegister64, rax
-    return isinstance(operand, GeneralPurposeRegister64) and (operand.is_virtual or operand == rax)
+
+    return isinstance(operand, GeneralPurposeRegister64) and (
+        operand.is_virtual or operand == rax
+    )
 
 
 def is_xmm0(operand):
     from nervapy.x86_64.registers import XMMRegister, xmm0
+
     return isinstance(operand, XMMRegister) and (operand.is_virtual or operand == xmm0)
 
 
 def is_r8(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister8)
 
 
 def is_r8rex(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister8) and \
-        operand.physical_id >= 4
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister8)
+        and operand.physical_id >= 4
+    )
 
 
 def is_r8h(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister8) and \
-        operand.mask == nervapy.x86_64.registers.GeneralPurposeRegister8._high_mask
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister8)
+        and operand.mask == nervapy.x86_64.registers.GeneralPurposeRegister8._high_mask
+    )
 
 
 def is_r16(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister16)
 
 
 def is_r32(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister32)
 
 
 def is_r64(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.GeneralPurposeRegister64)
 
 
 def is_mm(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.MMXRegister)
 
 
 def is_xmm(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.XMMRegister) and \
-           (operand.physical_id is None or operand.physical_id < 16)
+
+    return isinstance(operand, nervapy.x86_64.registers.XMMRegister) and (
+        operand.physical_id is None or operand.physical_id < 16
+    )
 
 
 def is_evex_xmm(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.XMMRegister)
 
 
 def is_xmmk(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.XMMRegister) or \
-        isinstance(operand, nervapy.x86_64.registers.MaskedRegister) and \
-        isinstance(operand.register, nervapy.x86_64.registers.XMMRegister) and \
-        not operand.mask.is_zeroing
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.XMMRegister)
+        or isinstance(operand, nervapy.x86_64.registers.MaskedRegister)
+        and isinstance(operand.register, nervapy.x86_64.registers.XMMRegister)
+        and not operand.mask.is_zeroing
+    )
 
 
 def is_xmmkz(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.XMMRegister) or \
-        isinstance(operand, nervapy.x86_64.registers.MaskedRegister) and \
-        isinstance(operand.register, nervapy.x86_64.registers.XMMRegister)
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.XMMRegister)
+        or isinstance(operand, nervapy.x86_64.registers.MaskedRegister)
+        and isinstance(operand.register, nervapy.x86_64.registers.XMMRegister)
+    )
 
 
 def is_ymm(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.YMMRegister) and \
-           (operand.physical_id is None or operand.physical_id < 16)
+
+    return isinstance(operand, nervapy.x86_64.registers.YMMRegister) and (
+        operand.physical_id is None or operand.physical_id < 16
+    )
 
 
 def is_evex_ymm(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.YMMRegister)
 
 
 def is_ymmk(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.YMMRegister) or \
-        isinstance(operand, nervapy.x86_64.registers.MaskedRegister) and \
-        isinstance(operand.register, nervapy.x86_64.registers.YMMRegister) and \
-        not operand.mask.is_zeroing
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.YMMRegister)
+        or isinstance(operand, nervapy.x86_64.registers.MaskedRegister)
+        and isinstance(operand.register, nervapy.x86_64.registers.YMMRegister)
+        and not operand.mask.is_zeroing
+    )
 
 
 def is_ymmkz(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.YMMRegister) or \
-        isinstance(operand, nervapy.x86_64.registers.MaskedRegister) and \
-        isinstance(operand.register, nervapy.x86_64.registers.YMMRegister)
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.YMMRegister)
+        or isinstance(operand, nervapy.x86_64.registers.MaskedRegister)
+        and isinstance(operand.register, nervapy.x86_64.registers.YMMRegister)
+    )
 
 
 def is_zmm(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.ZMMRegister)
 
 
 def is_zmmk(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.ZMMRegister) or \
-        isinstance(operand, nervapy.x86_64.registers.MaskedRegister) and \
-        isinstance(operand.register, nervapy.x86_64.registers.ZMMRegister) and \
-        not operand.mask.is_zeroing
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.ZMMRegister)
+        or isinstance(operand, nervapy.x86_64.registers.MaskedRegister)
+        and isinstance(operand.register, nervapy.x86_64.registers.ZMMRegister)
+        and not operand.mask.is_zeroing
+    )
 
 
 def is_zmmkz(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.ZMMRegister) or \
-        isinstance(operand, nervapy.x86_64.registers.MaskedRegister) and \
-        isinstance(operand.register, nervapy.x86_64.registers.ZMMRegister)
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.ZMMRegister)
+        or isinstance(operand, nervapy.x86_64.registers.MaskedRegister)
+        and isinstance(operand.register, nervapy.x86_64.registers.ZMMRegister)
+    )
 
 
 def is_k(operand):
     import nervapy.x86_64.registers
+
     return isinstance(operand, nervapy.x86_64.registers.KRegister)
 
 
 def is_kk(operand):
     import nervapy.x86_64.registers
-    return isinstance(operand, nervapy.x86_64.registers.KRegister) or \
-        isinstance(operand, nervapy.x86_64.registers.MaskedRegister) and \
-        isinstance(operand.register, nervapy.x86_64.registers.KRegister) and \
-        not operand.mask.is_zeroing
+
+    return (
+        isinstance(operand, nervapy.x86_64.registers.KRegister)
+        or isinstance(operand, nervapy.x86_64.registers.MaskedRegister)
+        and isinstance(operand.register, nervapy.x86_64.registers.KRegister)
+        and not operand.mask.is_zeroing
+    )
 
 
 def is_m(operand):
-    if not isinstance(operand, MemoryOperand) or operand.mask is not None or operand.broadcast is not None:
+    if (
+        not isinstance(operand, MemoryOperand)
+        or operand.mask is not None
+        or operand.broadcast is not None
+    ):
         return False
     # Check that the operand does not use vector index
     from nervapy.x86_64.registers import GeneralPurposeRegister
-    return isinstance(operand.address, RIPRelativeOffset) or \
-        operand.address.index is None or isinstance(operand.address.index, GeneralPurposeRegister)
+
+    return (
+        isinstance(operand.address, RIPRelativeOffset)
+        or operand.address.index is None
+        or isinstance(operand.address.index, GeneralPurposeRegister)
+    )
 
 
 def is_mk(operand):
@@ -618,7 +793,10 @@ def is_mk(operand):
         return False
     # Check that the operand does not use vector index
     from nervapy.x86_64.registers import GeneralPurposeRegister
-    return operand.address.index is None or isinstance(operand.address.index, GeneralPurposeRegister)
+
+    return operand.address.index is None or isinstance(
+        operand.address.index, GeneralPurposeRegister
+    )
 
 
 def is_mkz(operand):
@@ -626,54 +804,86 @@ def is_mkz(operand):
         return False
     # Check that the operand does not use vector index
     from nervapy.x86_64.registers import GeneralPurposeRegister
-    return operand.address.index is None or isinstance(operand.address.index, GeneralPurposeRegister)
+
+    return operand.address.index is None or isinstance(
+        operand.address.index, GeneralPurposeRegister
+    )
 
 
 def is_vmx(operand):
     from nervapy.x86_64.registers import XMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, XMMRegister) and \
-        (operand.address.index is None or operand.address.index.physical_id < 16) and \
-        operand.mask is None
+
+    return (
+        isinstance(operand, MemoryOperand)
+        and isinstance(operand.address.index, XMMRegister)
+        and (operand.address.index is None or operand.address.index.physical_id < 16)
+        and operand.mask is None
+    )
 
 
 def is_evex_vmx(operand):
     from nervapy.x86_64.registers import XMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, XMMRegister) and \
-        operand.mask is None
+
+    return (
+        isinstance(operand, MemoryOperand)
+        and isinstance(operand.address.index, XMMRegister)
+        and operand.mask is None
+    )
 
 
 def is_vmxk(operand):
     from nervapy.x86_64.registers import XMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, XMMRegister)
+
+    return isinstance(operand, MemoryOperand) and isinstance(
+        operand.address.index, XMMRegister
+    )
 
 
 def is_vmy(operand):
     from nervapy.x86_64.registers import YMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, YMMRegister) and \
-        (operand.address.index is None or operand.address.index.physical_id < 16) and \
-        operand.mask is None
+
+    return (
+        isinstance(operand, MemoryOperand)
+        and isinstance(operand.address.index, YMMRegister)
+        and (operand.address.index is None or operand.address.index.physical_id < 16)
+        and operand.mask is None
+    )
 
 
 def is_evex_vmy(operand):
     from nervapy.x86_64.registers import YMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, YMMRegister) and \
-        operand.mask is None
+
+    return (
+        isinstance(operand, MemoryOperand)
+        and isinstance(operand.address.index, YMMRegister)
+        and operand.mask is None
+    )
 
 
 def is_vmyk(operand):
     from nervapy.x86_64.registers import YMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, YMMRegister)
+
+    return isinstance(operand, MemoryOperand) and isinstance(
+        operand.address.index, YMMRegister
+    )
 
 
 def is_vmz(operand):
     from nervapy.x86_64.registers import ZMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, ZMMRegister) and \
-        operand.mask is None
+
+    return (
+        isinstance(operand, MemoryOperand)
+        and isinstance(operand.address.index, ZMMRegister)
+        and operand.mask is None
+    )
 
 
 def is_vmzk(operand):
     from nervapy.x86_64.registers import ZMMRegister
-    return isinstance(operand, MemoryOperand) and isinstance(operand.address.index, ZMMRegister)
+
+    return isinstance(operand, MemoryOperand) and isinstance(
+        operand.address.index, ZMMRegister
+    )
 
 
 def is_m8(operand, strict=False):
@@ -682,8 +892,13 @@ def is_m8(operand, strict=False):
 
 def is_m16(operand, strict=False):
     import nervapy.literal
-    return is_m(operand) and (operand.size is None and not strict or operand.size == 2) or \
-        isinstance(operand, nervapy.literal.Constant) and operand.size == 2
+
+    return (
+        is_m(operand)
+        and (operand.size is None and not strict or operand.size == 2)
+        or isinstance(operand, nervapy.literal.Constant)
+        and operand.size == 2
+    )
 
 
 def is_m16kz(operand):
@@ -692,8 +907,13 @@ def is_m16kz(operand):
 
 def is_m32(operand, strict=False):
     import nervapy.literal
-    return is_m(operand) and (operand.size is None and not strict or operand.size == 4) or \
-        isinstance(operand, nervapy.literal.Constant) and operand.size == 4
+
+    return (
+        is_m(operand)
+        and (operand.size is None and not strict or operand.size == 4)
+        or isinstance(operand, nervapy.literal.Constant)
+        and operand.size == 4
+    )
 
 
 def is_m32k(operand):
@@ -706,8 +926,13 @@ def is_m32kz(operand):
 
 def is_m64(operand, strict=False):
     import nervapy.literal
-    return is_m(operand) and (operand.size is None and not strict or operand.size == 8) or \
-        isinstance(operand, nervapy.literal.Constant) and operand.size == 8
+
+    return (
+        is_m(operand)
+        and (operand.size is None and not strict or operand.size == 8)
+        or isinstance(operand, nervapy.literal.Constant)
+        and operand.size == 8
+    )
 
 
 def is_m64k(operand):
@@ -724,8 +949,13 @@ def is_m80(operand, strict=False):
 
 def is_m128(operand, strict=False):
     import nervapy.literal
-    return is_m(operand) and (operand.size is None and not strict or operand.size == 16) or \
-        isinstance(operand, nervapy.literal.Constant) and operand.size == 16
+
+    return (
+        is_m(operand)
+        and (operand.size is None and not strict or operand.size == 16)
+        or isinstance(operand, nervapy.literal.Constant)
+        and operand.size == 16
+    )
 
 
 def is_m128kz(operand):
@@ -734,8 +964,13 @@ def is_m128kz(operand):
 
 def is_m256(operand, strict=False):
     import nervapy.literal
-    return is_m(operand) and (operand.size is None and not strict or operand.size == 32) or \
-        isinstance(operand, nervapy.literal.Constant) and operand.size == 32
+
+    return (
+        is_m(operand)
+        and (operand.size is None and not strict or operand.size == 32)
+        or isinstance(operand, nervapy.literal.Constant)
+        and operand.size == 32
+    )
 
 
 def is_m256kz(operand):
@@ -744,8 +979,13 @@ def is_m256kz(operand):
 
 def is_m512(operand, strict=False):
     import nervapy.literal
-    return is_m(operand) and (operand.size is None and not strict or operand.size == 64) or \
-        isinstance(operand, nervapy.literal.Constant) and operand.size == 64
+
+    return (
+        is_m(operand)
+        and (operand.size is None and not strict or operand.size == 64)
+        or isinstance(operand, nervapy.literal.Constant)
+        and operand.size == 64
+    )
 
 
 def is_m512kz(operand):
@@ -753,31 +993,66 @@ def is_m512kz(operand):
 
 
 def is_m64_m32bcst(operand):
-    return is_m64(operand) or isinstance(operand, MemoryOperand) and operand.size == 4 and operand.broadcast == 2
+    return (
+        is_m64(operand)
+        or isinstance(operand, MemoryOperand)
+        and operand.size == 4
+        and operand.broadcast == 2
+    )
 
 
 def is_m128_m32bcst(operand):
-    return is_m128(operand) or isinstance(operand, MemoryOperand) and operand.size == 4 and operand.broadcast == 4
+    return (
+        is_m128(operand)
+        or isinstance(operand, MemoryOperand)
+        and operand.size == 4
+        and operand.broadcast == 4
+    )
 
 
 def is_m256_m32bcst(operand):
-    return is_m256(operand) or isinstance(operand, MemoryOperand) and operand.size == 4 and operand.broadcast == 8
+    return (
+        is_m256(operand)
+        or isinstance(operand, MemoryOperand)
+        and operand.size == 4
+        and operand.broadcast == 8
+    )
 
 
 def is_m512_m32bcst(operand):
-    return is_m512(operand) or isinstance(operand, MemoryOperand) and operand.size == 4 and operand.broadcast == 16
+    return (
+        is_m512(operand)
+        or isinstance(operand, MemoryOperand)
+        and operand.size == 4
+        and operand.broadcast == 16
+    )
 
 
 def is_m128_m64bcst(operand):
-    return is_m128(operand) or isinstance(operand, MemoryOperand) and operand.size == 8 and operand.broadcast == 2
+    return (
+        is_m128(operand)
+        or isinstance(operand, MemoryOperand)
+        and operand.size == 8
+        and operand.broadcast == 2
+    )
 
 
 def is_m256_m64bcst(operand):
-    return is_m256(operand) or isinstance(operand, MemoryOperand) and operand.size == 8 and operand.broadcast == 4
+    return (
+        is_m256(operand)
+        or isinstance(operand, MemoryOperand)
+        and operand.size == 8
+        and operand.broadcast == 4
+    )
 
 
 def is_m512_m64bcst(operand):
-    return is_m512(operand) or isinstance(operand, MemoryOperand) and operand.size == 8 and operand.broadcast == 8
+    return (
+        is_m512(operand)
+        or isinstance(operand, MemoryOperand)
+        and operand.size == 8
+        and operand.broadcast == 8
+    )
 
 
 def is_m32bcst(operand):
@@ -790,61 +1065,73 @@ def is_m64bcst(operand):
 
 def is_imm(operand):
     import nervapy.util
+
     return nervapy.util.is_int(operand)
 
 
 def is_imm4(operand):
     import nervapy.util
+
     return nervapy.util.is_int(operand) and 0 <= operand <= 15
 
 
 def is_imm8(operand, ext_size=None):
     import nervapy.util
+
     if ext_size is None:
         return nervapy.util.is_int8(operand)
     else:
-        sup = 2**(8*ext_size)
-        return nervapy.util.is_int(operand) and \
-            (-128 <= operand <= 127 or sup - 128 <= operand < sup)
+        sup = 2 ** (8 * ext_size)
+        return nervapy.util.is_int(operand) and (
+            -128 <= operand <= 127 or sup - 128 <= operand < sup
+        )
 
 
 def is_imm16(operand, ext_size=None):
     import nervapy.util
+
     if ext_size is None:
         return nervapy.util.is_int16(operand)
     else:
-        sup = 2**(8*ext_size)
-        return nervapy.util.is_int(operand) and \
-            (-32768 <= operand <= 32767 or sup - 32768 <= operand < sup)
+        sup = 2 ** (8 * ext_size)
+        return nervapy.util.is_int(operand) and (
+            -32768 <= operand <= 32767 or sup - 32768 <= operand < sup
+        )
 
 
 def is_imm32(operand, ext_size=None):
     import nervapy.util
+
     if ext_size is None:
         return nervapy.util.is_int32(operand)
     else:
-        sup = 2**(8*ext_size)
-        return nervapy.util.is_int(operand) and \
-            (-2147483648 <= operand <= 2147483647 or sup - 2147483648 <= operand < sup)
+        sup = 2 ** (8 * ext_size)
+        return nervapy.util.is_int(operand) and (
+            -2147483648 <= operand <= 2147483647 or sup - 2147483648 <= operand < sup
+        )
 
 
 def is_imm64(operand):
     import nervapy.util
+
     return nervapy.util.is_int64(operand)
 
 
 def is_rel8(operand):
     from nervapy.util import is_sint8
+
     return isinstance(operand, RIPRelativeOffset) and is_sint8(operand.offset)
 
 
 def is_rel32(operand):
     from nervapy.util import is_sint32
+
     return isinstance(operand, RIPRelativeOffset) and is_sint32(operand.offset)
 
 
 def is_label(operand):
     import nervapy.x86_64.pseudo
+
     return isinstance(operand, nervapy.x86_64.pseudo.Label)
 
 
@@ -876,10 +1163,18 @@ class RoundingControl:
         return hash(self.name)
 
     def __eq__(self, other):
-        return isinstance(other, RoundingControl) and other.name == self.name and other.code == self.code
+        return (
+            isinstance(other, RoundingControl)
+            and other.name == self.name
+            and other.code == self.code
+        )
 
     def __ne__(self, other):
-        return not isinstance(other, RoundingControl) or other.name != self.name or other.code != self.code
+        return (
+            not isinstance(other, RoundingControl)
+            or other.name != self.name
+            or other.code != self.code
+        )
 
     def __str__(self):
         return "{" + self.name + "}"

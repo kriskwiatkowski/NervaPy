@@ -36,25 +36,38 @@ class KADDB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KADDB(k, k, k)    [AVX512DQ]
+        * KADDB(k, k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KADDB, self).__init__("KADDB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KADDB\" requires 3 operands")
+            raise SyntaxError('Instruction "KADDB" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3) + bytearray([0x4A, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x4A, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KADDB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KADDB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -65,25 +78,38 @@ class KADDW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KADDW(k, k, k)    [AVX512DQ]
+        * KADDW(k, k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KADDW, self).__init__("KADDW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KADDW\" requires 3 operands")
+            raise SyntaxError('Instruction "KADDW" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3) + bytearray([0x4A, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x4A, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KADDW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KADDW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -94,25 +120,45 @@ class KADDD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KADDD(k, k, k)    [AVX512BW]
+        * KADDD(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KADDD, self).__init__("KADDD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KADDD\" requires 3 operands")
+            raise SyntaxError('Instruction "KADDD" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFD ^ (op[1].hlcode << 3), 0x4A, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFD ^ (op[1].hlcode << 3),
+                            0x4A,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KADDD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KADDD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -123,25 +169,45 @@ class KADDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KADDQ(k, k, k)    [AVX512BW]
+        * KADDQ(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KADDQ, self).__init__("KADDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KADDQ\" requires 3 operands")
+            raise SyntaxError('Instruction "KADDQ" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFC ^ (op[1].hlcode << 3), 0x4A, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFC ^ (op[1].hlcode << 3),
+                            0x4A,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KADDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KADDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -152,25 +218,38 @@ class KANDB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDB(k, k, k)    [AVX512DQ]
+        * KANDB(k, k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDB, self).__init__("KANDB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDB\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDB" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3) + bytearray([0x41, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x41, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KANDB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -181,25 +260,38 @@ class KANDW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDW(k, k, k)    [AVX512F]
+        * KANDW(k, k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDW, self).__init__("KANDW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDW\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDW" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3) + bytearray([0x41, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x41, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KANDW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -210,25 +302,45 @@ class KANDD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDD(k, k, k)    [AVX512BW]
+        * KANDD(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDD, self).__init__("KANDD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDD\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDD" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFD ^ (op[1].hlcode << 3), 0x41, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFD ^ (op[1].hlcode << 3),
+                            0x41,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KANDD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -239,25 +351,45 @@ class KANDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDQ(k, k, k)    [AVX512BW]
+        * KANDQ(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDQ, self).__init__("KANDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDQ\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDQ" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFC ^ (op[1].hlcode << 3), 0x41, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFC ^ (op[1].hlcode << 3),
+                            0x41,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KANDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -268,25 +400,38 @@ class KANDNB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDNB(k, k, k)    [AVX512DQ]
+        * KANDNB(k, k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDNB, self).__init__("KANDNB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDNB\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDNB" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3) + bytearray([0x42, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x42, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KANDNB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDNB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -297,25 +442,38 @@ class KANDNW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDNW(k, k, k)    [AVX512F]
+        * KANDNW(k, k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDNW, self).__init__("KANDNW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDNW\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDNW" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3) + bytearray([0x42, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x42, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KANDNW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDNW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -326,25 +484,45 @@ class KANDND(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDND(k, k, k)    [AVX512BW]
+        * KANDND(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDND, self).__init__("KANDND", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDND\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDND" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFD ^ (op[1].hlcode << 3), 0x42, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFD ^ (op[1].hlcode << 3),
+                            0x42,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KANDND " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDND "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -355,25 +533,45 @@ class KANDNQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KANDNQ(k, k, k)    [AVX512BW]
+        * KANDNQ(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KANDNQ, self).__init__("KANDNQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KANDNQ\" requires 3 operands")
+            raise SyntaxError('Instruction "KANDNQ" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFC ^ (op[1].hlcode << 3), 0x42, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFC ^ (op[1].hlcode << 3),
+                            0x42,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KANDNQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KANDNQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -384,25 +582,38 @@ class KORB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORB(k, k, k)    [AVX512DQ]
+        * KORB(k, k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORB, self).__init__("KORB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KORB\" requires 3 operands")
+            raise SyntaxError('Instruction "KORB" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3) + bytearray([0x45, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x45, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KORB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -413,25 +624,38 @@ class KORW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORW(k, k, k)    [AVX512F]
+        * KORW(k, k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORW, self).__init__("KORW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KORW\" requires 3 operands")
+            raise SyntaxError('Instruction "KORW" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3) + bytearray([0x45, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x45, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KORW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -442,25 +666,45 @@ class KORD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORD(k, k, k)    [AVX512BW]
+        * KORD(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORD, self).__init__("KORD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KORD\" requires 3 operands")
+            raise SyntaxError('Instruction "KORD" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFD ^ (op[1].hlcode << 3), 0x45, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFD ^ (op[1].hlcode << 3),
+                            0x45,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KORD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -471,25 +715,45 @@ class KORQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORQ(k, k, k)    [AVX512BW]
+        * KORQ(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORQ, self).__init__("KORQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KORQ\" requires 3 operands")
+            raise SyntaxError('Instruction "KORQ" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFC ^ (op[1].hlcode << 3), 0x45, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFC ^ (op[1].hlcode << 3),
+                            0x45,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KORQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -500,25 +764,38 @@ class KXNORB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXNORB(k, k, k)    [AVX512DQ]
+        * KXNORB(k, k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXNORB, self).__init__("KXNORB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXNORB\" requires 3 operands")
+            raise SyntaxError('Instruction "KXNORB" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3) + bytearray([0x46, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x46, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KXNORB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXNORB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -529,25 +806,38 @@ class KXNORW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXNORW(k, k, k)    [AVX512F]
+        * KXNORW(k, k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXNORW, self).__init__("KXNORW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXNORW\" requires 3 operands")
+            raise SyntaxError('Instruction "KXNORW" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3) + bytearray([0x46, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x46, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KXNORW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXNORW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -558,25 +848,45 @@ class KXNORD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXNORD(k, k, k)    [AVX512BW]
+        * KXNORD(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXNORD, self).__init__("KXNORD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXNORD\" requires 3 operands")
+            raise SyntaxError('Instruction "KXNORD" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFD ^ (op[1].hlcode << 3), 0x46, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFD ^ (op[1].hlcode << 3),
+                            0x46,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KXNORD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXNORD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -587,25 +897,45 @@ class KXNORQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXNORQ(k, k, k)    [AVX512BW]
+        * KXNORQ(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXNORQ, self).__init__("KXNORQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXNORQ\" requires 3 operands")
+            raise SyntaxError('Instruction "KXNORQ" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFC ^ (op[1].hlcode << 3), 0x46, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFC ^ (op[1].hlcode << 3),
+                            0x46,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KXNORQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXNORQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -616,25 +946,38 @@ class KXORB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXORB(k, k, k)    [AVX512DQ]
+        * KXORB(k, k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXORB, self).__init__("KXORB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXORB\" requires 3 operands")
+            raise SyntaxError('Instruction "KXORB" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3) + bytearray([0x47, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x47, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KXORB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXORB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -645,25 +988,38 @@ class KXORW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXORW(k, k, k)    [AVX512F]
+        * KXORW(k, k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXORW, self).__init__("KXORW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXORW\" requires 3 operands")
+            raise SyntaxError('Instruction "KXORW" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3) + bytearray([0x47, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x47, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KXORW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXORW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -674,25 +1030,45 @@ class KXORD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXORD(k, k, k)    [AVX512BW]
+        * KXORD(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXORD, self).__init__("KXORD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXORD\" requires 3 operands")
+            raise SyntaxError('Instruction "KXORD" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFD ^ (op[1].hlcode << 3), 0x47, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFD ^ (op[1].hlcode << 3),
+                            0x47,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KXORD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXORD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -703,25 +1079,45 @@ class KXORQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KXORQ(k, k, k)    [AVX512BW]
+        * KXORQ(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KXORQ, self).__init__("KXORQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KXORQ\" requires 3 operands")
+            raise SyntaxError('Instruction "KXORQ" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFC ^ (op[1].hlcode << 3), 0x47, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFC ^ (op[1].hlcode << 3),
+                            0x47,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KXORQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KXORQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -732,45 +1128,88 @@ class KMOVB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KMOVB(k, k)      [AVX512DQ]
-            * KMOVB(k, m8)     [AVX512DQ]
-            * KMOVB(k, r32)    [AVX512DQ]
-            * KMOVB(m8, k)     [AVX512DQ]
-            * KMOVB(r32, k)    [AVX512DQ]
+        * KMOVB(k, k)      [AVX512DQ]
+        * KMOVB(k, m8)     [AVX512DQ]
+        * KMOVB(k, r32)    [AVX512DQ]
+        * KMOVB(m8, k)     [AVX512DQ]
+        * KMOVB(r32, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KMOVB, self).__init__("KMOVB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KMOVB\" requires 2 operands")
+            raise SyntaxError('Instruction "KMOVB" requires 2 operands')
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(1, 0, None, 0, vex3) + bytearray([0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(1, 0, None, 0, vex3)
+                    + bytearray([0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_r32(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(1, 0, op[1], 0, vex3) + bytearray([0x92, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(1, 0, op[1], 0, vex3)
+                    + bytearray([0x92, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_m8(self.operands[1]):
-            self.encodings.append((0x50, lambda op, vex3=False, sib=False, min_disp=0: vex2(1, 0, op[1].address, 0, vex3) + bytearray([0x90]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x50,
+                    lambda op, vex3=False, sib=False, min_disp=0: vex2(
+                        1, 0, op[1].address, 0, vex3
+                    )
+                    + bytearray([0x90])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_r32(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(1, op[0].hcode, None, 0, vex3) + bytearray([0x93, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(1, op[0].hcode, None, 0, vex3)
+                    + bytearray([0x93, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m8(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x50, lambda op, vex3=False, sib=False, min_disp=0: vex2(1, 0, op[0].address, 0, vex3) + bytearray([0x91]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x50,
+                    lambda op, vex3=False, sib=False, min_disp=0: vex2(
+                        1, 0, op[0].address, 0, vex3
+                    )
+                    + bytearray([0x91])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: KMOVB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KMOVB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -781,45 +1220,88 @@ class KMOVW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KMOVW(k, k)      [AVX512F]
-            * KMOVW(k, m16)    [AVX512F]
-            * KMOVW(k, r32)    [AVX512F]
-            * KMOVW(m16, k)    [AVX512F]
-            * KMOVW(r32, k)    [AVX512F]
+        * KMOVW(k, k)      [AVX512F]
+        * KMOVW(k, m16)    [AVX512F]
+        * KMOVW(k, r32)    [AVX512F]
+        * KMOVW(m16, k)    [AVX512F]
+        * KMOVW(r32, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KMOVW, self).__init__("KMOVW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KMOVW\" requires 2 operands")
+            raise SyntaxError('Instruction "KMOVW" requires 2 operands')
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(0, 0, None, 0, vex3) + bytearray([0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(0, 0, None, 0, vex3)
+                    + bytearray([0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_r32(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(0, 0, op[1], 0, vex3) + bytearray([0x92, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(0, 0, op[1], 0, vex3)
+                    + bytearray([0x92, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_m16(self.operands[1]):
-            self.encodings.append((0x50, lambda op, vex3=False, sib=False, min_disp=0: vex2(0, 0, op[1].address, 0, vex3) + bytearray([0x90]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x50,
+                    lambda op, vex3=False, sib=False, min_disp=0: vex2(
+                        0, 0, op[1].address, 0, vex3
+                    )
+                    + bytearray([0x90])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_r32(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(0, op[0].hcode, None, 0, vex3) + bytearray([0x93, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(0, op[0].hcode, None, 0, vex3)
+                    + bytearray([0x93, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m16(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x50, lambda op, vex3=False, sib=False, min_disp=0: vex2(0, 0, op[0].address, 0, vex3) + bytearray([0x91]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x50,
+                    lambda op, vex3=False, sib=False, min_disp=0: vex2(
+                        0, 0, op[0].address, 0, vex3
+                    )
+                    + bytearray([0x91])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: KMOVW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KMOVW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -830,43 +1312,87 @@ class KMOVD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KMOVD(k, k)          [AVX512BW]
-            * KMOVD(k, r32/m32)    [AVX512BW]
-            * KMOVD(r32/m32, k)    [AVX512BW]
+        * KMOVD(k, k)          [AVX512BW]
+        * KMOVD(k, r32/m32)    [AVX512BW]
+        * KMOVD(r32/m32, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KMOVD, self).__init__("KMOVD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KMOVD\" requires 2 operands")
+            raise SyntaxError('Instruction "KMOVD" requires 2 operands')
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF9, 0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF9, 0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_r32(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(3, 0, op[1], 0, vex3) + bytearray([0x92, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(3, 0, op[1], 0, vex3)
+                    + bytearray([0x92, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: vex3(0xC4, 0b1, 0x81, 0, op[1].address) + bytearray([0x90]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: vex3(
+                        0xC4, 0b1, 0x81, 0, op[1].address
+                    )
+                    + bytearray([0x90])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_r32(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(3, op[0].hcode, None, 0, vex3) + bytearray([0x93, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(3, op[0].hcode, None, 0, vex3)
+                    + bytearray([0x93, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m32(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: vex3(0xC4, 0b1, 0x81, 0, op[0].address) + bytearray([0x91]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: vex3(
+                        0xC4, 0b1, 0x81, 0, op[0].address
+                    )
+                    + bytearray([0x91])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: KMOVD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KMOVD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -877,43 +1403,101 @@ class KMOVQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KMOVQ(k, k)          [AVX512BW]
-            * KMOVQ(k, r64/m64)    [AVX512BW]
-            * KMOVQ(r64/m64, k)    [AVX512BW]
+        * KMOVQ(k, k)          [AVX512BW]
+        * KMOVQ(k, r64/m64)    [AVX512BW]
+        * KMOVQ(r64/m64, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KMOVQ, self).__init__("KMOVQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KMOVQ\" requires 2 operands")
+            raise SyntaxError('Instruction "KMOVQ" requires 2 operands')
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF8, 0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF8, 0x90, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_r64(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1 ^ (op[1].hcode << 5), 0xFB, 0x92, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1 ^ (op[1].hcode << 5),
+                            0xFB,
+                            0x92,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_k(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: vex3(0xC4, 0b1, 0x80, 0, op[1].address) + bytearray([0x90]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: vex3(
+                        0xC4, 0b1, 0x80, 0, op[1].address
+                    )
+                    + bytearray([0x90])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_r64(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1 ^ (op[0].hcode << 7), 0xFB, 0x93, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1 ^ (op[0].hcode << 7),
+                            0xFB,
+                            0x93,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m64(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: vex3(0xC4, 0b1, 0x80, 0, op[0].address) + bytearray([0x91]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: vex3(
+                        0xC4, 0b1, 0x80, 0, op[0].address
+                    )
+                    + bytearray([0x91])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: KMOVQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KMOVQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -924,25 +1508,38 @@ class KNOTB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KNOTB(k, k)    [AVX512DQ]
+        * KNOTB(k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KNOTB, self).__init__("KNOTB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KNOTB\" requires 2 operands")
+            raise SyntaxError('Instruction "KNOTB" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(1, 0, None, 0, vex3) + bytearray([0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(1, 0, None, 0, vex3)
+                    + bytearray([0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KNOTB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KNOTB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -953,25 +1550,38 @@ class KNOTW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KNOTW(k, k)    [AVX512F]
+        * KNOTW(k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KNOTW, self).__init__("KNOTW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KNOTW\" requires 2 operands")
+            raise SyntaxError('Instruction "KNOTW" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(0, 0, None, 0, vex3) + bytearray([0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(0, 0, None, 0, vex3)
+                    + bytearray([0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KNOTW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KNOTW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -982,25 +1592,39 @@ class KNOTD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KNOTD(k, k)    [AVX512BW]
+        * KNOTD(k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KNOTD, self).__init__("KNOTD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KNOTD\" requires 2 operands")
+            raise SyntaxError('Instruction "KNOTD" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF9, 0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF9, 0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KNOTD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KNOTD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1011,25 +1635,39 @@ class KNOTQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KNOTQ(k, k)    [AVX512BW]
+        * KNOTQ(k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KNOTQ, self).__init__("KNOTQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KNOTQ\" requires 2 operands")
+            raise SyntaxError('Instruction "KNOTQ" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF8, 0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF8, 0x44, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KNOTQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KNOTQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1040,25 +1678,38 @@ class KUNPCKBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KUNPCKBW(k, k, k)    [AVX512F]
+        * KUNPCKBW(k, k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KUNPCKBW, self).__init__("KUNPCKBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KUNPCKBW\" requires 3 operands")
+            raise SyntaxError('Instruction "KUNPCKBW" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3) + bytearray([0x4B, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(5, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x4B, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KUNPCKBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KUNPCKBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1069,25 +1720,38 @@ class KUNPCKWD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KUNPCKWD(k, k, k)    [AVX512BW]
+        * KUNPCKWD(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KUNPCKWD, self).__init__("KUNPCKWD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KUNPCKWD\" requires 3 operands")
+            raise SyntaxError('Instruction "KUNPCKWD" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3) + bytearray([0x4B, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(4, 0, None, op[1].hlcode, vex3)
+                    + bytearray([0x4B, 0xC0 | op[0].lcode << 3 | op[2].lcode]),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KUNPCKWD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KUNPCKWD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1098,25 +1762,45 @@ class KUNPCKDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KUNPCKDQ(k, k, k)    [AVX512BW]
+        * KUNPCKDQ(k, k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KUNPCKDQ, self).__init__("KUNPCKDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KUNPCKDQ\" requires 3 operands")
+            raise SyntaxError('Instruction "KUNPCKDQ" requires 3 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]) and is_k(self.operands[2]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xFC ^ (op[1].hlcode << 3), 0x4B, 0xC0 | op[0].lcode << 3 | op[2].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE1,
+                            0xFC ^ (op[1].hlcode << 3),
+                            0x4B,
+                            0xC0 | op[0].lcode << 3 | op[2].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, True)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KUNPCKDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KUNPCKDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1127,25 +1811,38 @@ class KTESTB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KTESTB(k, k)    [AVX512DQ]
+        * KTESTB(k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KTESTB, self).__init__("KTESTB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KTESTB\" requires 2 operands")
+            raise SyntaxError('Instruction "KTESTB" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(1, 0, None, 0, vex3) + bytearray([0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(1, 0, None, 0, vex3)
+                    + bytearray([0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KTESTB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KTESTB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1156,25 +1853,38 @@ class KTESTW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KTESTW(k, k)    [AVX512DQ]
+        * KTESTW(k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KTESTW, self).__init__("KTESTW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KTESTW\" requires 2 operands")
+            raise SyntaxError('Instruction "KTESTW" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(0, 0, None, 0, vex3) + bytearray([0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(0, 0, None, 0, vex3)
+                    + bytearray([0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KTESTW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KTESTW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1185,25 +1895,39 @@ class KTESTD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KTESTD(k, k)    [AVX512BW]
+        * KTESTD(k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KTESTD, self).__init__("KTESTD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KTESTD\" requires 2 operands")
+            raise SyntaxError('Instruction "KTESTD" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF9, 0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF9, 0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KTESTD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KTESTD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1214,25 +1938,39 @@ class KTESTQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KTESTQ(k, k)    [AVX512BW]
+        * KTESTQ(k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KTESTQ, self).__init__("KTESTQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KTESTQ\" requires 2 operands")
+            raise SyntaxError('Instruction "KTESTQ" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF8, 0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF8, 0x99, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KTESTQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KTESTQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1243,25 +1981,38 @@ class KORTESTB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORTESTB(k, k)    [AVX512DQ]
+        * KORTESTB(k, k)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORTESTB, self).__init__("KORTESTB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KORTESTB\" requires 2 operands")
+            raise SyntaxError('Instruction "KORTESTB" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(1, 0, None, 0, vex3) + bytearray([0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(1, 0, None, 0, vex3)
+                    + bytearray([0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KORTESTB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORTESTB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1272,25 +2023,38 @@ class KORTESTW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORTESTW(k, k)    [AVX512F]
+        * KORTESTW(k, k)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORTESTW, self).__init__("KORTESTW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KORTESTW\" requires 2 operands")
+            raise SyntaxError('Instruction "KORTESTW" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x40, lambda op, vex3=False: vex2(0, 0, None, 0, vex3) + bytearray([0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x40,
+                    lambda op, vex3=False: vex2(0, 0, None, 0, vex3)
+                    + bytearray([0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KORTESTW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORTESTW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1301,25 +2065,39 @@ class KORTESTD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORTESTD(k, k)    [AVX512BW]
+        * KORTESTD(k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORTESTD, self).__init__("KORTESTD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KORTESTD\" requires 2 operands")
+            raise SyntaxError('Instruction "KORTESTD" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF9, 0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF9, 0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KORTESTD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORTESTD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1330,25 +2108,39 @@ class KORTESTQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KORTESTQ(k, k)    [AVX512BW]
+        * KORTESTQ(k, k)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KORTESTQ, self).__init__("KORTESTQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"KORTESTQ\" requires 2 operands")
+            raise SyntaxError('Instruction "KORTESTQ" requires 2 operands')
         if is_k(self.operands[0]) and is_k(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE1, 0xF8, 0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [0xC4, 0xE1, 0xF8, 0x98, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KORTESTQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KORTESTQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1359,27 +2151,52 @@ class KSHIFTLB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTLB(k, k, imm8)    [AVX512DQ]
+        * KSHIFTLB(k, k, imm8)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTLB, self).__init__("KSHIFTLB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTLB\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTLB" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0x79, 0x32, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0x79,
+                            0x32,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTLB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTLB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1390,27 +2207,52 @@ class KSHIFTLW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTLW(k, k, imm8)    [AVX512F]
+        * KSHIFTLW(k, k, imm8)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTLW, self).__init__("KSHIFTLW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTLW\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTLW" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0xF9, 0x32, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0xF9,
+                            0x32,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTLW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTLW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1421,27 +2263,52 @@ class KSHIFTLD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTLD(k, k, imm8)    [AVX512BW]
+        * KSHIFTLD(k, k, imm8)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTLD, self).__init__("KSHIFTLD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTLD\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTLD" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0x79, 0x33, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0x79,
+                            0x33,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTLD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTLD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1452,27 +2319,52 @@ class KSHIFTLQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTLQ(k, k, imm8)    [AVX512BW]
+        * KSHIFTLQ(k, k, imm8)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTLQ, self).__init__("KSHIFTLQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTLQ\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTLQ" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0xF9, 0x33, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0xF9,
+                            0x33,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTLQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTLQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1483,27 +2375,52 @@ class KSHIFTRB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTRB(k, k, imm8)    [AVX512DQ]
+        * KSHIFTRB(k, k, imm8)    [AVX512DQ]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTRB, self).__init__("KSHIFTRB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTRB\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTRB" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0x79, 0x30, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0x79,
+                            0x30,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512dq])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTRB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTRB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1514,27 +2431,52 @@ class KSHIFTRW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTRW(k, k, imm8)    [AVX512F]
+        * KSHIFTRW(k, k, imm8)    [AVX512F]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTRW, self).__init__("KSHIFTRW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTRW\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTRW" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0xF9, 0x30, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0xF9,
+                            0x30,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512f])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTRW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTRW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1545,27 +2487,52 @@ class KSHIFTRD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTRD(k, k, imm8)    [AVX512BW]
+        * KSHIFTRD(k, k, imm8)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTRD, self).__init__("KSHIFTRD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTRD\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTRD" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0x79, 0x31, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0x79,
+                            0x31,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTRD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTRD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1576,28 +2543,51 @@ class KSHIFTRQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * KSHIFTRQ(k, k, imm8)    [AVX512BW]
+        * KSHIFTRQ(k, k, imm8)    [AVX512BW]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(KSHIFTRQ, self).__init__("KSHIFTRQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"KSHIFTRQ\" requires 3 operands")
-        if is_k(self.operands[0]) and is_k(self.operands[1]) and is_imm(self.operands[2]):
+            raise SyntaxError('Instruction "KSHIFTRQ" requires 3 operands')
+        if (
+            is_k(self.operands[0])
+            and is_k(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0xC4, 0xE3, 0xF9, 0x31, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xC4,
+                            0xE3,
+                            0xF9,
+                            0x31,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.out_operands = (True, False, False)
             self.isa_extensions = frozenset([nervapy.x86_64.isa.avx512bw])
         else:
-            raise SyntaxError("Invalid operand types: KSHIFTRQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: KSHIFTRQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
-
-

@@ -23,17 +23,35 @@ class RegisterAllocator:
                 self.conflicting_registers[conflict_virtual_id].add(-virtual_id)
 
     def set_allocation_options(self, abi, register_kind):
-        physical_ids = \
-            [reg.physical_id for reg in abi.volatile_registers if reg.kind == register_kind] + \
-            [reg.physical_id for reg in abi.argument_registers if reg.kind == register_kind][::-1] + \
-            [reg.physical_id for reg in abi.callee_save_registers if reg.kind == register_kind]
+        physical_ids = (
+            [
+                reg.physical_id
+                for reg in abi.volatile_registers
+                if reg.kind == register_kind
+            ]
+            + [
+                reg.physical_id
+                for reg in abi.argument_registers
+                if reg.kind == register_kind
+            ][::-1]
+            + [
+                reg.physical_id
+                for reg in abi.callee_save_registers
+                if reg.kind == register_kind
+            ]
+        )
         for reg in abi.restricted_registers:
             if reg.kind == register_kind and reg.physical_id in physical_ids:
                 physical_ids.remove(reg.physical_id)
         # TODO: account the pre-allocated registers in allocation options
-        for virtual_id, conflict_internal_ids in six.iteritems(self.conflicting_registers):
-            self.allocation_options[virtual_id] = \
-                [physical_id for physical_id in physical_ids if physical_id not in conflict_internal_ids]
+        for virtual_id, conflict_internal_ids in six.iteritems(
+            self.conflicting_registers
+        ):
+            self.allocation_options[virtual_id] = [
+                physical_id
+                for physical_id in physical_ids
+                if physical_id not in conflict_internal_ids
+            ]
 
     def _bind_register(self, virtual_id, physical_id):
         assert virtual_id > 0
@@ -58,29 +76,44 @@ class RegisterAllocator:
             return False
 
     def _allocation_alternatives(self, virtual_id, physical_id):
-        return sum(1 for reg in self.allocation_options[virtual_id] if reg != physical_id)
+        return sum(
+            1 for reg in self.allocation_options[virtual_id] if reg != physical_id
+        )
 
     def _min_conflict_allocation_alternatives(self, virtual_id, physical_id):
         try:
-            return min(self._allocation_alternatives(-conflict_internal_id, physical_id)
-                   for conflict_internal_id in self.conflicting_registers[virtual_id]
-                   if conflict_internal_id < 0)
+            return min(
+                self._allocation_alternatives(-conflict_internal_id, physical_id)
+                for conflict_internal_id in self.conflicting_registers[virtual_id]
+                if conflict_internal_id < 0
+            )
         except ValueError:
             return 0
 
     def allocate_registers(self):
-        unallocated_registers = [reg for reg in six.iterkeys(self.allocation_options)
-                                 if reg not in self.register_allocations]
+        unallocated_registers = [
+            reg
+            for reg in six.iterkeys(self.allocation_options)
+            if reg not in self.register_allocations
+        ]
 
         while unallocated_registers:
             # Choose the virtual register for which there are the least allocation options
-            virtual_id = min(unallocated_registers, key=lambda reg: len(self.allocation_options[reg]))
+            virtual_id = min(
+                unallocated_registers, key=lambda reg: len(self.allocation_options[reg])
+            )
             if not self.allocation_options[virtual_id]:
-                raise Exception("No physical registers for virtual register %d" % virtual_id)
+                raise Exception(
+                    "No physical registers for virtual register %d" % virtual_id
+                )
             if self.conflicting_registers[virtual_id]:
                 # Choose the physical register for which there are most alternatives
-                physical_id = max(self.allocation_options[virtual_id],
-                                  key=lambda reg: self._min_conflict_allocation_alternatives(virtual_id, reg))
+                physical_id = max(
+                    self.allocation_options[virtual_id],
+                    key=lambda reg: self._min_conflict_allocation_alternatives(
+                        virtual_id, reg
+                    ),
+                )
             else:
                 # Choose the first available physical register
                 physical_id = self.allocation_options[virtual_id].pop()

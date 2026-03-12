@@ -8,12 +8,15 @@ class Image:
                                                  SymbolSection, null_section)
         from nervapy.formats.elf.symbol import (Symbol, SymbolBinding,
                                                 SymbolType)
+
         self.abi = abi
         self.shstrtab = StringSection(".shstrtab")
         self.strtab = StringSection(".strtab")
         self.symtab = SymbolSection(string_table=self.strtab)
         self.sections = [null_section, self.shstrtab, self.strtab, self.symtab]
-        self._section_names = set([self.shstrtab.name, self.strtab.name, self.symtab.name])
+        self._section_names = set(
+            [self.shstrtab.name, self.strtab.name, self.symtab.name]
+        )
         if source:
             source_symbol = Symbol()
             source_symbol.value = 0
@@ -26,10 +29,13 @@ class Image:
 
     def add_section(self, section):
         from nervapy.formats.elf.section import Section
+
         if not isinstance(section, Section):
             raise TypeError("%s is not a Section object" % str(section))
         if section.name is not None and section.name in self._section_names:
-            raise ValueError("Section %s is already present in the image" % section.name)
+            raise ValueError(
+                "Section %s is already present in the image" % section.name
+            )
         self.sections.append(section)
         self._section_names.add(section.name)
 
@@ -63,7 +69,9 @@ class Image:
                     self.strtab.add(symbol.name)
 
         # Layout sections
-        data_offset = file_header.size + Section.get_header_size(self.abi) * len(self.sections)
+        data_offset = file_header.size + Section.get_header_size(self.abi) * len(
+            self.sections
+        )
         section_offsets = []
         for section in self.sections:
             if section.alignment != 0:
@@ -72,19 +80,27 @@ class Image:
             data_offset += section.get_content_size(self.abi)
 
         from nervapy.encoder import Encoder
+
         encoder = Encoder(self.abi.endianness, self.abi.elf_bitness)
 
-        section_index_map = {section: index for index, section in enumerate(self.sections)}
+        section_index_map = {
+            section: index for index, section in enumerate(self.sections)
+        }
         # Write section headers
         for section, offset in zip(self.sections, section_offsets):
-            data += section.encode_header(encoder, self.shstrtab._string_index_map, section_index_map, offset)
+            data += section.encode_header(
+                encoder, self.shstrtab._string_index_map, section_index_map, offset
+            )
 
         # Write section content
         for section in self.sections:
             padding = bytearray(roundup(len(data), section.alignment) - len(data))
             data += padding
-            data += section.encode_content(encoder,
-                                           self.strtab._string_index_map, section_index_map,
-                                           self.symtab.symbol_index_map)
+            data += section.encode_content(
+                encoder,
+                self.strtab._string_index_map,
+                section_index_map,
+                self.symtab.symbol_index_map,
+            )
 
         return data

@@ -14,22 +14,23 @@ class Label(object):
         self.is_external = is_external
 
     def __str__(self):
-        return "<LABEL:" + self.name + '>'
+        return "<LABEL:" + self.name + ">"
 
 
 class ExternalFunction(object):
     """Represents an external function that needs to be imported."""
+
     def __init__(self, name):
         super(ExternalFunction, self).__init__()
         self.name = name
-        
+
     def __str__(self):
         return self.name
 
 
 class LabelQuasiInstruction(QuasiInstruction):
     def __init__(self, name, origin=None):
-        super(LabelQuasiInstruction, self).__init__('<LABEL>', origin=origin)
+        super(LabelQuasiInstruction, self).__init__("<LABEL>", origin=origin)
         if name.is_label():
             self.name = name.label
         else:
@@ -37,20 +38,23 @@ class LabelQuasiInstruction(QuasiInstruction):
         self.input_branches = set()
 
     def __str__(self):
-        return "L" + self.name + ':'
+        return "L" + self.name + ":"
 
 
 class AlignQuasiInstruction(QuasiInstruction):
     supported_alignments = [2, 4, 8, 16, 32]
 
     def __init__(self, alignment, origin=None):
-        super(AlignQuasiInstruction, self).__init__('<ALIGN>', origin=origin)
+        super(AlignQuasiInstruction, self).__init__("<ALIGN>", origin=origin)
         if isinstance(alignment, int):
             if alignment in AlignQuasiInstruction.supported_alignments:
                 self.alignment = alignment
             else:
-                raise ValueError("The alignment value {0} is not in the list of supported alignments ({1})"
-                                 .format(alignment, ", ".join(AlignQuasiInstruction.supported_alignments)))
+                raise ValueError(
+                    "The alignment value {0} is not in the list of supported alignments ({1})".format(
+                        alignment, ", ".join(AlignQuasiInstruction.supported_alignments)
+                    )
+                )
         else:
             raise TypeError("The alignment value must be an integer")
 
@@ -60,28 +64,43 @@ class AlignQuasiInstruction(QuasiInstruction):
 
 class LoadConstantPseudoInstruction(Instruction):
     def __init__(self, destination, source, origin=None):
-        super(LoadConstantPseudoInstruction, self).__init__('<LOAD-CONSTANT>', origin=origin)
+        super(LoadConstantPseudoInstruction, self).__init__(
+            "<LOAD-CONSTANT>", origin=origin
+        )
         if destination.is_register():
             self.destination = destination
         else:
-            raise ValueError('Load constant pseudo-instruction expects a register as a destination')
+            raise ValueError(
+                "Load constant pseudo-instruction expects a register as a destination"
+            )
         if source.is_constant():
-            if destination.register.size * 8 == source.constant.size * source.constant.repeats:
+            if (
+                destination.register.size * 8
+                == source.constant.size * source.constant.repeats
+            ):
                 self.source = source
-            elif destination.register.size == 16 and \
-                    source.constant.size == 64 and \
-                    source.constant.repeats == 1 and \
-                    source.constant.basic_type == 'float64':
+            elif (
+                destination.register.size == 16
+                and source.constant.size == 64
+                and source.constant.repeats == 1
+                and source.constant.basic_type == "float64"
+            ):
                 self.source = source
-            elif destination.register.size == 16 and \
-                    source.constant.size == 32 and \
-                    source.constant.repeats == 1 and \
-                    source.constant.basic_type == 'float32':
+            elif (
+                destination.register.size == 16
+                and source.constant.size == 32
+                and source.constant.repeats == 1
+                and source.constant.basic_type == "float32"
+            ):
                 self.source = source
             else:
-                raise ValueError('The size of constant should be the same as the size of register')
+                raise ValueError(
+                    "The size of constant should be the same as the size of register"
+                )
         else:
-            raise ValueError('Load constant pseudo-instruction expects a Constant instance as a source')
+            raise ValueError(
+                "Load constant pseudo-instruction expects a Constant instance as a source"
+            )
         self.size = 4 + 4
 
     def __str__(self):
@@ -104,33 +123,43 @@ class LoadArgumentPseudoInstruction(Instruction):
     def __init__(self, destination, source, origin=None):
         from nervapy import Argument, Yep32f, Yep64f
         from nervapy.arm.function import active_function
-        super(LoadArgumentPseudoInstruction, self).__init__('<LOAD-PARAMETER>', [destination, source], origin=origin)
+
+        super(LoadArgumentPseudoInstruction, self).__init__(
+            "<LOAD-PARAMETER>", [destination, source], origin=origin
+        )
         if isinstance(source, Argument):
             argument = active_function.find_argument(source)
             if argument is not None:
                 self.argument = argument
             else:
-                raise ValueError('{0} is not an argument of the active function'.format(source))
+                raise ValueError(
+                    "{0} is not an argument of the active function".format(source)
+                )
         else:
-            raise TypeError('LOAD.ARGUMENT expects an Argument object as a source')
-        if destination.is_general_purpose_register() and \
-                (argument.is_integer or argument.is_pointer or argument.is_codeunit):
+            raise TypeError("LOAD.ARGUMENT expects an Argument object as a source")
+        if destination.is_general_purpose_register() and (
+            argument.is_integer or argument.is_pointer or argument.is_codeunit
+        ):
             if destination.register.size >= argument.size:
                 self.destination = destination
             else:
-                raise ValueError('Destination register %s is too narrow for the argument %s' % (destination, argument))
+                raise ValueError(
+                    "Destination register %s is too narrow for the argument %s"
+                    % (destination, argument)
+                )
         elif destination.is_s_register() and source.c_type == Yep32f:
             self.destination = destination
         elif destination.is_d_register() and source.c_type == Yep64f:
             self.destination = destination
         else:
-            raise ValueError('Unsupported combination of instruction operands')
+            raise ValueError("Unsupported combination of instruction operands")
 
     def __str__(self):
         return "LOAD.ARGUMENT {0} = {1}".format(self.destination, self.argument)
 
     def get_input_registers_list(self):
         from nervapy.arm.registers import sp
+
         if self.argument.register:
             return [self.argument.register]
         else:
@@ -142,18 +171,21 @@ class LoadArgumentPseudoInstruction(Instruction):
 
 class ReturnInstruction(QuasiInstruction):
     def __init__(self, return_value=None, origin=None):
-        super(ReturnInstruction, self).__init__('RETURN', origin=origin)
+        super(ReturnInstruction, self).__init__("RETURN", origin=origin)
         if return_value.is_none():
             self.return_value = None
         elif return_value.is_modified_immediate12():
             self.return_value = return_value.immediate
         else:
-            raise ValueError('Return value is not representable as a 12-bit modified immediate integer')
+            raise ValueError(
+                "Return value is not representable as a 12-bit modified immediate integer"
+            )
 
     def to_instruction_list(self):
         from nervapy.arm.generic import BX, MOV
         from nervapy.arm.registers import lr, r0
         from nervapy.stream import InstructionStream
+
         return_instructions = InstructionStream()
         with return_instructions:
             if self.return_value is None:
@@ -168,10 +200,12 @@ class ReturnInstruction(QuasiInstruction):
 
     def get_input_registers_list(self):
         from nervapy.arm.registers import sp
+
         return [sp]
 
     def get_output_registers_list(self):
         from nervapy.arm.registers import sp
+
         return [sp]
 
     def get_constant(self):
@@ -183,11 +217,15 @@ class ReturnInstruction(QuasiInstruction):
 
 class AssumeInitializedPseudoInstruction(Instruction):
     def __init__(self, destination, origin=None):
-        super(AssumeInitializedPseudoInstruction, self).__init__('<ASSUME-INITIALIZED>', origin=origin)
+        super(AssumeInitializedPseudoInstruction, self).__init__(
+            "<ASSUME-INITIALIZED>", origin=origin
+        )
         if destination.is_register():
             self.destination = destination
         else:
-            raise ValueError('Assume initialized pseudo-instruction expects a register as a destination')
+            raise ValueError(
+                "Assume initialized pseudo-instruction expects a register as a destination"
+            )
         self.size = 0
 
     def __str__(self):
@@ -212,6 +250,7 @@ def LABEL(name):
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
+
 class Loop:
     def __init__(self, name=None):
         if name is None:
@@ -219,15 +258,20 @@ class Loop:
             import re
 
             source_line = inspect.stack()[1][4][0].strip()
-            match = re.match("(?:\\w+\\.)*(\\w+)\\s*=\\s*(?:\\w+\\.)*Loop\\(.*\\)", source_line)
+            match = re.match(
+                "(?:\\w+\\.)*(\\w+)\\s*=\\s*(?:\\w+\\.)*Loop\\(.*\\)", source_line
+            )
             if match:
                 name = match.group(1)
             else:
-                match = re.match("\\s*with\\s+(?:\\w+\\.)*Loop\\(.*\\)\\s+as\\s+(\\w+)\\s*:\\s*", source_line)
+                match = re.match(
+                    "\\s*with\\s+(?:\\w+\\.)*Loop\\(.*\\)\\s+as\\s+(\\w+)\\s*:\\s*",
+                    source_line,
+                )
                 if match:
                     name = match.group(1)
                 else:
-                    raise ValueError('Loop name is unspecified')
+                    raise ValueError("Loop name is unspecified")
         self.name = name
         self.begin = Label(self.name + "_begin")
         self.end = Label(self.name + "_end")
@@ -259,8 +303,11 @@ class LOAD:
     @staticmethod
     def CONSTANT(destination, source):
         from nervapy.arm.function import active_function
+
         origin = inspect.stack() if active_function.collect_origin else None
-        instruction = LoadConstantPseudoInstruction(Operand(destination), Operand(source), origin=origin)
+        instruction = LoadConstantPseudoInstruction(
+            Operand(destination), Operand(source), origin=origin
+        )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(instruction)
         return instruction
@@ -268,8 +315,11 @@ class LOAD:
     @staticmethod
     def ARGUMENT(destination, source):
         from nervapy.arm.function import active_function
+
         origin = inspect.stack() if active_function.collect_origin else None
-        instruction = LoadArgumentPseudoInstruction(Operand(destination), source, origin=origin)
+        instruction = LoadArgumentPseudoInstruction(
+            Operand(destination), source, origin=origin
+        )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(instruction)
         return instruction
@@ -280,6 +330,7 @@ class LOAD:
         from nervapy.arm.function import active_function
         from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
                                            SRegister)
+
         registers = list()
         for argument in active_function.arguments:
             if argument.is_pointer or argument.is_integer or argument.is_codeunit:
@@ -305,20 +356,20 @@ class LOAD:
     @staticmethod
     def ZERO(destination, ctype):
         if isinstance(ctype, nervapy.c.Type):
-        # 			if isinstance(destination, SRegister):
-        # 				PXOR( destination, destination )
-        # 			elif isinstance(destination, DRegister):
-        # 				if ctype.is_floating_point():
-        # 					if Target.has_avx():
-        # 						SIMD_XOR = {4: VXORPS, 8: VXORPD }[ctype.get_size()]
-        # 					else:
-        # 						SIMD_XOR = {4: XORPS, 8: XORPD}[ctype.get_size()]
-        # 				else:
-        # 					SIMD_XOR = VPXOR if Target.has_avx() else PXOR
-        # 				SIMD_XOR( destination, destination )
-        # 			elif isinstance(destination, QRegister):
-        # 				LOAD.ZERO( destination.get_oword(), ctype )
-        # 			else:
+            # 			if isinstance(destination, SRegister):
+            # 				PXOR( destination, destination )
+            # 			elif isinstance(destination, DRegister):
+            # 				if ctype.is_floating_point():
+            # 					if Target.has_avx():
+            # 						SIMD_XOR = {4: VXORPS, 8: VXORPD }[ctype.get_size()]
+            # 					else:
+            # 						SIMD_XOR = {4: XORPS, 8: XORPD}[ctype.get_size()]
+            # 				else:
+            # 					SIMD_XOR = VPXOR if Target.has_avx() else PXOR
+            # 				SIMD_XOR( destination, destination )
+            # 			elif isinstance(destination, QRegister):
+            # 				LOAD.ZERO( destination.get_oword(), ctype )
+            # 			else:
             raise TypeError("Unsupported type of destination register")
         else:
             raise TypeError("Type must be a C type")
@@ -332,6 +383,7 @@ class LOAD:
         from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
                                            Register, SRegister)
         from nervapy.arm.vfpneon import VLDR
+
         if not isinstance(ctype, Type):
             raise TypeError("Type must be a C type")
         if isinstance(destination, Register):
@@ -357,7 +409,9 @@ class LOAD:
                     else:
                         LDRB(destination, source)
                 else:
-                    raise ValueError("Invalid memory operand size {0}".format(memory_size))
+                    raise ValueError(
+                        "Invalid memory operand size {0}".format(memory_size)
+                    )
             elif ctype.is_signed_integer:
                 if memory_size == 4:
                     if increment_pointer:
@@ -375,7 +429,9 @@ class LOAD:
                     else:
                         LDRSB(destination, source)
                 else:
-                    raise ValueError("Invalid memory operand size {0}".format(memory_size))
+                    raise ValueError(
+                        "Invalid memory operand size {0}".format(memory_size)
+                    )
             else:
                 raise TypeError("Invalid memory operand type")
         elif isinstance(destination, SRegister):
@@ -386,7 +442,9 @@ class LOAD:
                         address_register = Operand(source).get_registers_list()[0]
                         ADD(address_register, memory_size)
                 else:
-                    raise ValueError("Invalid memory operand size {0}".format(memory_size))
+                    raise ValueError(
+                        "Invalid memory operand size {0}".format(memory_size)
+                    )
             else:
                 raise TypeError("Invalid memory operand type")
         elif isinstance(destination, DRegister):
@@ -397,7 +455,9 @@ class LOAD:
                         address_register = Operand(source).get_registers_list()[0]
                         ADD(address_register, memory_size)
                 else:
-                    raise ValueError("Invalid memory operand size {0}".format(memory_size))
+                    raise ValueError(
+                        "Invalid memory operand size {0}".format(memory_size)
+                    )
             else:
                 raise TypeError("Invalid memory operand type")
         else:
@@ -413,6 +473,7 @@ class STORE:
         from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
                                            SRegister)
         from nervapy.arm.vfpneon import VSTR
+
         if isinstance(ctype, nervapy.c.Type):
             if Operand(destination).is_memory_address():
                 if Operand(source).is_register():
@@ -435,7 +496,11 @@ class STORE:
                                 else:
                                     STRB(source, destination)
                             else:
-                                raise ValueError("Invalid memory operand size {0}".format(memory_size))
+                                raise ValueError(
+                                    "Invalid memory operand size {0}".format(
+                                        memory_size
+                                    )
+                                )
                         else:
                             raise TypeError("Invalid memory operand type")
                     elif isinstance(source, SRegister):
@@ -443,10 +508,16 @@ class STORE:
                             if memory_size == 4:
                                 VSTR(source, destination)
                                 if increment_pointer:
-                                    address_register = Operand(destination).get_registers_list()[0]
+                                    address_register = Operand(
+                                        destination
+                                    ).get_registers_list()[0]
                                     ADD(address_register, memory_size)
                             else:
-                                raise ValueError("Invalid memory operand size {0}".format(memory_size))
+                                raise ValueError(
+                                    "Invalid memory operand size {0}".format(
+                                        memory_size
+                                    )
+                                )
                         else:
                             raise TypeError("Invalid memory operand type")
                     elif isinstance(source, DRegister):
@@ -454,10 +525,16 @@ class STORE:
                             if memory_size == 8:
                                 VSTR(source, destination)
                                 if increment_pointer:
-                                    address_register = Operand(destination).get_registers_list()[0]
+                                    address_register = Operand(
+                                        destination
+                                    ).get_registers_list()[0]
                                     ADD(address_register, memory_size)
                             else:
-                                raise ValueError("Invalid memory operand size {0}".format(memory_size))
+                                raise ValueError(
+                                    "Invalid memory operand size {0}".format(
+                                        memory_size
+                                    )
+                                )
                         else:
                             raise TypeError("Invalid memory operand type")
                     else:
@@ -474,8 +551,11 @@ class ASSUME:
     @staticmethod
     def INITIALIZED(destination):
         from nervapy.arm.function import active_function
+
         origin = inspect.stack() if active_function.collect_origin else None
-        instruction = AssumeInitializedPseudoInstruction(Operand(destination), origin=origin)
+        instruction = AssumeInitializedPseudoInstruction(
+            Operand(destination), origin=origin
+        )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(instruction)
         return instruction
@@ -483,33 +563,34 @@ class ASSUME:
 
 class IMPORT:
     """Declare external functions for ARMCC assembly."""
+
     @staticmethod
     def FUNCTION(name):
         """
         Declare an external function that will be called.
         For ARMCC, this generates an IMPORT directive.
-        
+
         Args:
             name: Name of the external function (string or ExternalFunction)
-        
+
         Returns:
             ExternalFunction object that can be used with BL
         """
         from nervapy.arm.function import active_function
-        
+
         if isinstance(name, str):
             external_func = ExternalFunction(name)
         elif isinstance(name, ExternalFunction):
             external_func = name
         else:
             raise TypeError("Function name must be a string or ExternalFunction")
-        
+
         # Register the external function with the active function
         if active_function is not None:
-            if not hasattr(active_function, 'external_functions'):
+            if not hasattr(active_function, "external_functions"):
                 active_function.external_functions = set()
             active_function.external_functions.add(external_func.name)
-        
+
         return external_func
 
 
@@ -517,9 +598,15 @@ class INIT:
     @staticmethod
     def ONCE(register_class, constant, register=None):
         if register is None:
-            origin = inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+            origin = (
+                inspect.stack()
+                if nervapy.arm.function.active_function.collect_origin
+                else None
+            )
             register = register_class()
-            instruction = LoadConstantPseudoInstruction(Operand(register), Operand(constant), origin=origin)
+            instruction = LoadConstantPseudoInstruction(
+                Operand(register), Operand(constant), origin=origin
+            )
             if nervapy.stream.active_stream is not None:
                 nervapy.stream.active_stream.add_instruction(instruction)
             return register
@@ -540,17 +627,26 @@ class REDUCE:
     def MIN(acc, input_type, output_type):
         raise NotImplementedError("Needs ARM implementation")
 
+
 class SWAP:
     @staticmethod
     def REGISTERS(register_x, register_y):
         from nervapy.arm.registers import Register
+
         if isinstance(register_x, Register) and isinstance(register_y, Register):
-            if register_x.type == register_y.type and register_x.size == register_y.size:
-                register_x.number, register_y.number = register_y.number, register_x.number
+            if (
+                register_x.type == register_y.type
+                and register_x.size == register_y.size
+            ):
+                register_x.number, register_y.number = (
+                    register_y.number,
+                    register_x.number,
+                )
             else:
                 raise ValueError(
-                    "Registers {0} and {1} have incompatible register types".format(register_x, register_y))
+                    "Registers {0} and {1} have incompatible register types".format(
+                        register_x, register_y
+                    )
+                )
         else:
             raise TypeError("Arguments must be of register type")
-
-

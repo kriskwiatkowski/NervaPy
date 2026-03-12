@@ -11,13 +11,17 @@ def parse_assigned_variable_name(stack_frames, constructor_name):
     if isinstance(stack_frames, list) and len(stack_frames) > 1:
         parent_stack_frame = stack_frames[1]
         if isinstance(parent_stack_frame, tuple) and len(parent_stack_frame) == 6:
-            (_, _, _, _, source_lines, _) = parent_stack_frame
+            _, _, _, _, source_lines, _ = parent_stack_frame
             if isinstance(source_lines, list) and source_lines:
                 source_line = source_lines[0]
                 if source_line:
                     import re
 
-                    assignment_regexp = r"(?:\w+\.)*(\w+)\s*=\s*(?:\w+\.)*" + re.escape(constructor_name) + r"\(.*\)"
+                    assignment_regexp = (
+                        r"(?:\w+\.)*(\w+)\s*=\s*(?:\w+\.)*"
+                        + re.escape(constructor_name)
+                        + r"\(.*\)"
+                    )
                     match = re.match(assignment_regexp, source_line.strip())
                     if match:
                         return match.group(1)
@@ -32,13 +36,17 @@ def parse_with_variable_name(stack_frames, constructor_name):
     if isinstance(stack_frames, list) and len(stack_frames) > 1:
         parent_stack_frame = stack_frames[1]
         if isinstance(parent_stack_frame, tuple) and len(parent_stack_frame) == 6:
-            (_, _, _, _, source_lines, _) = parent_stack_frame
+            _, _, _, _, source_lines, _ = parent_stack_frame
             if isinstance(source_lines, list) and source_lines:
                 source_line = source_lines[0]
                 if source_line:
                     import re
 
-                    with_regexp = r"with\s+(?:\w+\.)*" + re.escape(constructor_name) + r"\(.*\)\s+as\s+([_a-zA-Z]\w*)\s*:"
+                    with_regexp = (
+                        r"with\s+(?:\w+\.)*"
+                        + re.escape(constructor_name)
+                        + r"\(.*\)\s+as\s+([_a-zA-Z]\w*)\s*:"
+                    )
                     match = re.match(with_regexp, source_line.strip())
                     if match:
                         return match.group(1)

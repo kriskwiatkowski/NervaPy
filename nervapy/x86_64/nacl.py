@@ -73,26 +73,34 @@ from nervapy.x86_64.operand import (check_operand, format_operand_type,
 
 class NACLJMP(Instruction):
     """Sandboxed Indirect Jump"""
+
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * NACLJMP(r32)
+        * NACLJMP(r32)
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(NACLJMP, self).__init__("NACLJMP", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 1:
-            raise SyntaxError("Instruction \"NACLJMP\" requires 1 operand")
+            raise SyntaxError('Instruction "NACLJMP" requires 1 operand')
         self.in_regs = (True,)
         self.out_regs = (False,)
         self.out_operands = (True,)
         self._gas_name = "nacljmp"
         if not is_r32(self.operands[0]):
-            raise SyntaxError("Invalid operand types: NACLJMP " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: NACLJMP "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -100,6 +108,7 @@ class NACLJMP(Instruction):
         from nervapy.stream import InstructionStream
         from nervapy.x86_64.generic import ADD, AND, JMP
         from nervapy.x86_64.registers import r15
+
         with InstructionStream() as stream:
             AND(self.operands[0], -32)
             ADD(self.operands[0].as_qword, r15)
@@ -108,32 +117,41 @@ class NACLJMP(Instruction):
 
     def encode(self):
         import operator
+
         return bytearray().join(map(operator.methodcaller("encode"), self._lower()))
 
 
 class NACLASP(Instruction):
     """Sandboxed RSP Increment (Addition)"""
+
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * NACLASP(r32)
-            * NACLASP(imm32)
+        * NACLASP(r32)
+        * NACLASP(imm32)
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(NACLASP, self).__init__("NACLASP", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 1:
-            raise SyntaxError("Instruction \"NACLASP\" requires 1 operand")
+            raise SyntaxError('Instruction "NACLASP" requires 1 operand')
         self.in_regs = (True,)
         self.out_regs = (False,)
         self.out_operands = (True,)
         self._gas_name = "naclasp"
         if not is_r32(self.operands[0]) and not is_imm32(self.operands[0]):
-            raise SyntaxError("Invalid operand types: NACLASP" + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: NACLASP"
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -141,6 +159,7 @@ class NACLASP(Instruction):
         from nervapy.stream import InstructionStream
         from nervapy.x86_64.generic import ADD
         from nervapy.x86_64.registers import esp, r15, rsp
+
         with InstructionStream() as stream:
             ADD(esp, self.operands[0])
             ADD(rsp, r15)
@@ -148,32 +167,41 @@ class NACLASP(Instruction):
 
     def encode(self):
         import operator
+
         return bytearray().join(map(operator.methodcaller("encode"), self._lower()))
 
 
 class NACLSSP(Instruction):
     """Sandboxed RSP Decrement (Subtraction)"""
+
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * NACLSSP(r32)
-            * NACLSSP(imm32)
+        * NACLSSP(r32)
+        * NACLSSP(imm32)
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(NACLSSP, self).__init__("NACLSSP", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 1:
-            raise SyntaxError("Instruction \"NACLSSP\" requires 1 operand")
+            raise SyntaxError('Instruction "NACLSSP" requires 1 operand')
         self.in_regs = (True,)
         self.out_regs = (False,)
         self.out_operands = (True,)
         self._gas_name = "naclssp"
         if not is_r32(self.operands[0]) and not is_imm32(self.operands[0]):
-            raise SyntaxError("Invalid operand types: NACLSSP" + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: NACLSSP"
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -181,6 +209,7 @@ class NACLSSP(Instruction):
         from nervapy.stream import InstructionStream
         from nervapy.x86_64.generic import ADD, SUB
         from nervapy.x86_64.registers import esp, r15, rsp
+
         with InstructionStream() as stream:
             SUB(esp, self.operands[0])
             ADD(rsp, r15)
@@ -188,25 +217,33 @@ class NACLSSP(Instruction):
 
     def encode(self):
         import operator
+
         return bytearray().join(map(operator.methodcaller("encode"), self._lower()))
 
 
 class NACLRESTSP(Instruction):
     """Sandboxed RSP Restore"""
+
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * NACLRESTSP(r32)
+        * NACLRESTSP(r32)
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
-        super(NACLRESTSP, self).__init__("NACLRESTSP", origin=origin, prototype=prototype)
+        super(NACLRESTSP, self).__init__(
+            "NACLRESTSP", origin=origin, prototype=prototype
+        )
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 1:
-            raise SyntaxError("Instruction \"NACLRESTSP\" requires 1 operand")
+            raise SyntaxError('Instruction "NACLRESTSP" requires 1 operand')
         self.in_regs = (True,)
         self.out_regs = (False,)
         self.out_operands = (True,)
@@ -214,7 +251,10 @@ class NACLRESTSP(Instruction):
         if is_r32(self.operands[0]):
             pass
         else:
-            raise SyntaxError("Invalid operand types: NACLRESTSP " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: NACLRESTSP "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -222,6 +262,7 @@ class NACLRESTSP(Instruction):
         from nervapy.stream import InstructionStream
         from nervapy.x86_64.generic import ADD, MOV
         from nervapy.x86_64.registers import esp, r15, rsp
+
         with InstructionStream() as stream:
             MOV(esp, self.operands[0])
             ADD(rsp, r15)
@@ -229,25 +270,33 @@ class NACLRESTSP(Instruction):
 
     def encode(self):
         import operator
+
         return bytearray().join(map(operator.methodcaller("encode"), self._lower()))
 
 
 class NACLRESTBP(Instruction):
     """Sandboxed RBP Restore"""
+
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * NACLRESTBP(r32)
+        * NACLRESTBP(r32)
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
-        super(NACLRESTBP, self).__init__("NACLRESTBP", origin=origin, prototype=prototype)
+        super(NACLRESTBP, self).__init__(
+            "NACLRESTBP", origin=origin, prototype=prototype
+        )
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 1:
-            raise SyntaxError("Instruction \"NACLRESTBP\" requires 1 operand")
+            raise SyntaxError('Instruction "NACLRESTBP" requires 1 operand')
         self.in_regs = (True,)
         self.out_regs = (False,)
         self.out_operands = (True,)
@@ -255,7 +304,10 @@ class NACLRESTBP(Instruction):
         if is_r32(self.operands[0]):
             pass
         else:
-            raise SyntaxError("Invalid operand types: NACLRESTBP " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: NACLRESTBP "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -263,6 +315,7 @@ class NACLRESTBP(Instruction):
         from nervapy.stream import InstructionStream
         from nervapy.x86_64.generic import ADD, MOV
         from nervapy.x86_64.registers import ebp, r15, rbp
+
         with InstructionStream() as stream:
             MOV(ebp, self.operands[0])
             ADD(rbp, r15)
@@ -270,4 +323,5 @@ class NACLRESTBP(Instruction):
 
     def encode(self):
         import operator
+
         return bytearray().join(map(operator.methodcaller("encode"), self._lower()))

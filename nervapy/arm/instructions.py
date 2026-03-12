@@ -1,6 +1,7 @@
 # This file is part of PeachPy package and is licensed under the Simplified BSD license.
 #    See license.rst for the full text of the license.
 
+
 class QuasiInstruction(object):
     def __init__(self, name, origin=None):
         super(QuasiInstruction, self).__init__()
@@ -13,6 +14,7 @@ class QuasiInstruction(object):
 class Instruction(QuasiInstruction):
     def __init__(self, name, operands, isa_extensions=None, origin=None):
         import nervapy.x86_64.isa
+
         super(Instruction, self).__init__(name, origin=origin)
         self.operands = operands
         self.isa_extensions = nervapy.x86_64.isa.Extensions(isa_extensions)
@@ -26,7 +28,11 @@ class Instruction(QuasiInstruction):
         return self.name + " " + ", ".join(map(str, self.operands))
 
     def get_registers_list(self):
-        return [register for operand in self.operands for register in operand.get_registers_list()]
+        return [
+            register
+            for operand in self.operands
+            for register in operand.get_registers_list()
+        ]
 
     def get_local_variable(self):
         for operand in self.operands:
@@ -59,7 +65,7 @@ class Operand(object):
 
         from nervapy import Constant
         from nervapy.arm.function import LocalVariable
-        from nervapy.arm.pseudo import Label, ExternalFunction
+        from nervapy.arm.pseudo import ExternalFunction, Label
         from nervapy.arm.registers import (DRegisterLanes,
                                            GeneralPurposeRegister,
                                            GeneralPurposeRegisterWriteback,
@@ -81,35 +87,54 @@ class Operand(object):
             self.register = copy.deepcopy(operand)
         elif isinstance(operand, tuple):
             if all(isinstance(element, Register) for element in operand):
-                if len(set((register.type, register.size) for register in operand)) == 1:
+                if (
+                    len(set((register.type, register.size) for register in operand))
+                    == 1
+                ):
                     self.type = Operand.RegisterListType
                     self.register_list = copy.deepcopy(operand)
                 else:
-                    raise TypeError('Register in the list {0} have different types'.format(", ".join(operand)))
+                    raise TypeError(
+                        "Register in the list {0} have different types".format(
+                            ", ".join(operand)
+                        )
+                    )
             elif all(isinstance(element, DRegisterLanes) for element in operand):
                 self.type = Operand.RegisterLanesListType
                 self.register_list = copy.deepcopy(operand)
             else:
-                raise TypeError('Unknown tuple elements {0}'.format(operand))
+                raise TypeError("Unknown tuple elements {0}".format(operand))
         elif is_int(operand):
             if -9223372036854775808 <= operand <= 18446744073709551615:
                 self.type = Operand.ImmediateType
                 self.immediate = operand
             else:
-                raise ValueError('The immediate operand {0} is not a 64-bit value'.format(operand))
+                raise ValueError(
+                    "The immediate operand {0} is not a 64-bit value".format(operand)
+                )
         elif isinstance(operand, list):
-            if len(operand) == 1 and (isinstance(operand[0], GeneralPurposeRegister) or isinstance(operand[0],
-                                                                                                   GeneralPurposeRegisterWriteback)):
+            if len(operand) == 1 and (
+                isinstance(operand[0], GeneralPurposeRegister)
+                or isinstance(operand[0], GeneralPurposeRegisterWriteback)
+            ):
                 self.type = Operand.MemoryType
                 self.base = copy.deepcopy(operand[0])
                 self.offset = None
-            elif len(operand) == 2 and isinstance(operand[0], GeneralPurposeRegister) and (
-                isinstance(operand[1], int) or isinstance(operand[1], ShiftedGeneralPurposeRegister)):
+            elif (
+                len(operand) == 2
+                and isinstance(operand[0], GeneralPurposeRegister)
+                and (
+                    isinstance(operand[1], int)
+                    or isinstance(operand[1], ShiftedGeneralPurposeRegister)
+                )
+            ):
                 self.type = Operand.MemoryType
                 self.base = copy.deepcopy(operand[0])
                 self.offset = operand[1]
             else:
-                raise ValueError('Memory operand must be a list with only one or two elements')
+                raise ValueError(
+                    "Memory operand must be a list with only one or two elements"
+                )
         elif isinstance(operand, Constant):
             self.type = Operand.ConstantType
             self.constant = operand
@@ -131,7 +156,11 @@ class Operand(object):
         elif operand is None:
             self.type = Operand.NoneType
         else:
-            raise TypeError('The operand {0} is not a valid assembly instruction operand'.format(operand))
+            raise TypeError(
+                "The operand {0} is not a valid assembly instruction operand".format(
+                    operand
+                )
+            )
 
     def __str__(self):
         if self.is_constant():
@@ -143,6 +172,7 @@ class Operand(object):
             return str(self.variable)
         elif self.is_memory_address():
             from nervapy.arm.registers import GeneralPurposeRegisterWriteback
+
             if self.offset is None:
                 if isinstance(self.base, GeneralPurposeRegisterWriteback):
                     return "[" + str(self.base.register) + "]!"
@@ -150,7 +180,9 @@ class Operand(object):
                     return "[" + str(self.base) + "]"
             else:
                 if isinstance(self.base, GeneralPurposeRegisterWriteback):
-                    return "[" + str(self.base.register) + ", #" + str(self.offset) + "]!"
+                    return (
+                        "[" + str(self.base.register) + ", #" + str(self.offset) + "]!"
+                    )
                 else:
                     if isinstance(self.offset, int):
                         return "[" + str(self.base) + ", #" + str(self.offset) + "]"
@@ -171,7 +203,7 @@ class Operand(object):
         elif self.is_none():
             return ""
         else:
-            raise TypeError('Unsupported operand type')
+            raise TypeError("Unsupported operand type")
 
     def __eq__(self, other):
         if isinstance(other, Operand) and self.type == other.type:
@@ -209,8 +241,12 @@ class Operand(object):
                 dword = self.immediate & 0xFFFFFFFF
                 ndword = (~self.immediate) & 0xFFFFFFFF
                 return any(
-                    [(rotate32(dword, n) & 0xFFFFFF00) == 0x00000000 or (rotate32(ndword, n) & 0xFFFFFF00) == 0x00000000
-                     for n in range(0, 32, 2)])
+                    [
+                        (rotate32(dword, n) & 0xFFFFFF00) == 0x00000000
+                        or (rotate32(ndword, n) & 0xFFFFFF00) == 0x00000000
+                        for n in range(0, 32, 2)
+                    ]
+                )
             else:
                 return False
         else:
@@ -227,19 +263,27 @@ class Operand(object):
             return False
 
     def is_neon_modified_immediate32(self):
-        if self.type == Operand.ImmediateType and -2147483648 <= self.immediate <= 4294967295:
+        if (
+            self.type == Operand.ImmediateType
+            and -2147483648 <= self.immediate <= 4294967295
+        ):
             word = self.immediate & 0xFFFFFFFF
-            return (word & 0x00FFFFFF) == 0x00000000 or \
-                   (word & 0xFF00FFFF) == 0x00000000 or \
-                   (word & 0xFFFF00FF) == 0x00000000 or \
-                   (word & 0xFFFFFF00) == 0x00000000 or \
-                   (word & 0xFF00FFFF) == 0x0000FFFF or \
-                   (word & 0xFFFF00FF) == 0x000000FF
+            return (
+                (word & 0x00FFFFFF) == 0x00000000
+                or (word & 0xFF00FFFF) == 0x00000000
+                or (word & 0xFFFF00FF) == 0x00000000
+                or (word & 0xFFFFFF00) == 0x00000000
+                or (word & 0xFF00FFFF) == 0x0000FFFF
+                or (word & 0xFFFF00FF) == 0x000000FF
+            )
         else:
             return False
 
     def is_neon_modified_immediate64(self):
-        if self.type == Operand.ImmediateType and -2147483648 <= self.immediate <= 4294967295:
+        if (
+            self.type == Operand.ImmediateType
+            and -2147483648 <= self.immediate <= 4294967295
+        ):
             dword = self.immediate & 0xFFFFFFFFFFFFFFFF
             byte = dword & 0xFF
             return all([(dword >> n) & 0xFF == byte for n in range(8, 64, 8)])
@@ -248,15 +292,21 @@ class Operand(object):
 
     def is_preindexed_memory_address(self):
         from nervapy.arm.registers import GeneralPurposeRegisterWriteback
-        return self.type == Operand.MemoryType and \
-            self.offset is not None and \
-            isinstance(self.base, GeneralPurposeRegisterWriteback)
+
+        return (
+            self.type == Operand.MemoryType
+            and self.offset is not None
+            and isinstance(self.base, GeneralPurposeRegisterWriteback)
+        )
 
     def is_memory_address(self, offset_bits=None, allow_writeback=True):
         from nervapy.arm.registers import (GeneralPurposeRegisterWriteback,
                                            ShiftedGeneralPurposeRegister)
+
         if self.type == Operand.MemoryType:
-            if not allow_writeback and isinstance(self.base, GeneralPurposeRegisterWriteback):
+            if not allow_writeback and isinstance(
+                self.base, GeneralPurposeRegisterWriteback
+            ):
                 return False
             else:
                 if self.offset is None or offset_bits is None:
@@ -271,11 +321,15 @@ class Operand(object):
 
     def is_writeback_memory_address(self):
         from nervapy.arm.registers import GeneralPurposeRegisterWriteback
-        return self.type == Operand.MemoryType and isinstance(self.base, GeneralPurposeRegisterWriteback)
+
+        return self.type == Operand.MemoryType and isinstance(
+            self.base, GeneralPurposeRegisterWriteback
+        )
 
     def is_memory_address_offset8_mod4(self):
-        return self.type == Operand.MemoryType and \
-            (self.offset is None or -1020 <= self.offset <= 1020 and self.offset % 4 == 0)
+        return self.type == Operand.MemoryType and (
+            self.offset is None or -1020 <= self.offset <= 1020 and self.offset % 4 == 0
+        )
 
     def is_offset8(self):
         return self.type == Operand.ImmediateType and -255 <= self.immediate <= 255
@@ -306,61 +360,102 @@ class Operand(object):
 
     def is_general_purpose_register(self):
         from nervapy.arm.registers import GeneralPurposeRegister
-        return self.type == Operand.RegisterType and \
-            isinstance(self.register, GeneralPurposeRegister)
+
+        return self.type == Operand.RegisterType and isinstance(
+            self.register, GeneralPurposeRegister
+        )
 
     def is_shifted_general_purpose_register(self):
         from nervapy.arm.registers import ShiftedGeneralPurposeRegister
-        return self.is_general_purpose_register() or self.type == Operand.ShiftedRegisterType and \
-            isinstance(self.register, ShiftedGeneralPurposeRegister)
+
+        return (
+            self.is_general_purpose_register()
+            or self.type == Operand.ShiftedRegisterType
+            and isinstance(self.register, ShiftedGeneralPurposeRegister)
+        )
 
     def is_general_purpose_register_list(self):
         from nervapy.arm.registers import GeneralPurposeRegister
-        return self.is_general_purpose_register() or self.type == Operand.RegisterListType and \
-            isinstance(self.register_list[0], GeneralPurposeRegister)
+
+        return (
+            self.is_general_purpose_register()
+            or self.type == Operand.RegisterListType
+            and isinstance(self.register_list[0], GeneralPurposeRegister)
+        )
 
     def is_address_register(self):
-        return self.is_general_purpose_register() or self.type == Operand.AddressRegisterType
+        return (
+            self.is_general_purpose_register()
+            or self.type == Operand.AddressRegisterType
+        )
 
     def is_wmmx_register(self):
         from nervapy.arm.registers import WMMXRegister
-        return self.type == Operand.RegisterType and isinstance(self.register, WMMXRegister)
+
+        return self.type == Operand.RegisterType and isinstance(
+            self.register, WMMXRegister
+        )
 
     def is_s_register(self):
         from nervapy.arm.registers import SRegister
-        return self.type == Operand.RegisterType and isinstance(self.register, SRegister)
+
+        return self.type == Operand.RegisterType and isinstance(
+            self.register, SRegister
+        )
 
     def is_s_register_list(self):
         from nervapy.arm.registers import SRegister
-        return self.is_s_register() or \
-               self.type == Operand.RegisterListType and isinstance(self.register_list[0], SRegister)
+
+        return (
+            self.is_s_register()
+            or self.type == Operand.RegisterListType
+            and isinstance(self.register_list[0], SRegister)
+        )
 
     def is_d_register(self):
         from nervapy.arm.registers import DRegister
-        return self.type == Operand.RegisterType and isinstance(self.register, DRegister)
+
+        return self.type == Operand.RegisterType and isinstance(
+            self.register, DRegister
+        )
 
     def is_d_register_list(self):
         from nervapy.arm.registers import DRegister
-        return self.is_d_register() or \
-               self.type == Operand.RegisterListType and isinstance(self.register_list[0], DRegister)
+
+        return (
+            self.is_d_register()
+            or self.type == Operand.RegisterListType
+            and isinstance(self.register_list[0], DRegister)
+        )
 
     def is_q_register(self):
         from nervapy.arm.registers import QRegister
-        return self.type == Operand.RegisterType and isinstance(self.register, QRegister)
+
+        return self.type == Operand.RegisterType and isinstance(
+            self.register, QRegister
+        )
 
     def is_vldst1_register_list(self):
         from nervapy.arm.registers import DRegister
-        return self.is_d_register() or \
-            self.type == Operand.RegisterListType and \
-            isinstance(self.register_list[0], DRegister) and \
-            len(self.register_list) <= 4
+
+        return (
+            self.is_d_register()
+            or self.type == Operand.RegisterListType
+            and isinstance(self.register_list[0], DRegister)
+            and len(self.register_list) <= 4
+        )
 
     def is_vldst1_register_lanes_list(self):
         from nervapy.arm.registers import DRegisterLanes
-        return self.type == Operand.RegisterLanesType and \
-               isinstance(self.register, DRegisterLanes) or \
-               self.type == Operand.RegisterLanesListType and \
-               all(isinstance(register, DRegisterLanes) for register in self.register_list)
+
+        return (
+            self.type == Operand.RegisterLanesType
+            and isinstance(self.register, DRegisterLanes)
+            or self.type == Operand.RegisterLanesListType
+            and all(
+                isinstance(register, DRegisterLanes) for register in self.register_list
+            )
+        )
 
     def is_general_purpose_memory_address(self):
         return self.type == Operand.MemoryType and -4095 <= self.offset <= 4095
@@ -368,6 +463,7 @@ class Operand(object):
     def get_registers_list(self):
         from nervapy.arm.registers import (GeneralPurposeRegisterWriteback,
                                            ShiftedGeneralPurposeRegister, sp)
+
         if self.is_address_register() or self.is_register() or self.is_register_lanes():
             return [self.register]
         elif self.is_shifted_general_purpose_register():
@@ -394,11 +490,10 @@ class Operand(object):
     def get_writeback_registers_list(self):
         if self.is_memory_address():
             from nervapy.arm.registers import GeneralPurposeRegisterWriteback
+
             if isinstance(self.base, GeneralPurposeRegisterWriteback):
                 return [self.base.register]
             else:
                 return [self.base]
         else:
             return list()
-
-

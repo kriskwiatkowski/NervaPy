@@ -28,6 +28,7 @@ class Image:
 
     def __init__(self, abi, source=None):
         from nervapy.formats.mscoff.section import StringTable
+
         self.abi = abi
         self.sections = list()
         self.symbols = list()
@@ -35,22 +36,26 @@ class Image:
 
     def add_section(self, section):
         from nervapy.formats.mscoff.section import Section
+
         assert isinstance(section, Section)
 
         self.sections.append(section)
 
     def add_symbol(self, symbol):
         from nervapy.formats.mscoff.symbol import Symbol
+
         assert isinstance(symbol, Symbol)
 
         self.symbols.append(symbol)
 
     def encode(self):
         from nervapy.encoder import Encoder
+
         encoder = Encoder(self.abi.endianness)
 
         # Collect names that need to be encoded in the string table
         import codecs
+
         for section in self.sections:
             if len(codecs.encode(section.name, "utf8")) > 8:
                 self.string_table.add(section.name)
@@ -62,7 +67,9 @@ class Image:
         from nervapy.formats.mscoff.section import Section
 
         section_offset_map = dict()
-        symbol_table_offset = Image.file_header_size + len(self.sections) * Section.header_size
+        symbol_table_offset = (
+            Image.file_header_size + len(self.sections) * Section.header_size
+        )
         data_offset = symbol_table_offset + self.string_table.size
         for symbol in self.symbols:
             data_offset += symbol.entry_size
@@ -79,29 +86,38 @@ class Image:
                 section_relocations_map[section] = data_offset
                 data_offset += Relocation.entry_size * len(section.relocations)
 
-        section_index_map = {section: index + 1 for index, section in enumerate(self.sections)}
+        section_index_map = {
+            section: index + 1 for index, section in enumerate(self.sections)
+        }
         symbol_index_map = {symbol: index for index, symbol in enumerate(self.symbols)}
 
         # Write file header
         timestamp = 0
         file_flags = 0
-        data = encoder.uint16(self.abi.mscoff_machine_type) + \
-            encoder.uint16(len(self.sections)) + \
-            encoder.uint32(timestamp) + \
-            encoder.uint32(symbol_table_offset) + \
-            encoder.uint32(len(self.symbols)) + \
-            encoder.uint16(0) + \
-            encoder.uint16(file_flags)
+        data = (
+            encoder.uint16(self.abi.mscoff_machine_type)
+            + encoder.uint16(len(self.sections))
+            + encoder.uint32(timestamp)
+            + encoder.uint32(symbol_table_offset)
+            + encoder.uint32(len(self.symbols))
+            + encoder.uint16(0)
+            + encoder.uint16(file_flags)
+        )
 
         # Write section headers
         for section in self.sections:
-            data += section.encode_header(encoder, self.string_table._strings,
-                                          section_offset_map[section],
-                                          section_relocations_map.get(section))
+            data += section.encode_header(
+                encoder,
+                self.string_table._strings,
+                section_offset_map[section],
+                section_relocations_map.get(section),
+            )
 
         # Write symbol table and string table (immediately follows symbols table)
         for symbol in self.symbols:
-            data += symbol.encode_entry(encoder, self.string_table._strings, section_index_map)
+            data += symbol.encode_entry(
+                encoder, self.string_table._strings, section_index_map
+            )
         data += self.string_table.encode()
 
         # Write section content

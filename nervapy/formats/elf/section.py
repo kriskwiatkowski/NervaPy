@@ -79,8 +79,12 @@ class Section(object):
     @alignment.setter
     def alignment(self, alignment):
         from nervapy.util import is_uint32
+
         if not is_uint32(alignment):
-            raise TypeError("Section alignment %s is not representable as a 32-bit unsigned integer" % str(alignment))
+            raise TypeError(
+                "Section alignment %s is not representable as a 32-bit unsigned integer"
+                % str(alignment)
+            )
         if alignment & (alignment - 1) != 0:
             raise ValueError("Section alignment %d is not a power of 2" % alignment)
         if alignment == 0:
@@ -90,6 +94,7 @@ class Section(object):
     @staticmethod
     def get_header_size(abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.elf_bitness in [32, 64]
 
@@ -98,11 +103,21 @@ class Section(object):
     def get_content_size(self, abi):
         return 0
 
-    def encode_header(self, encoder, name_index_map, section_index_map, offset,
-                      address=None, link_section=None, info=None,
-                      content_size=0, entry_size=0):
+    def encode_header(
+        self,
+        encoder,
+        name_index_map,
+        section_index_map,
+        offset,
+        address=None,
+        link_section=None,
+        info=None,
+        content_size=0,
+        entry_size=0,
+    ):
         import nervapy.encoder
         from nervapy.util import is_uint32, is_uint64
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert isinstance(name_index_map, dict)
         assert section_index_map is None or isinstance(section_index_map, dict)
@@ -130,19 +145,24 @@ class Section(object):
             link = section_index_map[link_section]
         if info is None:
             info = 0
-        return encoder.uint32(name_index) + \
-            encoder.uint32(self.type) + \
-            encoder.unsigned_offset(self.flags) + \
-            encoder.unsigned_offset(address) + \
-            encoder.unsigned_offset(offset) + \
-            encoder.unsigned_offset(content_size) + \
-            encoder.uint32(link) + \
-            encoder.uint32(info) + \
-            encoder.unsigned_offset(self.alignment) + \
-            encoder.unsigned_offset(entry_size)
+        return (
+            encoder.uint32(name_index)
+            + encoder.uint32(self.type)
+            + encoder.unsigned_offset(self.flags)
+            + encoder.unsigned_offset(address)
+            + encoder.unsigned_offset(offset)
+            + encoder.unsigned_offset(content_size)
+            + encoder.uint32(link)
+            + encoder.uint32(info)
+            + encoder.unsigned_offset(self.alignment)
+            + encoder.unsigned_offset(entry_size)
+        )
 
-    def encode_content(self, encoder, name_index_map, section_index_map, symbol_index_map):
+    def encode_content(
+        self, encoder, name_index_map, section_index_map, symbol_index_map
+    ):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert isinstance(name_index_map, dict)
         assert section_index_map is None or isinstance(section_index_map, dict)
@@ -158,18 +178,32 @@ null_section = Section(None, SectionType.null)
 
 class ProgramBitsSection(Section):
     def __init__(self, name, allocate=True, writable=False, executable=False):
-        super(ProgramBitsSection, self).__init__(name, SectionType.program_bits, allocate, writable, executable)
+        super(ProgramBitsSection, self).__init__(
+            name, SectionType.program_bits, allocate, writable, executable
+        )
         self.content = bytearray()
 
     def get_content_size(self, abi):
         return len(self.content)
 
-    def encode_header(self, encoder, name_index_map, section_index_map, offset, address=None):
-        return super(ProgramBitsSection, self).encode_header(encoder, name_index_map, section_index_map, offset,
-                                                             address=address, content_size=len(self.content))
+    def encode_header(
+        self, encoder, name_index_map, section_index_map, offset, address=None
+    ):
+        return super(ProgramBitsSection, self).encode_header(
+            encoder,
+            name_index_map,
+            section_index_map,
+            offset,
+            address=address,
+            content_size=len(self.content),
+        )
 
-    def encode_content(self, encoder, name_index_map, section_index_map, symbol_index_map):
-        super(ProgramBitsSection, self).encode_content(encoder, name_index_map, section_index_map, symbol_index_map)
+    def encode_content(
+        self, encoder, name_index_map, section_index_map, symbol_index_map
+    ):
+        super(ProgramBitsSection, self).encode_content(
+            encoder, name_index_map, section_index_map, symbol_index_map
+        )
         return self.content
 
 
@@ -214,16 +248,27 @@ class StringSection(Section):
         return self.content_size
 
     def encode_header(self, encoder, name_index_map, section_index_map, offset):
-        return super(StringSection, self).encode_header(encoder, name_index_map, section_index_map, offset,
-                                                        content_size=self.content_size)
+        return super(StringSection, self).encode_header(
+            encoder,
+            name_index_map,
+            section_index_map,
+            offset,
+            content_size=self.content_size,
+        )
 
-    def encode_content(self, encoder, name_index_map, section_index_map, symbol_index_map):
-        super(StringSection, self).encode_content(encoder, name_index_map, section_index_map, symbol_index_map)
+    def encode_content(
+        self, encoder, name_index_map, section_index_map, symbol_index_map
+    ):
+        super(StringSection, self).encode_content(
+            encoder, name_index_map, section_index_map, symbol_index_map
+        )
         if self.content_size != 0:
             import codecs
 
             bytes = b"\x00"
-            for string in sorted(self._string_index_map, key=self._string_index_map.get):
+            for string in sorted(
+                self._string_index_map, key=self._string_index_map.get
+            ):
                 bytes += codecs.encode(string, "utf8") + b"\x00"
             return bytes
         else:
@@ -240,18 +285,28 @@ class SymbolSection(Section):
 
     @property
     def symbol_index_map(self):
-        symbol_index_map = {symbol: index for index, symbol in enumerate(self._local_symbols)}
+        symbol_index_map = {
+            symbol: index for index, symbol in enumerate(self._local_symbols)
+        }
         local_symbols_count = len(self._local_symbols)
         symbol_index_map.update(
-            {symbol: local_symbols_count + index for index, symbol in enumerate(self._nonlocal_symbols)})
+            {
+                symbol: local_symbols_count + index
+                for index, symbol in enumerate(self._nonlocal_symbols)
+            }
+        )
         return symbol_index_map
 
     def add(self, symbol):
         from nervapy.formats.elf.symbol import Symbol, SymbolBinding
+
         assert isinstance(symbol, Symbol)
 
         if symbol in self._symbols_set:
-            raise ValueError("Symbol %s is already present in the section %s" % (str(symbol), self.name))
+            raise ValueError(
+                "Symbol %s is already present in the section %s"
+                % (str(symbol), self.name)
+            )
         self._symbols_set.add(symbol)
         if symbol.binding == SymbolBinding.local:
             self._local_symbols.append(symbol)
@@ -261,6 +316,7 @@ class SymbolSection(Section):
     def get_content_size(self, abi):
         from nervapy.abi import ABI
         from nervapy.formats.elf.symbol import Symbol
+
         assert isinstance(abi, ABI)
         assert abi.elf_bitness in [32, 64]
 
@@ -269,19 +325,29 @@ class SymbolSection(Section):
 
     def encode_header(self, encoder, name_index_map, section_index_map, offset):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert encoder.bitness in [32, 64]
 
         entry_size = {32: 16, 64: 24}[encoder.bitness]
         symbols_count = len(self._local_symbols) + len(self._nonlocal_symbols)
-        return super(SymbolSection, self).encode_header(encoder, name_index_map, section_index_map, offset,
-                                                        link_section=self._string_table,
-                                                        info=len(self._local_symbols),
-                                                        content_size=symbols_count * entry_size,
-                                                        entry_size=entry_size)
+        return super(SymbolSection, self).encode_header(
+            encoder,
+            name_index_map,
+            section_index_map,
+            offset,
+            link_section=self._string_table,
+            info=len(self._local_symbols),
+            content_size=symbols_count * entry_size,
+            entry_size=entry_size,
+        )
 
-    def encode_content(self, encoder, name_index_map, section_index_map, symbol_index_map):
-        super(SymbolSection, self).encode_content(encoder, name_index_map, section_index_map, symbol_index_map)
+    def encode_content(
+        self, encoder, name_index_map, section_index_map, symbol_index_map
+    ):
+        super(SymbolSection, self).encode_content(
+            encoder, name_index_map, section_index_map, symbol_index_map
+        )
 
         # Local symbols must be encoded before non-local symbols. Thus, need to separate the two classes
         content = bytearray()
@@ -298,8 +364,9 @@ class SymbolSection(Section):
 
 class RelocationsWithAddendSection(Section):
     def __init__(self, reference_section, symbol_table):
-        super(RelocationsWithAddendSection, self).__init__(".rela" + reference_section.name,
-                                                           SectionType.relocations_with_addend)
+        super(RelocationsWithAddendSection, self).__init__(
+            ".rela" + reference_section.name, SectionType.relocations_with_addend
+        )
         self.reference_section = reference_section
         self.symbol_table = symbol_table
 
@@ -307,12 +374,14 @@ class RelocationsWithAddendSection(Section):
 
     def add(self, relocation):
         from nervapy.formats.elf.symbol import RelocationWithAddend
+
         assert isinstance(relocation, RelocationWithAddend)
 
         self.relocations.append(relocation)
 
     def get_content_size(self, abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.elf_bitness in [32, 64]
 
@@ -321,22 +390,30 @@ class RelocationsWithAddendSection(Section):
 
     def encode_header(self, encoder, name_index_map, section_index_map, offset):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert encoder.bitness in [32, 64]
 
         entry_size = {32: 16, 64: 24}[encoder.bitness]
         relocations_count = len(self.relocations)
         reference_section_index = section_index_map[self.reference_section]
-        return super(RelocationsWithAddendSection, self).\
-            encode_header(encoder, name_index_map, section_index_map, offset,
-                          link_section=self.symbol_table,
-                          info=reference_section_index,
-                          content_size=relocations_count * entry_size,
-                          entry_size=entry_size)
+        return super(RelocationsWithAddendSection, self).encode_header(
+            encoder,
+            name_index_map,
+            section_index_map,
+            offset,
+            link_section=self.symbol_table,
+            info=reference_section_index,
+            content_size=relocations_count * entry_size,
+            entry_size=entry_size,
+        )
 
-    def encode_content(self, encoder, name_index_map, section_index_map, symbol_index_map):
-        super(RelocationsWithAddendSection, self).\
-            encode_content(encoder, name_index_map, section_index_map, symbol_index_map)
+    def encode_content(
+        self, encoder, name_index_map, section_index_map, symbol_index_map
+    ):
+        super(RelocationsWithAddendSection, self).encode_content(
+            encoder, name_index_map, section_index_map, symbol_index_map
+        )
 
         content = bytearray()
         for relocation in self.relocations:

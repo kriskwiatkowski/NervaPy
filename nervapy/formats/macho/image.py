@@ -25,6 +25,7 @@ class Image:
 
     def add_segment(self, segment):
         from nervapy.formats.macho.section import Segment
+
         assert isinstance(segment, Segment)
 
         self.segments.append(segment)
@@ -92,15 +93,24 @@ class Image:
                 section_index += 1
 
         # Create map: symbol->index
-        symbol_index_map = {symbol: index for index, symbol in enumerate(self.symbol_table.symbols)}
+        symbol_index_map = {
+            symbol: index for index, symbol in enumerate(self.symbol_table.symbols)
+        }
 
         # Write Mach-O header
         data = mach_header.encode(encoder)
 
         # Write commands
         for segment in self.segments:
-            data += segment.encode_command(encoder, section_offset_map, section_address_map, section_relocations_map)
-        data += self.symbol_table.encode_command(encoder, symbol_offset_map, string_table_offset)
+            data += segment.encode_command(
+                encoder,
+                section_offset_map,
+                section_address_map,
+                section_relocations_map,
+            )
+        data += self.symbol_table.encode_command(
+            encoder, symbol_offset_map, string_table_offset
+        )
 
         # Write section data
         for segment in self.segments:
@@ -114,11 +124,18 @@ class Image:
         for segment in self.segments:
             for section in segment.sections:
                 for relocation in section.relocations:
-                    data += relocation.encode(encoder, section_index_map, symbol_index_map)
+                    data += relocation.encode(
+                        encoder, section_index_map, symbol_index_map
+                    )
 
         # Write symbols
         for symbol in self.symbol_table.symbols:
-            data += symbol.encode(encoder, self.string_table.string_index_map, section_index_map, section_address_map)
+            data += symbol.encode(
+                encoder,
+                self.string_table.string_index_map,
+                section_index_map,
+                section_address_map,
+            )
 
         # Write string table
         data += self.string_table.encode()

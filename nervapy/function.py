@@ -14,6 +14,7 @@ class Argument(object):
     :ivar name: the name of the argument
     :type name: str
     """
+
     def __init__(self, c_type, name=None):
         """
         :param nervapy.c.types.Type c_type: the type of the argument in C.
@@ -32,6 +33,7 @@ class Argument(object):
         """
 
         from nervapy.c.types import Type
+
         if not isinstance(c_type, Type):
             raise TypeError("%s is not a C type" % str(c_type))
         self.c_type = c_type
@@ -42,23 +44,30 @@ class Argument(object):
 
             _, _, _, _, caller_lines, _ = inspect.stack()[1]
             if caller_lines is None:
-                raise ValueError("Argument name is not specified and the caller context is not available")
+                raise ValueError(
+                    "Argument name is not specified and the caller context is not available"
+                )
             source_line = caller_lines[0].strip()
-            match = re.match("(?:\\w+\\.)*(\\w+)\\s*=\\s*(?:\\w+\\.)*Argument\\(.+\\)", source_line)
+            match = re.match(
+                "(?:\\w+\\.)*(\\w+)\\s*=\\s*(?:\\w+\\.)*Argument\\(.+\\)", source_line
+            )
             if match:
                 name = match.group(1)
                 while name.startswith("_"):
                     name = name[1:]
                 if name.endswith("argument") or name.endswith("Argument"):
-                    name = name[:-len("argument")]
+                    name = name[: -len("argument")]
                 if name.endswith("arg") or name.endswith("Arg"):
-                    name = name[:-len("arg")]
+                    name = name[: -len("arg")]
                 while name.endswith("_"):
                     name = name[:-1]
             if not name:
-                raise ValueError("Argument name is not specified and can not be parsed from the code")
+                raise ValueError(
+                    "Argument name is not specified and can not be parsed from the code"
+                )
 
         from nervapy.name import Name
+
         Name.check_name(name)
         self.name = name
 
@@ -69,10 +78,18 @@ class Argument(object):
         return str(self)
 
     def __eq__(self, other):
-        return isinstance(other, Argument) and self.c_type == other.c_type and self.name == other.name
+        return (
+            isinstance(other, Argument)
+            and self.c_type == other.c_type
+            and self.name == other.name
+        )
 
     def __ne__(self, other):
-        return not isinstance(other, Argument) or self.c_type != other.c_type or self.name != other.name
+        return (
+            not isinstance(other, Argument)
+            or self.c_type != other.c_type
+            or self.name != other.name
+        )
 
     @property
     def is_floating_point(self):
@@ -117,5 +134,3 @@ class Argument(object):
     @property
     def size(self):
         return self.c_type.size
-
-

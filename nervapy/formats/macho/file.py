@@ -102,19 +102,22 @@ class MachHeader:
     @staticmethod
     def get_size(abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.pointer_size in [4, 8]
 
         return {4: 24, 8: 32}[abi.pointer_size]
 
     def encode(self, encoder):
-        bytes = encoder.uint32(self.magic) + \
-            encoder.uint32(self.cpu_type) + \
-            encoder.uint32(self.cpu_subtype) + \
-            encoder.uint32(self.file_type) + \
-            encoder.uint32(self.commands_count) + \
-            encoder.uint32(self.commands_size) + \
-            encoder.uint32(self.flags)
+        bytes = (
+            encoder.uint32(self.magic)
+            + encoder.uint32(self.cpu_type)
+            + encoder.uint32(self.cpu_subtype)
+            + encoder.uint32(self.file_type)
+            + encoder.uint32(self.commands_count)
+            + encoder.uint32(self.commands_size)
+            + encoder.uint32(self.flags)
+        )
         if self.abi.pointer_size == 8:
             bytes += bytearray(4)
         return bytes

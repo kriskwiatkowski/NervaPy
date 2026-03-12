@@ -36,37 +36,74 @@ class MOVSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVSS(xmm, xmm/m32)    [SSE]
-            * MOVSS(xmm/m32, xmm)    [SSE]
+        * MOVSS(xmm, xmm/m32)    [SSE]
+        * MOVSS(xmm/m32, xmm)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVSS, self).__init__("MOVSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVSS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVSS" requires 2 operands')
         self.go_name = "MOVSS"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x10]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x10])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m32(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x11]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x11])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -77,34 +114,73 @@ class EXTRACTPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * EXTRACTPS(r32/m32, xmm, imm8)    [SSE4.1]
+        * EXTRACTPS(r32/m32, xmm, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(EXTRACTPS, self).__init__("EXTRACTPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"EXTRACTPS\" requires 3 operands")
+            raise SyntaxError('Instruction "EXTRACTPS" requires 3 operands')
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_r32(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_r32(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x3A, 0x17, 0xC0 | op[1].lcode << 3 | op[0].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x17,
+                            0xC0 | op[1].lcode << 3 | op[0].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
-        elif is_m32(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_m32(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x3A, 0x17]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x17])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.in_regs = (True, True, False)
             self.out_regs = (False, False, False)
         else:
-            raise SyntaxError("Invalid operand types: EXTRACTPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: EXTRACTPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -115,32 +191,71 @@ class INSERTPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * INSERTPS(xmm, xmm/m32, imm8)    [SSE4.1]
+        * INSERTPS(xmm, xmm/m32, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(INSERTPS, self).__init__("INSERTPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"INSERTPS\" requires 3 operands")
+            raise SyntaxError('Instruction "INSERTPS" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x21, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m32(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x21,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x21]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x21])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: INSERTPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: INSERTPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -151,17 +266,21 @@ class ADDSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ADDSS(xmm, xmm/m32)    [SSE]
+        * ADDSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ADDSS, self).__init__("ADDSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ADDSS\" requires 2 operands")
+            raise SyntaxError('Instruction "ADDSS" requires 2 operands')
         self.go_name = "ADDSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -169,11 +288,29 @@ class ADDSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x58]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x58])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ADDSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ADDSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -184,17 +321,21 @@ class SUBSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SUBSS(xmm, xmm/m32)    [SSE]
+        * SUBSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SUBSS, self).__init__("SUBSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SUBSS\" requires 2 operands")
+            raise SyntaxError('Instruction "SUBSS" requires 2 operands')
         self.go_name = "SUBSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -202,11 +343,29 @@ class SUBSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SUBSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SUBSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -217,17 +376,21 @@ class MULSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MULSS(xmm, xmm/m32)    [SSE]
+        * MULSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MULSS, self).__init__("MULSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MULSS\" requires 2 operands")
+            raise SyntaxError('Instruction "MULSS" requires 2 operands')
         self.go_name = "MULSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -235,11 +398,29 @@ class MULSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x59]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x59])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MULSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MULSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -250,17 +431,21 @@ class DIVSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * DIVSS(xmm, xmm/m32)    [SSE]
+        * DIVSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(DIVSS, self).__init__("DIVSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"DIVSS\" requires 2 operands")
+            raise SyntaxError('Instruction "DIVSS" requires 2 operands')
         self.go_name = "DIVSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -268,11 +453,29 @@ class DIVSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: DIVSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: DIVSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -283,17 +486,21 @@ class SQRTSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SQRTSS(xmm, xmm/m32)    [SSE]
+        * SQRTSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SQRTSS, self).__init__("SQRTSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SQRTSS\" requires 2 operands")
+            raise SyntaxError('Instruction "SQRTSS" requires 2 operands')
         self.go_name = "SQRTSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -301,11 +508,29 @@ class SQRTSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x51]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x51])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SQRTSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SQRTSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -316,32 +541,71 @@ class ROUNDSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ROUNDSS(xmm, xmm/m32, imm8)    [SSE4.1]
+        * ROUNDSS(xmm, xmm/m32, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ROUNDSS, self).__init__("ROUNDSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"ROUNDSS\" requires 3 operands")
+            raise SyntaxError('Instruction "ROUNDSS" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x0A, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m32(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x0A,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x0A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x0A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ROUNDSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ROUNDSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -352,17 +616,21 @@ class MINSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MINSS(xmm, xmm/m32)    [SSE]
+        * MINSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MINSS, self).__init__("MINSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MINSS\" requires 2 operands")
+            raise SyntaxError('Instruction "MINSS" requires 2 operands')
         self.go_name = "MINSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -370,11 +638,29 @@ class MINSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MINSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MINSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -385,17 +671,21 @@ class MAXSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MAXSS(xmm, xmm/m32)    [SSE]
+        * MAXSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MAXSS, self).__init__("MAXSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MAXSS\" requires 2 operands")
+            raise SyntaxError('Instruction "MAXSS" requires 2 operands')
         self.go_name = "MAXSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -403,11 +693,29 @@ class MAXSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MAXSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MAXSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -418,17 +726,21 @@ class RCPSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * RCPSS(xmm, xmm/m32)    [SSE]
+        * RCPSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(RCPSS, self).__init__("RCPSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"RCPSS\" requires 2 operands")
+            raise SyntaxError('Instruction "RCPSS" requires 2 operands')
         self.go_name = "RCPSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -436,11 +748,29 @@ class RCPSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x53, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x53, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x53]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x53])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: RCPSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: RCPSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -451,17 +781,21 @@ class RSQRTSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * RSQRTSS(xmm, xmm/m32)    [SSE]
+        * RSQRTSS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(RSQRTSS, self).__init__("RSQRTSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"RSQRTSS\" requires 2 operands")
+            raise SyntaxError('Instruction "RSQRTSS" requires 2 operands')
         self.go_name = "RSQRTSS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -469,11 +803,29 @@ class RSQRTSS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x52, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x52, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x52]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x52])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: RSQRTSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: RSQRTSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -484,33 +836,71 @@ class CMPSS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CMPSS(xmm, xmm/m32, imm8)    [SSE]
+        * CMPSS(xmm, xmm/m32, imm8)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CMPSS, self).__init__("CMPSS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"CMPSS\" requires 3 operands")
+            raise SyntaxError('Instruction "CMPSS" requires 3 operands')
         self.go_name = "CMPSS"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC2, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m32(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC2,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xC2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CMPSS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CMPSS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -521,17 +911,21 @@ class COMISS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * COMISS(xmm, xmm/m32)    [SSE]
+        * COMISS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(COMISS, self).__init__("COMISS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"COMISS\" requires 2 operands")
+            raise SyntaxError('Instruction "COMISS" requires 2 operands')
         self.go_name = "COMISS"
         self.in_regs = (True, True)
         self.out_regs = (False, False)
@@ -539,11 +933,29 @@ class COMISS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x2F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: COMISS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: COMISS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -554,17 +966,21 @@ class UCOMISS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * UCOMISS(xmm, xmm/m32)    [SSE]
+        * UCOMISS(xmm, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(UCOMISS, self).__init__("UCOMISS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"UCOMISS\" requires 2 operands")
+            raise SyntaxError('Instruction "UCOMISS" requires 2 operands')
         self.go_name = "UCOMISS"
         self.in_regs = (True, True)
         self.out_regs = (False, False)
@@ -572,11 +988,29 @@ class UCOMISS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x2E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: UCOMISS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: UCOMISS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -587,37 +1021,74 @@ class MOVSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVSD(xmm, xmm/m64)    [SSE2]
-            * MOVSD(xmm/m64, xmm)    [SSE2]
+        * MOVSD(xmm, xmm/m64)    [SSE2]
+        * MOVSD(xmm/m64, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVSD, self).__init__("MOVSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVSD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVSD" requires 2 operands')
         self.go_name = "MOVSD"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x10]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x10])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m64(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x11]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x11])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -628,17 +1099,21 @@ class ADDSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ADDSD(xmm, xmm/m64)    [SSE2]
+        * ADDSD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ADDSD, self).__init__("ADDSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ADDSD\" requires 2 operands")
+            raise SyntaxError('Instruction "ADDSD" requires 2 operands')
         self.go_name = "ADDSD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -646,11 +1121,29 @@ class ADDSD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x58]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x58])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ADDSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ADDSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -661,17 +1154,21 @@ class SUBSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SUBSD(xmm, xmm/m64)    [SSE2]
+        * SUBSD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SUBSD, self).__init__("SUBSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SUBSD\" requires 2 operands")
+            raise SyntaxError('Instruction "SUBSD" requires 2 operands')
         self.go_name = "SUBSD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -679,11 +1176,29 @@ class SUBSD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SUBSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SUBSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -694,17 +1209,21 @@ class MULSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MULSD(xmm, xmm/m64)    [SSE2]
+        * MULSD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MULSD, self).__init__("MULSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MULSD\" requires 2 operands")
+            raise SyntaxError('Instruction "MULSD" requires 2 operands')
         self.go_name = "MULSD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -712,11 +1231,29 @@ class MULSD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x59]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x59])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MULSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MULSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -727,17 +1264,21 @@ class DIVSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * DIVSD(xmm, xmm/m64)    [SSE2]
+        * DIVSD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(DIVSD, self).__init__("DIVSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"DIVSD\" requires 2 operands")
+            raise SyntaxError('Instruction "DIVSD" requires 2 operands')
         self.go_name = "DIVSD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -745,11 +1286,29 @@ class DIVSD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: DIVSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: DIVSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -760,17 +1319,21 @@ class SQRTSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SQRTSD(xmm, xmm/m64)    [SSE2]
+        * SQRTSD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SQRTSD, self).__init__("SQRTSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SQRTSD\" requires 2 operands")
+            raise SyntaxError('Instruction "SQRTSD" requires 2 operands')
         self.go_name = "SQRTSD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -778,11 +1341,29 @@ class SQRTSD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x51]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x51])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SQRTSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SQRTSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -793,32 +1374,71 @@ class ROUNDSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ROUNDSD(xmm, xmm/m64, imm8)    [SSE4.1]
+        * ROUNDSD(xmm, xmm/m64, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ROUNDSD, self).__init__("ROUNDSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"ROUNDSD\" requires 3 operands")
+            raise SyntaxError('Instruction "ROUNDSD" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x0B, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m64(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x0B,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m64(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x0B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x0B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ROUNDSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ROUNDSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -829,17 +1449,21 @@ class MINSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MINSD(xmm, xmm/m64)    [SSE2]
+        * MINSD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MINSD, self).__init__("MINSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MINSD\" requires 2 operands")
+            raise SyntaxError('Instruction "MINSD" requires 2 operands')
         self.go_name = "MINSD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -847,11 +1471,29 @@ class MINSD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MINSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MINSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -862,17 +1504,21 @@ class MAXSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MAXSD(xmm, xmm/m64)    [SSE2]
+        * MAXSD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MAXSD, self).__init__("MAXSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MAXSD\" requires 2 operands")
+            raise SyntaxError('Instruction "MAXSD" requires 2 operands')
         self.go_name = "MAXSD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -880,11 +1526,29 @@ class MAXSD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MAXSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MAXSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -895,33 +1559,71 @@ class CMPSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CMPSD(xmm, xmm/m64, imm8)    [SSE2]
+        * CMPSD(xmm, xmm/m64, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CMPSD, self).__init__("CMPSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"CMPSD\" requires 3 operands")
+            raise SyntaxError('Instruction "CMPSD" requires 3 operands')
         self.go_name = "CMPSD"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC2, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m64(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC2,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m64(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xC2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CMPSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CMPSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -932,17 +1634,21 @@ class COMISD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * COMISD(xmm, xmm/m64)    [SSE2]
+        * COMISD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(COMISD, self).__init__("COMISD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"COMISD\" requires 2 operands")
+            raise SyntaxError('Instruction "COMISD" requires 2 operands')
         self.go_name = "COMISD"
         self.in_regs = (True, True)
         self.out_regs = (False, False)
@@ -950,11 +1656,29 @@ class COMISD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: COMISD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: COMISD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -965,17 +1689,21 @@ class UCOMISD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * UCOMISD(xmm, xmm/m64)    [SSE2]
+        * UCOMISD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(UCOMISD, self).__init__("UCOMISD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"UCOMISD\" requires 2 operands")
+            raise SyntaxError('Instruction "UCOMISD" requires 2 operands')
         self.go_name = "UCOMISD"
         self.in_regs = (True, True)
         self.out_regs = (False, False)
@@ -983,11 +1711,29 @@ class UCOMISD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: UCOMISD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: UCOMISD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -998,37 +1744,74 @@ class MOVAPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVAPS(xmm, xmm/m128)    [SSE]
-            * MOVAPS(xmm/m128, xmm)    [SSE]
+        * MOVAPS(xmm, xmm/m128)    [SSE]
+        * MOVAPS(xmm/m128, xmm)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVAPS, self).__init__("MOVAPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVAPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVAPS" requires 2 operands')
         self.go_name = "MOVAPS"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x28, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x29, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x28, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x29, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x28]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x28])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m128(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x29]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0x29])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVAPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVAPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1039,37 +1822,74 @@ class MOVUPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVUPS(xmm, xmm/m128)    [SSE]
-            * MOVUPS(xmm/m128, xmm)    [SSE]
+        * MOVUPS(xmm, xmm/m128)    [SSE]
+        * MOVUPS(xmm/m128, xmm)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVUPS, self).__init__("MOVUPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVUPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVUPS" requires 2 operands')
         self.go_name = "MOVUPS"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x10]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x10])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m128(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x11]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0x11])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVUPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVUPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1080,31 +1900,56 @@ class MOVLPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVLPS(m64, xmm)    [SSE]
-            * MOVLPS(xmm, m64)    [SSE]
+        * MOVLPS(m64, xmm)    [SSE]
+        * MOVLPS(xmm, m64)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVLPS, self).__init__("MOVLPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVLPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVLPS" requires 2 operands')
         self.go_name = "MOVLPS"
         self.in_regs = (True, True)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x12]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x12])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.out_regs = (True, False)
         elif is_m64(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x13]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0x13])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVLPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVLPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1115,27 +1960,43 @@ class MOVNTPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVNTPS(m128, xmm)    [SSE]
+        * MOVNTPS(m128, xmm)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVNTPS, self).__init__("MOVNTPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVNTPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVNTPS" requires 2 operands')
         if is_m128(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "MOVNTPS"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x2B]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0x2B])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         else:
-            raise SyntaxError("Invalid operand types: MOVNTPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVNTPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1146,31 +2007,56 @@ class MOVHPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVHPS(m64, xmm)    [SSE]
-            * MOVHPS(xmm, m64)    [SSE]
+        * MOVHPS(m64, xmm)    [SSE]
+        * MOVHPS(xmm, m64)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVHPS, self).__init__("MOVHPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVHPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVHPS" requires 2 operands')
         self.go_name = "MOVHPS"
         self.in_regs = (True, True)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x16]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x16])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.out_regs = (True, False)
         elif is_m64(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x17]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0x17])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVHPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVHPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1181,28 +2067,50 @@ class MOVSLDUP(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVSLDUP(xmm, xmm/m128)    [SSE3]
+        * MOVSLDUP(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVSLDUP, self).__init__("MOVSLDUP", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVSLDUP\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVSLDUP" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x12, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x12, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x12]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x12])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MOVSLDUP " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVSLDUP "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1213,28 +2121,50 @@ class MOVSHDUP(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVSHDUP(xmm, xmm/m128)    [SSE3]
+        * MOVSHDUP(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVSHDUP, self).__init__("MOVSHDUP", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVSHDUP\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVSHDUP" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x16, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x16, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x16]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x16])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MOVSHDUP " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVSHDUP "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1245,37 +2175,74 @@ class MOVAPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVAPD(xmm, xmm/m128)    [SSE2]
-            * MOVAPD(xmm/m128, xmm)    [SSE2]
+        * MOVAPD(xmm, xmm/m128)    [SSE2]
+        * MOVAPD(xmm/m128, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVAPD, self).__init__("MOVAPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVAPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVAPD" requires 2 operands')
         self.go_name = "MOVAPD"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x28, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x29, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x28, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x29, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x28]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x28])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m128(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x29]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x29])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVAPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVAPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1286,37 +2253,74 @@ class MOVUPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVUPD(xmm, xmm/m128)    [SSE2]
-            * MOVUPD(xmm/m128, xmm)    [SSE2]
+        * MOVUPD(xmm, xmm/m128)    [SSE2]
+        * MOVUPD(xmm/m128, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVUPD, self).__init__("MOVUPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVUPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVUPD" requires 2 operands')
         self.go_name = "MOVUPD"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x11, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x10]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x10])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m128(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x11]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x11])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVUPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVUPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1327,31 +2331,54 @@ class MOVLPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVLPD(m64, xmm)    [SSE2]
-            * MOVLPD(xmm, m64)    [SSE2]
+        * MOVLPD(m64, xmm)    [SSE2]
+        * MOVLPD(xmm, m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVLPD, self).__init__("MOVLPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVLPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVLPD" requires 2 operands')
         self.go_name = "MOVLPD"
         self.in_regs = (True, True)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x12]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x12])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.out_regs = (True, False)
         elif is_m64(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x13]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x13])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVLPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVLPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1362,27 +2389,42 @@ class MOVNTPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVNTPD(m128, xmm)    [SSE2]
+        * MOVNTPD(m128, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVNTPD, self).__init__("MOVNTPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVNTPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVNTPD" requires 2 operands')
         if is_m128(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "MOVNTPD"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x2B]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x2B])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MOVNTPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVNTPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1393,31 +2435,54 @@ class MOVHPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVHPD(m64, xmm)    [SSE2]
-            * MOVHPD(xmm, m64)    [SSE2]
+        * MOVHPD(m64, xmm)    [SSE2]
+        * MOVHPD(xmm, m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVHPD, self).__init__("MOVHPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVHPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVHPD" requires 2 operands')
         self.go_name = "MOVHPD"
         self.in_regs = (True, True)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x16]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x16])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.out_regs = (True, False)
         elif is_m64(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x17]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x17])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVHPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVHPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1428,28 +2493,50 @@ class MOVDDUP(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVDDUP(xmm, xmm/m64)    [SSE3]
+        * MOVDDUP(xmm, xmm/m64)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVDDUP, self).__init__("MOVDDUP", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVDDUP\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVDDUP" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x12, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x12, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x12]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x12])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MOVDDUP " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVDDUP "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1460,17 +2547,21 @@ class ADDPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ADDPS(xmm, xmm/m128)    [SSE]
+        * ADDPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ADDPS, self).__init__("ADDPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ADDPS\" requires 2 operands")
+            raise SyntaxError('Instruction "ADDPS" requires 2 operands')
         self.go_name = "ADDPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1478,11 +2569,29 @@ class ADDPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x58]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x58])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ADDPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ADDPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1493,28 +2602,50 @@ class HADDPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * HADDPS(xmm, xmm/m128)    [SSE3]
+        * HADDPS(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(HADDPS, self).__init__("HADDPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"HADDPS\" requires 2 operands")
+            raise SyntaxError('Instruction "HADDPS" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x7C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x7C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x7C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x7C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: HADDPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: HADDPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1525,17 +2656,21 @@ class SUBPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SUBPS(xmm, xmm/m128)    [SSE]
+        * SUBPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SUBPS, self).__init__("SUBPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SUBPS\" requires 2 operands")
+            raise SyntaxError('Instruction "SUBPS" requires 2 operands')
         self.go_name = "SUBPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1543,11 +2678,29 @@ class SUBPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x5C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SUBPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SUBPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1558,28 +2711,50 @@ class HSUBPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * HSUBPS(xmm, xmm/m128)    [SSE3]
+        * HSUBPS(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(HSUBPS, self).__init__("HSUBPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"HSUBPS\" requires 2 operands")
+            raise SyntaxError('Instruction "HSUBPS" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x7D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x7D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x7D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x7D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: HSUBPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: HSUBPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1590,28 +2765,50 @@ class ADDSUBPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ADDSUBPS(xmm, xmm/m128)    [SSE3]
+        * ADDSUBPS(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ADDSUBPS, self).__init__("ADDSUBPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ADDSUBPS\" requires 2 operands")
+            raise SyntaxError('Instruction "ADDSUBPS" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD0, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD0, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD0]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD0])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ADDSUBPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ADDSUBPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1622,17 +2819,21 @@ class MULPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MULPS(xmm, xmm/m128)    [SSE]
+        * MULPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MULPS, self).__init__("MULPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MULPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MULPS" requires 2 operands')
         self.go_name = "MULPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1640,11 +2841,29 @@ class MULPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x59]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x59])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MULPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MULPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1655,17 +2874,21 @@ class DIVPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * DIVPS(xmm, xmm/m128)    [SSE]
+        * DIVPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(DIVPS, self).__init__("DIVPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"DIVPS\" requires 2 operands")
+            raise SyntaxError('Instruction "DIVPS" requires 2 operands')
         self.go_name = "DIVPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1673,11 +2896,29 @@ class DIVPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x5E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: DIVPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: DIVPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1688,17 +2929,21 @@ class SQRTPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SQRTPS(xmm, xmm/m128)    [SSE]
+        * SQRTPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SQRTPS, self).__init__("SQRTPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SQRTPS\" requires 2 operands")
+            raise SyntaxError('Instruction "SQRTPS" requires 2 operands')
         self.go_name = "SQRTPS"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -1706,11 +2951,29 @@ class SQRTPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x51]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x51])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SQRTPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SQRTPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1721,17 +2984,21 @@ class ADDPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ADDPD(xmm, xmm/m128)    [SSE2]
+        * ADDPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ADDPD, self).__init__("ADDPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ADDPD\" requires 2 operands")
+            raise SyntaxError('Instruction "ADDPD" requires 2 operands')
         self.go_name = "ADDPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1739,11 +3006,29 @@ class ADDPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x58, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x58]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x58])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ADDPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ADDPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1754,28 +3039,50 @@ class HADDPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * HADDPD(xmm, xmm/m128)    [SSE3]
+        * HADDPD(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(HADDPD, self).__init__("HADDPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"HADDPD\" requires 2 operands")
+            raise SyntaxError('Instruction "HADDPD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x7C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x7C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x7C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x7C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: HADDPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: HADDPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1786,17 +3093,21 @@ class SUBPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SUBPD(xmm, xmm/m128)    [SSE2]
+        * SUBPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SUBPD, self).__init__("SUBPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SUBPD\" requires 2 operands")
+            raise SyntaxError('Instruction "SUBPD" requires 2 operands')
         self.go_name = "SUBPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1804,11 +3115,29 @@ class SUBPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SUBPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SUBPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1819,28 +3148,50 @@ class HSUBPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * HSUBPD(xmm, xmm/m128)    [SSE3]
+        * HSUBPD(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(HSUBPD, self).__init__("HSUBPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"HSUBPD\" requires 2 operands")
+            raise SyntaxError('Instruction "HSUBPD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x7D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x7D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x7D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x7D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: HSUBPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: HSUBPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1851,28 +3202,50 @@ class ADDSUBPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ADDSUBPD(xmm, xmm/m128)    [SSE3]
+        * ADDSUBPD(xmm, xmm/m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ADDSUBPD, self).__init__("ADDSUBPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ADDSUBPD\" requires 2 operands")
+            raise SyntaxError('Instruction "ADDSUBPD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD0, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD0, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD0]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD0])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ADDSUBPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ADDSUBPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1883,17 +3256,21 @@ class MULPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MULPD(xmm, xmm/m128)    [SSE2]
+        * MULPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MULPD, self).__init__("MULPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MULPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MULPD" requires 2 operands')
         self.go_name = "MULPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1901,11 +3278,29 @@ class MULPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x59, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x59]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x59])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MULPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MULPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1916,17 +3311,21 @@ class DIVPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * DIVPD(xmm, xmm/m128)    [SSE2]
+        * DIVPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(DIVPD, self).__init__("DIVPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"DIVPD\" requires 2 operands")
+            raise SyntaxError('Instruction "DIVPD" requires 2 operands')
         self.go_name = "DIVPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -1934,11 +3333,29 @@ class DIVPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: DIVPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: DIVPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1949,17 +3366,21 @@ class SQRTPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SQRTPD(xmm, xmm/m128)    [SSE2]
+        * SQRTPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SQRTPD, self).__init__("SQRTPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"SQRTPD\" requires 2 operands")
+            raise SyntaxError('Instruction "SQRTPD" requires 2 operands')
         self.go_name = "SQRTPD"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -1967,11 +3388,29 @@ class SQRTPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x51, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x51]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x51])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SQRTPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SQRTPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -1982,32 +3421,71 @@ class ROUNDPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ROUNDPS(xmm, xmm/m128, imm8)    [SSE4.1]
+        * ROUNDPS(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ROUNDPS, self).__init__("ROUNDPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"ROUNDPS\" requires 3 operands")
+            raise SyntaxError('Instruction "ROUNDPS" requires 3 operands')
         self.in_regs = (False, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x08, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x08,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x08]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x08])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ROUNDPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ROUNDPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2018,17 +3496,21 @@ class MINPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MINPS(xmm, xmm/m128)    [SSE]
+        * MINPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MINPS, self).__init__("MINPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MINPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MINPS" requires 2 operands')
         self.go_name = "MINPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2036,11 +3518,29 @@ class MINPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x5D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MINPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MINPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2051,17 +3551,21 @@ class MAXPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MAXPS(xmm, xmm/m128)    [SSE]
+        * MAXPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MAXPS, self).__init__("MAXPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MAXPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MAXPS" requires 2 operands')
         self.go_name = "MAXPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2069,11 +3573,29 @@ class MAXPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x5F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MAXPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MAXPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2084,17 +3606,21 @@ class RCPPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * RCPPS(xmm, xmm/m128)    [SSE]
+        * RCPPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(RCPPS, self).__init__("RCPPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"RCPPS\" requires 2 operands")
+            raise SyntaxError('Instruction "RCPPS" requires 2 operands')
         self.go_name = "RCPPS"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -2102,11 +3628,29 @@ class RCPPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x53, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x53, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x53]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x53])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: RCPPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: RCPPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2117,17 +3661,21 @@ class RSQRTPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * RSQRTPS(xmm, xmm/m128)    [SSE]
+        * RSQRTPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(RSQRTPS, self).__init__("RSQRTPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"RSQRTPS\" requires 2 operands")
+            raise SyntaxError('Instruction "RSQRTPS" requires 2 operands')
         self.go_name = "RSQRTPS"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -2135,11 +3683,29 @@ class RSQRTPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x52, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x52, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x52]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x52])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: RSQRTPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: RSQRTPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2150,32 +3716,71 @@ class DPPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * DPPS(xmm, xmm/m128, imm8)    [SSE4.1]
+        * DPPS(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(DPPS, self).__init__("DPPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"DPPS\" requires 3 operands")
+            raise SyntaxError('Instruction "DPPS" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x40, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x40,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x40]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x40])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: DPPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: DPPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2186,33 +3791,71 @@ class CMPPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CMPPS(xmm, xmm/m128, imm8)    [SSE]
+        * CMPPS(xmm, xmm/m128, imm8)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CMPPS, self).__init__("CMPPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"CMPPS\" requires 3 operands")
+            raise SyntaxError('Instruction "CMPPS" requires 3 operands')
         self.go_name = "CMPPS"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC2, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC2,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xC2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CMPPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CMPPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2223,27 +3866,40 @@ class MOVMSKPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVMSKPS(r32, xmm)    [SSE]
+        * MOVMSKPS(r32, xmm)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVMSKPS, self).__init__("MOVMSKPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVMSKPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVMSKPS" requires 2 operands')
         if is_r32(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "MOVMSKPS"
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x50, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x50, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         else:
-            raise SyntaxError("Invalid operand types: MOVMSKPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVMSKPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2254,32 +3910,71 @@ class ROUNDPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ROUNDPD(xmm, xmm/m128, imm8)    [SSE4.1]
+        * ROUNDPD(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ROUNDPD, self).__init__("ROUNDPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"ROUNDPD\" requires 3 operands")
+            raise SyntaxError('Instruction "ROUNDPD" requires 3 operands')
         self.in_regs = (False, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x09, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x09,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x09]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x09])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ROUNDPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ROUNDPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2290,17 +3985,21 @@ class MINPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MINPD(xmm, xmm/m128)    [SSE2]
+        * MINPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MINPD, self).__init__("MINPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MINPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MINPD" requires 2 operands')
         self.go_name = "MINPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2308,11 +4007,29 @@ class MINPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MINPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MINPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2323,17 +4040,21 @@ class MAXPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MAXPD(xmm, xmm/m128)    [SSE2]
+        * MAXPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MAXPD, self).__init__("MAXPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MAXPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MAXPD" requires 2 operands')
         self.go_name = "MAXPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2341,11 +4062,29 @@ class MAXPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MAXPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MAXPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2356,32 +4095,71 @@ class DPPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * DPPD(xmm, xmm/m128, imm8)    [SSE4.1]
+        * DPPD(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(DPPD, self).__init__("DPPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"DPPD\" requires 3 operands")
+            raise SyntaxError('Instruction "DPPD" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x41, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x41,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x41]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x41])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: DPPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: DPPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2392,33 +4170,71 @@ class CMPPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CMPPD(xmm, xmm/m128, imm8)    [SSE2]
+        * CMPPD(xmm, xmm/m128, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CMPPD, self).__init__("CMPPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"CMPPD\" requires 3 operands")
+            raise SyntaxError('Instruction "CMPPD" requires 3 operands')
         self.go_name = "CMPPD"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC2, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC2,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xC2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CMPPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CMPPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2429,27 +4245,41 @@ class MOVMSKPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVMSKPD(r32, xmm)    [SSE2]
+        * MOVMSKPD(r32, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVMSKPD, self).__init__("MOVMSKPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVMSKPD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVMSKPD" requires 2 operands')
         if is_r32(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "MOVMSKPD"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x50, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x50, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MOVMSKPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVMSKPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2460,17 +4290,21 @@ class ANDPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ANDPS(xmm, xmm/m128)    [SSE]
+        * ANDPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ANDPS, self).__init__("ANDPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ANDPS\" requires 2 operands")
+            raise SyntaxError('Instruction "ANDPS" requires 2 operands')
         self.go_name = "ANDPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2478,11 +4312,29 @@ class ANDPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x54, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x54, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x54]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x54])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ANDPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ANDPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2493,17 +4345,21 @@ class ANDNPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ANDNPS(xmm, xmm/m128)    [SSE]
+        * ANDNPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ANDNPS, self).__init__("ANDNPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ANDNPS\" requires 2 operands")
+            raise SyntaxError('Instruction "ANDNPS" requires 2 operands')
         self.go_name = "ANDNPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2511,12 +4367,30 @@ class ANDNPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x55, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x55, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x55]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x55])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ANDNPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ANDNPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2527,17 +4401,21 @@ class ORPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ORPS(xmm, xmm/m128)    [SSE]
+        * ORPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ORPS, self).__init__("ORPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ORPS\" requires 2 operands")
+            raise SyntaxError('Instruction "ORPS" requires 2 operands')
         self.go_name = "ORPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2545,11 +4423,29 @@ class ORPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x56, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x56, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x56]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x56])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ORPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ORPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2560,17 +4456,21 @@ class XORPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * XORPS(xmm, xmm/m128)    [SSE]
+        * XORPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(XORPS, self).__init__("XORPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"XORPS\" requires 2 operands")
+            raise SyntaxError('Instruction "XORPS" requires 2 operands')
         self.go_name = "XORPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2578,80 +4478,169 @@ class XORPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x57, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x57, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x57]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x57])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: XORPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: XORPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
 
 class BLENDPS(Instruction):
-    """ Blend Packed Single Precision Floating-Point Values"""
+    """Blend Packed Single Precision Floating-Point Values"""
 
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * BLENDPS(xmm, xmm/m128, imm8)    [SSE4.1]
+        * BLENDPS(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(BLENDPS, self).__init__("BLENDPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"BLENDPS\" requires 3 operands")
+            raise SyntaxError('Instruction "BLENDPS" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x0C, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x0C,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x0C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x0C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: BLENDPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: BLENDPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
 
 class BLENDVPS(Instruction):
-    """ Variable Blend Packed Single Precision Floating-Point Values"""
+    """Variable Blend Packed Single Precision Floating-Point Values"""
 
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * BLENDVPS(xmm, xmm/m128, xmm0)    [SSE4.1]
+        * BLENDVPS(xmm, xmm/m128, xmm0)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(BLENDVPS, self).__init__("BLENDVPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"BLENDVPS\" requires 3 operands")
+            raise SyntaxError('Instruction "BLENDVPS" requires 3 operands')
         self.in_regs = (True, True, True)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_xmm0(self.operands[2]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x14, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_xmm0(self.operands[2]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x14]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_xmm0(self.operands[2])
+        ):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x14, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_xmm0(self.operands[2])
+        ):
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x14])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: BLENDVPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: BLENDVPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2662,17 +4651,21 @@ class ANDPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ANDPD(xmm, xmm/m128)    [SSE2]
+        * ANDPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ANDPD, self).__init__("ANDPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ANDPD\" requires 2 operands")
+            raise SyntaxError('Instruction "ANDPD" requires 2 operands')
         self.go_name = "ANDPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2680,11 +4673,29 @@ class ANDPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x54, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x54, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x54]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x54])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ANDPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ANDPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2695,17 +4706,21 @@ class ANDNPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ANDNPD(xmm, xmm/m128)    [SSE2]
+        * ANDNPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ANDNPD, self).__init__("ANDNPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ANDNPD\" requires 2 operands")
+            raise SyntaxError('Instruction "ANDNPD" requires 2 operands')
         self.go_name = "ANDNPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2713,12 +4728,30 @@ class ANDNPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x55, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x55, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x55]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x55])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ANDNPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ANDNPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2729,17 +4762,21 @@ class ORPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * ORPD(xmm, xmm/m128)    [SSE2]
+        * ORPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(ORPD, self).__init__("ORPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"ORPD\" requires 2 operands")
+            raise SyntaxError('Instruction "ORPD" requires 2 operands')
         self.go_name = "ORPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2747,11 +4784,29 @@ class ORPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x56, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x56, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x56]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x56])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: ORPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: ORPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2762,17 +4817,21 @@ class XORPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * XORPD(xmm, xmm/m128)    [SSE2]
+        * XORPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(XORPD, self).__init__("XORPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"XORPD\" requires 2 operands")
+            raise SyntaxError('Instruction "XORPD" requires 2 operands')
         self.go_name = "XORPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2780,12 +4839,30 @@ class XORPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x57, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x57, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x57]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x57])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: XORPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: XORPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2796,64 +4873,135 @@ class BLENDPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * BLENDPD(xmm, xmm/m128, imm8)    [SSE4.1]
+        * BLENDPD(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(BLENDPD, self).__init__("BLENDPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"BLENDPD\" requires 3 operands")
+            raise SyntaxError('Instruction "BLENDPD" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x0D, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x0D,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x0D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x0D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: BLENDPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: BLENDPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
 
 class BLENDVPD(Instruction):
-    """ Variable Blend Packed Double Precision Floating-Point Values"""
+    """Variable Blend Packed Double Precision Floating-Point Values"""
 
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * BLENDVPD(xmm, xmm/m128, xmm0)    [SSE4.1]
+        * BLENDVPD(xmm, xmm/m128, xmm0)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(BLENDVPD, self).__init__("BLENDVPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"BLENDVPD\" requires 3 operands")
+            raise SyntaxError('Instruction "BLENDVPD" requires 3 operands')
         self.in_regs = (True, True, True)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_xmm0(self.operands[2]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x15, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_xmm0(self.operands[2]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x15]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_xmm0(self.operands[2])
+        ):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x15, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_xmm0(self.operands[2])
+        ):
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x15])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: BLENDVPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: BLENDVPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2864,17 +5012,21 @@ class UNPCKLPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * UNPCKLPS(xmm, xmm/m128)    [SSE]
+        * UNPCKLPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(UNPCKLPS, self).__init__("UNPCKLPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"UNPCKLPS\" requires 2 operands")
+            raise SyntaxError('Instruction "UNPCKLPS" requires 2 operands')
         self.go_name = "UNPCKLPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2882,11 +5034,29 @@ class UNPCKLPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x14, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x14, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x14]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x14])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: UNPCKLPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: UNPCKLPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2897,17 +5067,21 @@ class UNPCKHPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * UNPCKHPS(xmm, xmm/m128)    [SSE]
+        * UNPCKHPS(xmm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(UNPCKHPS, self).__init__("UNPCKHPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"UNPCKHPS\" requires 2 operands")
+            raise SyntaxError('Instruction "UNPCKHPS" requires 2 operands')
         self.go_name = "UNPCKHPS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -2915,11 +5089,29 @@ class UNPCKHPS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x15, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x15, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x15]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x15])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: UNPCKHPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: UNPCKHPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2930,27 +5122,40 @@ class MOVLHPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVLHPS(xmm, xmm)    [SSE]
+        * MOVLHPS(xmm, xmm)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVLHPS, self).__init__("MOVLHPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVLHPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVLHPS" requires 2 operands')
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "MOVLHPS"
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x16, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x16, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         else:
-            raise SyntaxError("Invalid operand types: MOVLHPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVLHPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2961,27 +5166,40 @@ class MOVHLPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVHLPS(xmm, xmm)    [SSE]
+        * MOVHLPS(xmm, xmm)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVHLPS, self).__init__("MOVHLPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVHLPS\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVHLPS" requires 2 operands')
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "MOVHLPS"
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x12, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x12, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         else:
-            raise SyntaxError("Invalid operand types: MOVHLPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVHLPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -2992,33 +5210,71 @@ class SHUFPS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SHUFPS(xmm, xmm/m128, imm8)    [SSE]
+        * SHUFPS(xmm, xmm/m128, imm8)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SHUFPS, self).__init__("SHUFPS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"SHUFPS\" requires 3 operands")
+            raise SyntaxError('Instruction "SHUFPS" requires 3 operands')
         self.go_name = "SHUFPS"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC6, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC6,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC6]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xC6])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SHUFPS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SHUFPS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3029,17 +5285,21 @@ class UNPCKLPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * UNPCKLPD(xmm, xmm/m128)    [SSE2]
+        * UNPCKLPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(UNPCKLPD, self).__init__("UNPCKLPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"UNPCKLPD\" requires 2 operands")
+            raise SyntaxError('Instruction "UNPCKLPD" requires 2 operands')
         self.go_name = "UNPCKLPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -3047,11 +5307,29 @@ class UNPCKLPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x14, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x14, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x14]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x14])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: UNPCKLPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: UNPCKLPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3062,17 +5340,21 @@ class UNPCKHPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * UNPCKHPD(xmm, xmm/m128)    [SSE2]
+        * UNPCKHPD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(UNPCKHPD, self).__init__("UNPCKHPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"UNPCKHPD\" requires 2 operands")
+            raise SyntaxError('Instruction "UNPCKHPD" requires 2 operands')
         self.go_name = "UNPCKHPD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -3080,11 +5362,29 @@ class UNPCKHPD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x15, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x15, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x15]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x15])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: UNPCKHPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: UNPCKHPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3095,33 +5395,71 @@ class SHUFPD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * SHUFPD(xmm, xmm/m128, imm8)    [SSE2]
+        * SHUFPD(xmm, xmm/m128, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(SHUFPD, self).__init__("SHUFPD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"SHUFPD\" requires 3 operands")
+            raise SyntaxError('Instruction "SHUFPD" requires 3 operands')
         self.go_name = "SHUFPD"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC6, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC6,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC6]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xC6])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: SHUFPD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: SHUFPD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3132,71 +5470,138 @@ class MOVD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVD(mm, r32/m32)     [MMX]
-            * MOVD(r32/m32, mm)     [MMX]
-            * MOVD(r32/m32, xmm)    [SSE2]
-            * MOVD(xmm, r32/m32)    [SSE2]
+        * MOVD(mm, r32/m32)     [MMX]
+        * MOVD(r32/m32, mm)     [MMX]
+        * MOVD(r32/m32, xmm)    [SSE2]
+        * MOVD(xmm, r32/m32)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVD, self).__init__("MOVD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVD\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVD" requires 2 operands')
         self.out_operands = (True, False)
         if is_r32(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x7E, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x7E, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_r32(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x6E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_m32(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x7E]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0x7E])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_r32(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x7E, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x7E, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_r32(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x6E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_m32(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x7E]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x7E])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MOVD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3207,92 +5612,239 @@ class MOVQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVQ(mm, mm)          [MMX]
-            * MOVQ(mm, r64/m64)     [MMX]
-            * MOVQ(r64/m64, mm)     [MMX]
-            * MOVQ(r64/m64, xmm)    [SSE2]
-            * MOVQ(xmm, r64/m64)    [SSE2]
-            * MOVQ(xmm, xmm)        [SSE2]
+        * MOVQ(mm, mm)          [MMX]
+        * MOVQ(mm, r64/m64)     [MMX]
+        * MOVQ(r64/m64, mm)     [MMX]
+        * MOVQ(r64/m64, xmm)    [SSE2]
+        * MOVQ(xmm, r64/m64)    [SSE2]
+        * MOVQ(xmm, xmm)        [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVQ, self).__init__("MOVQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVQ\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVQ" requires 2 operands')
         self.go_name = "MOVQ"
         self.out_operands = (True, False)
         if is_r64(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0x48 | op[1].hcode << 2 | op[0].hcode, 0x0F, 0x7E, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0x48 | op[1].hcode << 2 | op[0].hcode,
+                            0x0F,
+                            0x7E,
+                            0xC0 | op[1].lcode << 3 | op[0].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_r64(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x6E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x6E,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x7F, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x7F, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x6E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x6F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x6E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_m64(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x7F]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: rex(1, op[1].hcode, op[0].address) + bytearray([0x0F, 0x7E]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0x7F])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: rex(1, op[1].hcode, op[0].address)
+                    + bytearray([0x0F, 0x7E])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_r64(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0x66, 0x48 | op[1].hcode << 2 | op[0].hcode, 0x0F, 0x7E, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0x66,
+                            0x48 | op[1].hcode << 2 | op[0].hcode,
+                            0x0F,
+                            0x7E,
+                            0xC0 | op[1].lcode << 3 | op[0].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_r64(self.operands[1]):
-            self.encodings.append((0x00, lambda op: bytearray([0x66, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x6E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0x66,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x6E,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x7E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0xD6, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x7E, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0xD6, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x7E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0x66]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x6E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x7E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0x66])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x6E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_m64(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0xD6]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0x66]) + rex(1, op[1].hcode, op[0].address) + bytearray([0x0F, 0x7E]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0xD6])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0x66])
+                    + rex(1, op[1].hcode, op[0].address)
+                    + bytearray([0x0F, 0x7E])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MOVQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3303,19 +5855,30 @@ class MOVDQ2Q(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVDQ2Q(mm, xmm)    [SSE2]
+        * MOVDQ2Q(mm, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVDQ2Q, self).__init__("MOVDQ2Q", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVDQ2Q\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVDQ2Q" requires 2 operands')
         if is_mm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD6, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD6, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
@@ -3323,7 +5886,10 @@ class MOVDQ2Q(Instruction):
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MOVDQ2Q " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVDQ2Q "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3334,19 +5900,30 @@ class MOVQ2DQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVQ2DQ(xmm, mm)    [SSE2]
+        * MOVQ2DQ(xmm, mm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVQ2DQ, self).__init__("MOVQ2DQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVQ2DQ\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVQ2DQ" requires 2 operands')
         if is_xmm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD6, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD6, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
@@ -3354,7 +5931,10 @@ class MOVQ2DQ(Instruction):
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MOVQ2DQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVQ2DQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3365,37 +5945,74 @@ class MOVDQA(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVDQA(xmm, xmm/m128)    [SSE2]
-            * MOVDQA(xmm/m128, xmm)    [SSE2]
+        * MOVDQA(xmm, xmm/m128)    [SSE2]
+        * MOVDQA(xmm/m128, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVDQA, self).__init__("MOVDQA", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVDQA\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVDQA" requires 2 operands')
         self.go_name = "MOVO"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x7F, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x7F, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x6F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m128(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x7F]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x7F])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVDQA " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVDQA "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3406,37 +6023,74 @@ class MOVDQU(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVDQU(xmm, xmm/m128)    [SSE2]
-            * MOVDQU(xmm/m128, xmm)    [SSE2]
+        * MOVDQU(xmm, xmm/m128)    [SSE2]
+        * MOVDQU(xmm/m128, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVDQU, self).__init__("MOVDQU", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVDQU\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVDQU" requires 2 operands')
         self.go_name = "MOVOU"
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x7F, 0xC0 | op[1].lcode << 3 | op[0].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6F, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray([0x0F, 0x7F, 0xC0 | op[1].lcode << 3 | op[0].lcode]),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x6F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
         elif is_m128(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x7F]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x7F])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
         else:
-            raise SyntaxError("Invalid operand types: MOVDQU " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVDQU "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3447,26 +6101,41 @@ class LDDQU(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * LDDQU(xmm, m128)    [SSE3]
+        * LDDQU(xmm, m128)    [SSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(LDDQU, self).__init__("LDDQU", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"LDDQU\" requires 2 operands")
+            raise SyntaxError('Instruction "LDDQU" requires 2 operands')
         if is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF0]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF0])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse3])
         else:
-            raise SyntaxError("Invalid operand types: LDDQU " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: LDDQU "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3477,20 +6146,30 @@ class MASKMOVQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MASKMOVQ(mm, mm)    [MMX+]
+        * MASKMOVQ(mm, mm)    [MMX+]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MASKMOVQ, self).__init__("MASKMOVQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MASKMOVQ\" requires 2 operands")
+            raise SyntaxError('Instruction "MASKMOVQ" requires 2 operands')
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
             self.go_name = "MASKMOVQ"
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF7, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF7, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self._implicit_in_regs = {7: 15}
             self.in_regs = (True, True)
             self.out_regs = (False, False)
@@ -3498,7 +6177,10 @@ class MASKMOVQ(Instruction):
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         else:
-            raise SyntaxError("Invalid operand types: MASKMOVQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MASKMOVQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3509,19 +6191,32 @@ class MASKMOVDQU(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MASKMOVDQU(xmm, xmm)    [SSE2]
+        * MASKMOVDQU(xmm, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
-        super(MASKMOVDQU, self).__init__("MASKMOVDQU", origin=origin, prototype=prototype)
+        super(MASKMOVDQU, self).__init__(
+            "MASKMOVDQU", origin=origin, prototype=prototype
+        )
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MASKMOVDQU\" requires 2 operands")
+            raise SyntaxError('Instruction "MASKMOVDQU" requires 2 operands')
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF7, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF7, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self._implicit_in_regs = {7: 15}
             self.in_regs = (True, True)
             self.out_regs = (False, False)
@@ -3529,7 +6224,10 @@ class MASKMOVDQU(Instruction):
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MASKMOVDQU " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MASKMOVDQU "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3540,27 +6238,43 @@ class MOVNTQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVNTQ(m64, mm)    [MMX+]
+        * MOVNTQ(m64, mm)    [MMX+]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVNTQ, self).__init__("MOVNTQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVNTQ\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVNTQ" requires 2 operands')
         if is_m64(self.operands[0]) and is_mm(self.operands[1]):
             self.go_name = "MOVNTQ"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0xE7]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[1].hcode, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0xE7])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         else:
-            raise SyntaxError("Invalid operand types: MOVNTQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVNTQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3571,27 +6285,42 @@ class MOVNTDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVNTDQ(m128, xmm)    [SSE2]
+        * MOVNTDQ(m128, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVNTDQ, self).__init__("MOVNTDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVNTDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVNTDQ" requires 2 operands')
         if is_m128(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "MOVNTO"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0xE7]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0xE7])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.out_regs = (False, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: MOVNTDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVNTDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3602,26 +6331,41 @@ class MOVNTDQA(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MOVNTDQA(xmm, m128)    [SSE4.1]
+        * MOVNTDQA(xmm, m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MOVNTDQA, self).__init__("MOVNTDQA", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"MOVNTDQA\" requires 2 operands")
+            raise SyntaxError('Instruction "MOVNTDQA" requires 2 operands')
         if is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x2A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x2A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (False, True)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         else:
-            raise SyntaxError("Invalid operand types: MOVNTDQA " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MOVNTDQA "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3632,28 +6376,52 @@ class PMOVSXBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVSXBW(xmm, xmm/m64)    [SSE4.1]
+        * PMOVSXBW(xmm, xmm/m64)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVSXBW, self).__init__("PMOVSXBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVSXBW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVSXBW" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x20, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x20, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x20]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x20])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVSXBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVSXBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3664,28 +6432,52 @@ class PMOVSXBD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVSXBD(xmm, xmm/m32)    [SSE4.1]
+        * PMOVSXBD(xmm, xmm/m32)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVSXBD, self).__init__("PMOVSXBD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVSXBD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVSXBD" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x21, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x21, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x21]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x21])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVSXBD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVSXBD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3696,28 +6488,52 @@ class PMOVSXBQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVSXBQ(xmm, xmm/m16)    [SSE4.1]
+        * PMOVSXBQ(xmm, xmm/m16)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVSXBQ, self).__init__("PMOVSXBQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVSXBQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVSXBQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x22, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x22, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m16(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x22]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x22])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVSXBQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVSXBQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3728,28 +6544,52 @@ class PMOVSXWD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVSXWD(xmm, xmm/m64)    [SSE4.1]
+        * PMOVSXWD(xmm, xmm/m64)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVSXWD, self).__init__("PMOVSXWD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVSXWD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVSXWD" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x23, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x23, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x23]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x23])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVSXWD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVSXWD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3760,28 +6600,52 @@ class PMOVSXWQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVSXWQ(xmm, xmm/m32)    [SSE4.1]
+        * PMOVSXWQ(xmm, xmm/m32)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVSXWQ, self).__init__("PMOVSXWQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVSXWQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVSXWQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x24, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x24, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x24]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x24])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVSXWQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVSXWQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3792,28 +6656,52 @@ class PMOVSXDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVSXDQ(xmm, xmm/m64)    [SSE4.1]
+        * PMOVSXDQ(xmm, xmm/m64)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVSXDQ, self).__init__("PMOVSXDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVSXDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVSXDQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x25, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x25, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x25]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x25])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVSXDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVSXDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3824,28 +6712,52 @@ class PMOVZXBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVZXBW(xmm, xmm/m64)    [SSE4.1]
+        * PMOVZXBW(xmm, xmm/m64)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVZXBW, self).__init__("PMOVZXBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVZXBW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVZXBW" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x30, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x30, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x30]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x30])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVZXBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVZXBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3856,28 +6768,52 @@ class PMOVZXBD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVZXBD(xmm, xmm/m32)    [SSE4.1]
+        * PMOVZXBD(xmm, xmm/m32)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVZXBD, self).__init__("PMOVZXBD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVZXBD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVZXBD" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x31, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x31, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x31]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x31])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVZXBD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVZXBD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3888,28 +6824,52 @@ class PMOVZXBQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVZXBQ(xmm, xmm/m16)    [SSE4.1]
+        * PMOVZXBQ(xmm, xmm/m16)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVZXBQ, self).__init__("PMOVZXBQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVZXBQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVZXBQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x32, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x32, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m16(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x32]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x32])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVZXBQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVZXBQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3920,28 +6880,52 @@ class PMOVZXWD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVZXWD(xmm, xmm/m64)    [SSE4.1]
+        * PMOVZXWD(xmm, xmm/m64)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVZXWD, self).__init__("PMOVZXWD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVZXWD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVZXWD" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x33, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x33, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x33]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x33])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVZXWD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVZXWD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3952,28 +6936,52 @@ class PMOVZXWQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVZXWQ(xmm, xmm/m32)    [SSE4.1]
+        * PMOVZXWQ(xmm, xmm/m32)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVZXWQ, self).__init__("PMOVZXWQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVZXWQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVZXWQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x34, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x34, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x34]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x34])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVZXWQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVZXWQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -3984,28 +6992,52 @@ class PMOVZXDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVZXDQ(xmm, xmm/m64)    [SSE4.1]
+        * PMOVZXDQ(xmm, xmm/m64)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVZXDQ, self).__init__("PMOVZXDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVZXDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVZXDQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x35, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x35, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x35]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x35])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMOVZXDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVZXDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4016,35 +7048,74 @@ class PEXTRB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PEXTRB(m8, xmm, imm8)     [SSE4.1]
-            * PEXTRB(r32, xmm, imm8)    [SSE4.1]
+        * PEXTRB(m8, xmm, imm8)     [SSE4.1]
+        * PEXTRB(r32, xmm, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PEXTRB, self).__init__("PEXTRB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PEXTRB\" requires 3 operands")
+            raise SyntaxError('Instruction "PEXTRB" requires 3 operands')
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_r32(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_r32(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x3A, 0x14, 0xC0 | op[1].lcode << 3 | op[0].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x14,
+                            0xC0 | op[1].lcode << 3 | op[0].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
-        elif is_m8(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_m8(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x3A, 0x14]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x14])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.in_regs = (True, True, False)
             self.out_regs = (False, False, False)
         else:
-            raise SyntaxError("Invalid operand types: PEXTRB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PEXTRB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4055,48 +7126,118 @@ class PEXTRW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PEXTRW(m16, xmm, imm8)    [SSE4.1]
-            * PEXTRW(r32, mm, imm8)     [MMX+]
-            * PEXTRW(r32, xmm, imm8)    [SSE4.1]
+        * PEXTRW(m16, xmm, imm8)    [SSE4.1]
+        * PEXTRW(r32, mm, imm8)     [MMX+]
+        * PEXTRW(r32, xmm, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PEXTRW, self).__init__("PEXTRW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PEXTRW\" requires 3 operands")
+            raise SyntaxError('Instruction "PEXTRW" requires 3 operands')
         self.go_name = "PEXTRW"
         self.out_operands = (True, False, False)
-        if is_r32(self.operands[0]) and is_mm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_r32(self.operands[0])
+            and is_mm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC5, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC5,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
-        elif is_r32(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_r32(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x3A, 0x15, 0xC0 | op[1].lcode << 3 | op[0].lcode, op[2] & 0xFF])))
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC5, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x15,
+                            0xC0 | op[1].lcode << 3 | op[0].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC5,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        elif is_m16(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_m16(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x3A, 0x15]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x15])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.in_regs = (True, True, False)
             self.out_regs = (False, False, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         else:
-            raise SyntaxError("Invalid operand types: PEXTRW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PEXTRW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4107,34 +7248,73 @@ class PEXTRD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PEXTRD(r32/m32, xmm, imm8)    [SSE4.1]
+        * PEXTRD(r32/m32, xmm, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PEXTRD, self).__init__("PEXTRD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PEXTRD\" requires 3 operands")
+            raise SyntaxError('Instruction "PEXTRD" requires 3 operands')
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_r32(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_r32(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[1].hcode, op[0], rex) + bytearray([0x0F, 0x3A, 0x16, 0xC0 | op[1].lcode << 3 | op[0].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x16,
+                            0xC0 | op[1].lcode << 3 | op[0].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
-        elif is_m32(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_m32(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[1].hcode, op[0].address, rex) + bytearray([0x0F, 0x3A, 0x16]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[1].hcode, op[0].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x16])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.in_regs = (True, True, False)
             self.out_regs = (False, False, False)
         else:
-            raise SyntaxError("Invalid operand types: PEXTRD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PEXTRD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4145,34 +7325,73 @@ class PEXTRQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PEXTRQ(r64/m64, xmm, imm8)    [SSE4.1]
+        * PEXTRQ(r64/m64, xmm, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PEXTRQ, self).__init__("PEXTRQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PEXTRQ\" requires 3 operands")
+            raise SyntaxError('Instruction "PEXTRQ" requires 3 operands')
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_r64(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_r64(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0x66, 0x48 | op[1].hcode << 2 | op[0].hcode, 0x0F, 0x3A, 0x16, 0xC0 | op[1].lcode << 3 | op[0].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0x66,
+                            0x48 | op[1].hcode << 2 | op[0].hcode,
+                            0x0F,
+                            0x3A,
+                            0x16,
+                            0xC0 | op[1].lcode << 3 | op[0].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.in_regs = (False, True, False)
             self.out_regs = (True, False, False)
-        elif is_m64(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_m64(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0x66]) + rex(1, op[1].hcode, op[0].address) + bytearray([0x0F, 0x3A, 0x16]) + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0x66])
+                    + rex(1, op[1].hcode, op[0].address)
+                    + bytearray([0x0F, 0x3A, 0x16])
+                    + modrm_sib_disp(op[1].lcode, op[0].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.in_regs = (True, True, False)
             self.out_regs = (False, False, False)
         else:
-            raise SyntaxError("Invalid operand types: PEXTRQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PEXTRQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4183,33 +7402,72 @@ class PINSRB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PINSRB(xmm, m8, imm8)     [SSE4.1]
-            * PINSRB(xmm, r32, imm8)    [SSE4.1]
+        * PINSRB(xmm, m8, imm8)     [SSE4.1]
+        * PINSRB(xmm, r32, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PINSRB, self).__init__("PINSRB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PINSRB\" requires 3 operands")
+            raise SyntaxError('Instruction "PINSRB" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_r32(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_r32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x20, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m8(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x20,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m8(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x20]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x20])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PINSRB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PINSRB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4220,50 +7478,119 @@ class PINSRW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PINSRW(mm, m16, imm8)     [MMX+]
-            * PINSRW(mm, r32, imm8)     [MMX+]
-            * PINSRW(xmm, m16, imm8)    [SSE2]
-            * PINSRW(xmm, r32, imm8)    [SSE2]
+        * PINSRW(mm, m16, imm8)     [MMX+]
+        * PINSRW(mm, r32, imm8)     [MMX+]
+        * PINSRW(xmm, m16, imm8)    [SSE2]
+        * PINSRW(xmm, r32, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PINSRW, self).__init__("PINSRW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PINSRW\" requires 3 operands")
+            raise SyntaxError('Instruction "PINSRW" requires 3 operands')
         self.go_name = "PINSRW"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
-        if is_mm(self.operands[0]) and is_r32(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_mm(self.operands[0])
+            and is_r32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC4, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC4,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
-        elif is_mm(self.operands[0]) and is_m16(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_mm(self.operands[0])
+            and is_m16(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xC4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
-        elif is_xmm(self.operands[0]) and is_r32(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_r32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xC4, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0xC4,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
-        elif is_xmm(self.operands[0]) and is_m16(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_m16(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xC4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xC4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PINSRW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PINSRW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4274,33 +7601,72 @@ class PINSRD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PINSRD(xmm, r32/m32, imm8)    [SSE4.1]
+        * PINSRD(xmm, r32/m32, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PINSRD, self).__init__("PINSRD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PINSRD\" requires 3 operands")
+            raise SyntaxError('Instruction "PINSRD" requires 3 operands')
         self.go_name = "PINSRD"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_r32(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_r32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x22, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m32(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x22,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m32(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x22]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x22])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PINSRD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PINSRD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4311,33 +7677,72 @@ class PINSRQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PINSRQ(xmm, r64/m64, imm8)    [SSE4.1]
+        * PINSRQ(xmm, r64/m64, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PINSRQ, self).__init__("PINSRQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PINSRQ\" requires 3 operands")
+            raise SyntaxError('Instruction "PINSRQ" requires 3 operands')
         self.go_name = "PINSRQ"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_r64(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_r64(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x00, lambda op: bytearray([0x66, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x3A, 0x22, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m64(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0x66,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x3A,
+                            0x22,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m64(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0x66]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x3A, 0x22]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0x66])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x3A, 0x22])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PINSRQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PINSRQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4348,32 +7753,52 @@ class PMOVMSKB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMOVMSKB(r32, mm)     [MMX+]
-            * PMOVMSKB(r32, xmm)    [SSE2]
+        * PMOVMSKB(r32, mm)     [MMX+]
+        * PMOVMSKB(r32, xmm)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMOVMSKB, self).__init__("PMOVMSKB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMOVMSKB\" requires 2 operands")
+            raise SyntaxError('Instruction "PMOVMSKB" requires 2 operands')
         self.go_name = "PMOVMSKB"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_r32(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD7, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD7, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_r32(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD7, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD7, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMOVMSKB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMOVMSKB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4384,28 +7809,52 @@ class PTEST(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PTEST(xmm, xmm/m128)    [SSE4.1]
+        * PTEST(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PTEST, self).__init__("PTEST", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PTEST\" requires 2 operands")
+            raise SyntaxError('Instruction "PTEST" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (False, False)
         self.out_operands = (False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x17, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x17, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x17]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x17])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PTEST " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PTEST "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4416,40 +7865,77 @@ class PADDB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDB(mm, mm/m64)       [MMX]
-            * PADDB(xmm, xmm/m128)    [SSE2]
+        * PADDB(mm, mm/m64)       [MMX]
+        * PADDB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDB, self).__init__("PADDB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDB\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDB" requires 2 operands')
         self.go_name = "PADDB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFC, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFC, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFC]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xFC])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFC, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFC, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFC]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xFC])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PADDB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4460,40 +7946,77 @@ class PADDW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDW(mm, mm/m64)       [MMX]
-            * PADDW(xmm, xmm/m128)    [SSE2]
+        * PADDW(mm, mm/m64)       [MMX]
+        * PADDW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDW, self).__init__("PADDW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDW\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDW" requires 2 operands')
         self.go_name = "PADDW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFD, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFD, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFD]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xFD])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFD, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFD, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFD]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xFD])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PADDW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4504,40 +8027,77 @@ class PADDD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDD(mm, mm/m64)       [MMX]
-            * PADDD(xmm, xmm/m128)    [SSE2]
+        * PADDD(mm, mm/m64)       [MMX]
+        * PADDD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDD, self).__init__("PADDD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDD\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDD" requires 2 operands')
         self.go_name = "PADDL"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFE, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFE, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFE]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xFE])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFE, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFE, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFE]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xFE])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PADDD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4548,37 +8108,74 @@ class PADDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDQ(mm, mm/m64)       [SSE2]
-            * PADDQ(xmm, xmm/m128)    [SSE2]
+        * PADDQ(mm, mm/m64)       [SSE2]
+        * PADDQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDQ, self).__init__("PADDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDQ" requires 2 operands')
         self.go_name = "PADDQ"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD4, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD4, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xD4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD4, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD4, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PADDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4589,40 +8186,77 @@ class PADDSB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDSB(mm, mm/m64)       [MMX]
-            * PADDSB(xmm, xmm/m128)    [SSE2]
+        * PADDSB(mm, mm/m64)       [MMX]
+        * PADDSB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDSB, self).__init__("PADDSB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDSB\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDSB" requires 2 operands')
         self.go_name = "PADDSB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEC, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEC, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEC]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xEC])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEC, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEC, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEC]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xEC])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PADDSB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDSB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4633,40 +8267,77 @@ class PADDSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDSW(mm, mm/m64)       [MMX]
-            * PADDSW(xmm, xmm/m128)    [SSE2]
+        * PADDSW(mm, mm/m64)       [MMX]
+        * PADDSW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDSW, self).__init__("PADDSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDSW" requires 2 operands')
         self.go_name = "PADDSW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xED, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xED, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xED]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xED])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xED, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xED, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xED]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xED])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PADDSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4677,40 +8348,77 @@ class PADDUSB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDUSB(mm, mm/m64)       [MMX]
-            * PADDUSB(xmm, xmm/m128)    [SSE2]
+        * PADDUSB(mm, mm/m64)       [MMX]
+        * PADDUSB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDUSB, self).__init__("PADDUSB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDUSB\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDUSB" requires 2 operands')
         self.go_name = "PADDUSB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDC, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDC, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDC]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xDC])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDC, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDC, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDC]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xDC])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PADDUSB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDUSB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4721,40 +8429,77 @@ class PADDUSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PADDUSW(mm, mm/m64)       [MMX]
-            * PADDUSW(xmm, xmm/m128)    [SSE2]
+        * PADDUSW(mm, mm/m64)       [MMX]
+        * PADDUSW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PADDUSW, self).__init__("PADDUSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PADDUSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PADDUSW" requires 2 operands')
         self.go_name = "PADDUSW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDD, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDD, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDD]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xDD])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDD, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDD, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDD]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xDD])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PADDUSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PADDUSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4765,36 +8510,77 @@ class PHADDW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PHADDW(mm, mm/m64)       [SSSE3]
-            * PHADDW(xmm, xmm/m128)    [SSSE3]
+        * PHADDW(mm, mm/m64)       [SSSE3]
+        * PHADDW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PHADDW, self).__init__("PHADDW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PHADDW\" requires 2 operands")
+            raise SyntaxError('Instruction "PHADDW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x01, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x01, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x01]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x01])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x01, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x01, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x01]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x01])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PHADDW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PHADDW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4805,36 +8591,77 @@ class PHADDD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PHADDD(mm, mm/m64)       [SSSE3]
-            * PHADDD(xmm, xmm/m128)    [SSSE3]
+        * PHADDD(mm, mm/m64)       [SSSE3]
+        * PHADDD(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PHADDD, self).__init__("PHADDD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PHADDD\" requires 2 operands")
+            raise SyntaxError('Instruction "PHADDD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x02, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x02, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x02]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x02])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x02, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x02, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x02]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x02])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PHADDD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PHADDD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4845,36 +8672,77 @@ class PHADDSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PHADDSW(mm, mm/m64)       [SSSE3]
-            * PHADDSW(xmm, xmm/m128)    [SSSE3]
+        * PHADDSW(mm, mm/m64)       [SSSE3]
+        * PHADDSW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PHADDSW, self).__init__("PHADDSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PHADDSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PHADDSW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x03, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x03, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x03]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x03])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x03, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x03, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x03]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x03])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PHADDSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PHADDSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4885,42 +8753,79 @@ class PSUBB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBB(mm, mm/m64)       [MMX]
-            * PSUBB(xmm, xmm/m128)    [SSE2]
+        * PSUBB(mm, mm/m64)       [MMX]
+        * PSUBB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBB, self).__init__("PSUBB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBB\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBB" requires 2 operands')
         self.go_name = "PSUBB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF8, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF8, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF8]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF8])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF8, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF8, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF8]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF8])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSUBB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4931,42 +8836,79 @@ class PSUBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBW(mm, mm/m64)       [MMX]
-            * PSUBW(xmm, xmm/m128)    [SSE2]
+        * PSUBW(mm, mm/m64)       [MMX]
+        * PSUBW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBW, self).__init__("PSUBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBW" requires 2 operands')
         self.go_name = "PSUBW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF9, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF9, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF9]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF9])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF9, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF9, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF9]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF9])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSUBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -4977,42 +8919,79 @@ class PSUBD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBD(mm, mm/m64)       [MMX]
-            * PSUBD(xmm, xmm/m128)    [SSE2]
+        * PSUBD(mm, mm/m64)       [MMX]
+        * PSUBD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBD, self).__init__("PSUBD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBD\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBD" requires 2 operands')
         self.go_name = "PSUBL"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFA, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFA, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFA]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xFA])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFA, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFA, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFA]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xFA])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSUBD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5023,39 +9002,76 @@ class PSUBQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBQ(mm, mm/m64)       [SSE2]
-            * PSUBQ(xmm, xmm/m128)    [SSE2]
+        * PSUBQ(mm, mm/m64)       [SSE2]
+        * PSUBQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBQ, self).__init__("PSUBQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBQ" requires 2 operands')
         self.go_name = "PSUBQ"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFB, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFB, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFB]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xFB])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xFB, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xFB, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xFB]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xFB])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PSUBQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5066,42 +9082,79 @@ class PSUBSB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBSB(mm, mm/m64)       [MMX]
-            * PSUBSB(xmm, xmm/m128)    [SSE2]
+        * PSUBSB(mm, mm/m64)       [MMX]
+        * PSUBSB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBSB, self).__init__("PSUBSB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBSB\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBSB" requires 2 operands')
         self.go_name = "PSUBSB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE8, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE8, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE8]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE8])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE8, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE8, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE8]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE8])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSUBSB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBSB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5112,42 +9165,79 @@ class PSUBSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBSW(mm, mm/m64)       [MMX]
-            * PSUBSW(xmm, xmm/m128)    [SSE2]
+        * PSUBSW(mm, mm/m64)       [MMX]
+        * PSUBSW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBSW, self).__init__("PSUBSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBSW" requires 2 operands')
         self.go_name = "PSUBSW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE9, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE9, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE9]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE9])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE9, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE9, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE9]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE9])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSUBSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5158,42 +9248,79 @@ class PSUBUSB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBUSB(mm, mm/m64)       [MMX]
-            * PSUBUSB(xmm, xmm/m128)    [SSE2]
+        * PSUBUSB(mm, mm/m64)       [MMX]
+        * PSUBUSB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBUSB, self).__init__("PSUBUSB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBUSB\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBUSB" requires 2 operands')
         self.go_name = "PSUBUSB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD8, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD8, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD8]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xD8])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD8, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD8, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD8]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD8])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSUBUSB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBUSB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5204,42 +9331,79 @@ class PSUBUSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSUBUSW(mm, mm/m64)       [MMX]
-            * PSUBUSW(xmm, xmm/m128)    [SSE2]
+        * PSUBUSW(mm, mm/m64)       [MMX]
+        * PSUBUSW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSUBUSW, self).__init__("PSUBUSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSUBUSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSUBUSW" requires 2 operands')
         self.go_name = "PSUBUSW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD9, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD9, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD9]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xD9])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD9, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD9, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD9]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD9])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSUBUSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSUBUSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5250,38 +9414,79 @@ class PHSUBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PHSUBW(mm, mm/m64)       [SSSE3]
-            * PHSUBW(xmm, xmm/m128)    [SSSE3]
+        * PHSUBW(mm, mm/m64)       [SSSE3]
+        * PHSUBW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PHSUBW, self).__init__("PHSUBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PHSUBW\" requires 2 operands")
+            raise SyntaxError('Instruction "PHSUBW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x05, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x05, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x05]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x05])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x05, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x05, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x05]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x05])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PHSUBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PHSUBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5292,38 +9497,79 @@ class PHSUBD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PHSUBD(mm, mm/m64)       [SSSE3]
-            * PHSUBD(xmm, xmm/m128)    [SSSE3]
+        * PHSUBD(mm, mm/m64)       [SSSE3]
+        * PHSUBD(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PHSUBD, self).__init__("PHSUBD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PHSUBD\" requires 2 operands")
+            raise SyntaxError('Instruction "PHSUBD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x06, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x06, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x06]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x06])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x06, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x06, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x06]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x06])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PHSUBD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PHSUBD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5334,38 +9580,79 @@ class PHSUBSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PHSUBSW(mm, mm/m64)       [SSSE3]
-            * PHSUBSW(xmm, xmm/m128)    [SSSE3]
+        * PHSUBSW(mm, mm/m64)       [SSSE3]
+        * PHSUBSW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PHSUBSW, self).__init__("PHSUBSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PHSUBSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PHSUBSW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x07, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x07, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x07]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x07])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x07, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x07, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x07]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x07])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PHSUBSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PHSUBSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5376,28 +9663,52 @@ class PMAXSB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMAXSB(xmm, xmm/m128)    [SSE4.1]
+        * PMAXSB(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMAXSB, self).__init__("PMAXSB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMAXSB\" requires 2 operands")
+            raise SyntaxError('Instruction "PMAXSB" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x3C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x3C, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x3C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x3C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMAXSB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMAXSB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5408,40 +9719,77 @@ class PMAXSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMAXSW(mm, mm/m64)       [MMX+]
-            * PMAXSW(xmm, xmm/m128)    [SSE2]
+        * PMAXSW(mm, mm/m64)       [MMX+]
+        * PMAXSW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMAXSW, self).__init__("PMAXSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMAXSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMAXSW" requires 2 operands')
         self.go_name = "PMAXSW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEE, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEE, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEE]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xEE])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEE, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEE, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEE]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xEE])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMAXSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMAXSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5452,28 +9800,52 @@ class PMAXSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMAXSD(xmm, xmm/m128)    [SSE4.1]
+        * PMAXSD(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMAXSD, self).__init__("PMAXSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMAXSD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMAXSD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x3D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x3D, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x3D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x3D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMAXSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMAXSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5484,40 +9856,77 @@ class PMAXUB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMAXUB(mm, mm/m64)       [MMX+]
-            * PMAXUB(xmm, xmm/m128)    [SSE2]
+        * PMAXUB(mm, mm/m64)       [MMX+]
+        * PMAXUB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMAXUB, self).__init__("PMAXUB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMAXUB\" requires 2 operands")
+            raise SyntaxError('Instruction "PMAXUB" requires 2 operands')
         self.go_name = "PMAXUB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDE, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDE, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDE]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xDE])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDE, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDE, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDE]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xDE])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMAXUB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMAXUB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5528,28 +9937,52 @@ class PMAXUW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMAXUW(xmm, xmm/m128)    [SSE4.1]
+        * PMAXUW(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMAXUW, self).__init__("PMAXUW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMAXUW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMAXUW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x3E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x3E, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x3E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x3E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMAXUW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMAXUW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5560,28 +9993,52 @@ class PMAXUD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMAXUD(xmm, xmm/m128)    [SSE4.1]
+        * PMAXUD(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMAXUD, self).__init__("PMAXUD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMAXUD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMAXUD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x3F, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x3F, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x3F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x3F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMAXUD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMAXUD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5592,28 +10049,52 @@ class PMINSB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMINSB(xmm, xmm/m128)    [SSE4.1]
+        * PMINSB(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMINSB, self).__init__("PMINSB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMINSB\" requires 2 operands")
+            raise SyntaxError('Instruction "PMINSB" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x38, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x38, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x38]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x38])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMINSB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMINSB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5624,40 +10105,77 @@ class PMINSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMINSW(mm, mm/m64)       [MMX+]
-            * PMINSW(xmm, xmm/m128)    [SSE2]
+        * PMINSW(mm, mm/m64)       [MMX+]
+        * PMINSW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMINSW, self).__init__("PMINSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMINSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMINSW" requires 2 operands')
         self.go_name = "PMINSW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEA, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEA, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEA]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xEA])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEA, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEA, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEA]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xEA])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMINSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMINSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5668,28 +10186,52 @@ class PMINSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMINSD(xmm, xmm/m128)    [SSE4.1]
+        * PMINSD(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMINSD, self).__init__("PMINSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMINSD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMINSD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x39, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x39, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x39]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x39])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMINSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMINSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5700,40 +10242,77 @@ class PMINUB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMINUB(mm, mm/m64)       [MMX+]
-            * PMINUB(xmm, xmm/m128)    [SSE2]
+        * PMINUB(mm, mm/m64)       [MMX+]
+        * PMINUB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMINUB, self).__init__("PMINUB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMINUB\" requires 2 operands")
+            raise SyntaxError('Instruction "PMINUB" requires 2 operands')
         self.go_name = "PMINUB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDA, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDA, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDA]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xDA])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDA, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDA, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDA]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xDA])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMINUB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMINUB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5744,28 +10323,52 @@ class PMINUW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMINUW(xmm, xmm/m128)    [SSE4.1]
+        * PMINUW(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMINUW, self).__init__("PMINUW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMINUW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMINUW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x3A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x3A, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x3A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x3A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMINUW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMINUW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5776,28 +10379,52 @@ class PMINUD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMINUD(xmm, xmm/m128)    [SSE4.1]
+        * PMINUD(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMINUD, self).__init__("PMINUD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMINUD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMINUD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x3B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x3B, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x3B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x3B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMINUD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMINUD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5808,59 +10435,109 @@ class PSLLW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSLLW(mm, imm8)         [MMX]
-            * PSLLW(mm, mm/m64)       [MMX]
-            * PSLLW(xmm, imm8)        [SSE2]
-            * PSLLW(xmm, xmm/m128)    [SSE2]
+        * PSLLW(mm, imm8)         [MMX]
+        * PSLLW(mm, mm/m64)       [MMX]
+        * PSLLW(xmm, imm8)        [SSE2]
+        * PSLLW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSLLW, self).__init__("PSLLW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSLLW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSLLW" requires 2 operands')
         self.go_name = "PSLLW"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x71, 0xF0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x71, 0xF0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF1, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF1, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF1]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF1])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x71, 0xF0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x71, 0xF0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF1, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF1, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF1]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF1])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSLLW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSLLW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5871,59 +10548,109 @@ class PSLLD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSLLD(mm, imm8)         [MMX]
-            * PSLLD(mm, mm/m64)       [MMX]
-            * PSLLD(xmm, imm8)        [SSE2]
-            * PSLLD(xmm, xmm/m128)    [SSE2]
+        * PSLLD(mm, imm8)         [MMX]
+        * PSLLD(mm, mm/m64)       [MMX]
+        * PSLLD(xmm, imm8)        [SSE2]
+        * PSLLD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSLLD, self).__init__("PSLLD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSLLD\" requires 2 operands")
+            raise SyntaxError('Instruction "PSLLD" requires 2 operands')
         self.go_name = "PSLLL"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x72, 0xF0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x72, 0xF0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF2, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF2, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x72, 0xF0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x72, 0xF0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF2, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF2, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSLLD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSLLD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5934,59 +10661,109 @@ class PSLLQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSLLQ(mm, imm8)         [MMX]
-            * PSLLQ(mm, mm/m64)       [MMX]
-            * PSLLQ(xmm, imm8)        [SSE2]
-            * PSLLQ(xmm, xmm/m128)    [SSE2]
+        * PSLLQ(mm, imm8)         [MMX]
+        * PSLLQ(mm, mm/m64)       [MMX]
+        * PSLLQ(xmm, imm8)        [SSE2]
+        * PSLLQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSLLQ, self).__init__("PSLLQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSLLQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PSLLQ" requires 2 operands')
         self.go_name = "PSLLQ"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x73, 0xF0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x73, 0xF0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF3, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF3, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF3]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF3])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x73, 0xF0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x73, 0xF0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF3, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF3, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF3]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF3])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSLLQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSLLQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -5997,59 +10774,109 @@ class PSRLW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSRLW(mm, imm8)         [MMX]
-            * PSRLW(mm, mm/m64)       [MMX]
-            * PSRLW(xmm, imm8)        [SSE2]
-            * PSRLW(xmm, xmm/m128)    [SSE2]
+        * PSRLW(mm, imm8)         [MMX]
+        * PSRLW(mm, mm/m64)       [MMX]
+        * PSRLW(xmm, imm8)        [SSE2]
+        * PSRLW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSRLW, self).__init__("PSRLW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSRLW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSRLW" requires 2 operands')
         self.go_name = "PSRLW"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x71, 0xD0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x71, 0xD0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD1, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD1, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD1]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xD1])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x71, 0xD0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x71, 0xD0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD1, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD1, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD1]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD1])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSRLW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSRLW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6060,59 +10887,109 @@ class PSRLD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSRLD(mm, imm8)         [MMX]
-            * PSRLD(mm, mm/m64)       [MMX]
-            * PSRLD(xmm, imm8)        [SSE2]
-            * PSRLD(xmm, xmm/m128)    [SSE2]
+        * PSRLD(mm, imm8)         [MMX]
+        * PSRLD(mm, mm/m64)       [MMX]
+        * PSRLD(xmm, imm8)        [SSE2]
+        * PSRLD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSRLD, self).__init__("PSRLD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSRLD\" requires 2 operands")
+            raise SyntaxError('Instruction "PSRLD" requires 2 operands')
         self.go_name = "PSRLL"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x72, 0xD0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x72, 0xD0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD2, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD2, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xD2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x72, 0xD0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x72, 0xD0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD2, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD2, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSRLD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSRLD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6123,59 +11000,109 @@ class PSRLQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSRLQ(mm, imm8)         [MMX]
-            * PSRLQ(mm, mm/m64)       [MMX]
-            * PSRLQ(xmm, imm8)        [SSE2]
-            * PSRLQ(xmm, xmm/m128)    [SSE2]
+        * PSRLQ(mm, imm8)         [MMX]
+        * PSRLQ(mm, mm/m64)       [MMX]
+        * PSRLQ(xmm, imm8)        [SSE2]
+        * PSRLQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSRLQ, self).__init__("PSRLQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSRLQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PSRLQ" requires 2 operands')
         self.go_name = "PSRLQ"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x73, 0xD0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x73, 0xD0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD3, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD3, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD3]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xD3])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x73, 0xD0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x73, 0xD0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD3, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD3, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD3]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD3])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSRLQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSRLQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6186,59 +11113,109 @@ class PSRAW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSRAW(mm, imm8)         [MMX]
-            * PSRAW(mm, mm/m64)       [MMX]
-            * PSRAW(xmm, imm8)        [SSE2]
-            * PSRAW(xmm, xmm/m128)    [SSE2]
+        * PSRAW(mm, imm8)         [MMX]
+        * PSRAW(mm, mm/m64)       [MMX]
+        * PSRAW(xmm, imm8)        [SSE2]
+        * PSRAW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSRAW, self).__init__("PSRAW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSRAW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSRAW" requires 2 operands')
         self.go_name = "PSRAW"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x71, 0xE0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x71, 0xE0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE1, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE1, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE1]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE1])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x71, 0xE0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x71, 0xE0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE1, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE1, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE1]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE1])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSRAW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSRAW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6249,59 +11226,109 @@ class PSRAD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSRAD(mm, imm8)         [MMX]
-            * PSRAD(mm, mm/m64)       [MMX]
-            * PSRAD(xmm, imm8)        [SSE2]
-            * PSRAD(xmm, xmm/m128)    [SSE2]
+        * PSRAD(mm, imm8)         [MMX]
+        * PSRAD(mm, mm/m64)       [MMX]
+        * PSRAD(xmm, imm8)        [SSE2]
+        * PSRAD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSRAD, self).__init__("PSRAD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSRAD\" requires 2 operands")
+            raise SyntaxError('Instruction "PSRAD" requires 2 operands')
         self.go_name = "PSRAL"
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(0, op[0], rex) + bytearray([0x0F, 0x72, 0xE0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x72, 0xE0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE2, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE2, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x72, 0xE0 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x72, 0xE0 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE2, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE2, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE2]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE2])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True, True)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSRAD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSRAD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6312,40 +11339,77 @@ class PMULLW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMULLW(mm, mm/m64)       [MMX]
-            * PMULLW(xmm, xmm/m128)    [SSE2]
+        * PMULLW(mm, mm/m64)       [MMX]
+        * PMULLW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMULLW, self).__init__("PMULLW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMULLW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMULLW" requires 2 operands')
         self.go_name = "PMULLW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD5, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD5, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD5]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xD5])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xD5, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xD5, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xD5]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xD5])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMULLW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMULLW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6356,40 +11420,77 @@ class PMULHW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMULHW(mm, mm/m64)       [MMX]
-            * PMULHW(xmm, xmm/m128)    [SSE2]
+        * PMULHW(mm, mm/m64)       [MMX]
+        * PMULHW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMULHW, self).__init__("PMULHW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMULHW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMULHW" requires 2 operands')
         self.go_name = "PMULHW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE5, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE5, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE5]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE5])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE5, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE5, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE5]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE5])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMULHW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMULHW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6400,40 +11501,77 @@ class PMULHUW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMULHUW(mm, mm/m64)       [MMX+]
-            * PMULHUW(xmm, xmm/m128)    [SSE2]
+        * PMULHUW(mm, mm/m64)       [MMX+]
+        * PMULHUW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMULHUW, self).__init__("PMULHUW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMULHUW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMULHUW" requires 2 operands')
         self.go_name = "PMULHUW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE4, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE4, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE4, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE4, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMULHUW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMULHUW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6444,28 +11582,52 @@ class PMULLD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMULLD(xmm, xmm/m128)    [SSE4.1]
+        * PMULLD(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMULLD, self).__init__("PMULLD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMULLD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMULLD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x40, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x40, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x40]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x40])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMULLD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMULLD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6476,28 +11638,52 @@ class PMULDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMULDQ(xmm, xmm/m128)    [SSE4.1]
+        * PMULDQ(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMULDQ, self).__init__("PMULDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMULDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMULDQ" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x28, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x28, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x28]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x28])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PMULDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMULDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6508,37 +11694,74 @@ class PMULUDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMULUDQ(mm, mm/m64)       [SSE2]
-            * PMULUDQ(xmm, xmm/m128)    [SSE2]
+        * PMULUDQ(mm, mm/m64)       [SSE2]
+        * PMULUDQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMULUDQ, self).__init__("PMULUDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMULUDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PMULUDQ" requires 2 operands')
         self.go_name = "PMULULQ"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF4, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF4, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF4, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF4, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF4]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF4])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PMULUDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMULUDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6549,36 +11772,77 @@ class PMULHRSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMULHRSW(mm, mm/m64)       [SSSE3]
-            * PMULHRSW(xmm, xmm/m128)    [SSSE3]
+        * PMULHRSW(mm, mm/m64)       [SSSE3]
+        * PMULHRSW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMULHRSW, self).__init__("PMULHRSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMULHRSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMULHRSW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x0B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x0B, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x0B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x0B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x0B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x0B, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x0B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x0B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PMULHRSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMULHRSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6589,40 +11853,77 @@ class PMADDWD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMADDWD(mm, mm/m64)       [MMX]
-            * PMADDWD(xmm, xmm/m128)    [SSE2]
+        * PMADDWD(mm, mm/m64)       [MMX]
+        * PMADDWD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMADDWD, self).__init__("PMADDWD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMADDWD\" requires 2 operands")
+            raise SyntaxError('Instruction "PMADDWD" requires 2 operands')
         self.go_name = "PMADDWL"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF5, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF5, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF5]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF5])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF5, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF5, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF5]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF5])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PMADDWD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMADDWD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6633,36 +11934,77 @@ class PMADDUBSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PMADDUBSW(mm, mm/m64)       [SSSE3]
-            * PMADDUBSW(xmm, xmm/m128)    [SSSE3]
+        * PMADDUBSW(mm, mm/m64)       [SSSE3]
+        * PMADDUBSW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PMADDUBSW, self).__init__("PMADDUBSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PMADDUBSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PMADDUBSW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x04, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x04, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x04]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x04])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x04, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x04, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x04]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x04])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PMADDUBSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PMADDUBSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6673,40 +12015,77 @@ class PAVGB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PAVGB(mm, mm/m64)       [MMX+]
-            * PAVGB(xmm, xmm/m128)    [SSE2]
+        * PAVGB(mm, mm/m64)       [MMX+]
+        * PAVGB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PAVGB, self).__init__("PAVGB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PAVGB\" requires 2 operands")
+            raise SyntaxError('Instruction "PAVGB" requires 2 operands')
         self.go_name = "PAVGB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE0, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE0, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE0]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE0])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE0, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE0, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE0]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE0])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PAVGB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PAVGB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6717,40 +12096,77 @@ class PAVGW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PAVGW(mm, mm/m64)       [MMX+]
-            * PAVGW(xmm, xmm/m128)    [SSE2]
+        * PAVGW(mm, mm/m64)       [MMX+]
+        * PAVGW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PAVGW, self).__init__("PAVGW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PAVGW\" requires 2 operands")
+            raise SyntaxError('Instruction "PAVGW" requires 2 operands')
         self.go_name = "PAVGW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE3, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE3, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE3]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xE3])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE3, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE3, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE3]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE3])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PAVGW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PAVGW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6761,42 +12177,79 @@ class PSADBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSADBW(mm, mm/m64)       [MMX+]
-            * PSADBW(xmm, xmm/m128)    [SSE2]
+        * PSADBW(mm, mm/m64)       [MMX+]
+        * PSADBW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSADBW, self).__init__("PSADBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSADBW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSADBW" requires 2 operands')
         self.go_name = "PSADBW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF6, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF6, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF6]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xF6])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xF6, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xF6, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xF6]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xF6])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSADBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSADBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6807,32 +12260,71 @@ class MPSADBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * MPSADBW(xmm, xmm/m128, imm8)    [SSE4.1]
+        * MPSADBW(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(MPSADBW, self).__init__("MPSADBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"MPSADBW\" requires 3 operands")
+            raise SyntaxError('Instruction "MPSADBW" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x42, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x42,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x42]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x42])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: MPSADBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: MPSADBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6843,28 +12335,54 @@ class PHMINPOSUW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PHMINPOSUW(xmm, xmm/m128)    [SSE4.1]
+        * PHMINPOSUW(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
-        super(PHMINPOSUW, self).__init__("PHMINPOSUW", origin=origin, prototype=prototype)
+        super(PHMINPOSUW, self).__init__(
+            "PHMINPOSUW", origin=origin, prototype=prototype
+        )
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PHMINPOSUW\" requires 2 operands")
+            raise SyntaxError('Instruction "PHMINPOSUW" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x41, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x41, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x41]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x41])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PHMINPOSUW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PHMINPOSUW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6875,42 +12393,79 @@ class PCMPEQB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPEQB(mm, mm/m64)       [MMX]
-            * PCMPEQB(xmm, xmm/m128)    [SSE2]
+        * PCMPEQB(mm, mm/m64)       [MMX]
+        * PCMPEQB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPEQB, self).__init__("PCMPEQB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPEQB\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPEQB" requires 2 operands')
         self.go_name = "PCMPEQB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x74, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x74, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x74]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x74])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x74, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x74, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x74]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x74])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PCMPEQB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPEQB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6921,42 +12476,79 @@ class PCMPEQW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPEQW(mm, mm/m64)       [MMX]
-            * PCMPEQW(xmm, xmm/m128)    [SSE2]
+        * PCMPEQW(mm, mm/m64)       [MMX]
+        * PCMPEQW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPEQW, self).__init__("PCMPEQW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPEQW\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPEQW" requires 2 operands')
         self.go_name = "PCMPEQW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x75, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x75, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x75]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x75])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x75, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x75, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x75]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x75])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PCMPEQW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPEQW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -6967,42 +12559,79 @@ class PCMPEQD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPEQD(mm, mm/m64)       [MMX]
-            * PCMPEQD(xmm, xmm/m128)    [SSE2]
+        * PCMPEQD(mm, mm/m64)       [MMX]
+        * PCMPEQD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPEQD, self).__init__("PCMPEQD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPEQD\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPEQD" requires 2 operands')
         self.go_name = "PCMPEQL"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x76, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x76, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x76]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x76])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x76, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x76, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x76]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x76])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PCMPEQD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPEQD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7013,29 +12642,53 @@ class PCMPEQQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPEQQ(xmm, xmm/m128)    [SSE4.1]
+        * PCMPEQQ(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPEQQ, self).__init__("PCMPEQQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPEQQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPEQQ" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x29, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x29, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x29]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x29])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PCMPEQQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPEQQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7046,42 +12699,79 @@ class PCMPGTB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPGTB(mm, mm/m64)       [MMX]
-            * PCMPGTB(xmm, xmm/m128)    [SSE2]
+        * PCMPGTB(mm, mm/m64)       [MMX]
+        * PCMPGTB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPGTB, self).__init__("PCMPGTB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPGTB\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPGTB" requires 2 operands')
         self.go_name = "PCMPGTB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x64, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x64, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x64]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x64])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x64, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x64, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x64]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x64])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PCMPGTB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPGTB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7092,42 +12782,79 @@ class PCMPGTW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPGTW(mm, mm/m64)       [MMX]
-            * PCMPGTW(xmm, xmm/m128)    [SSE2]
+        * PCMPGTW(mm, mm/m64)       [MMX]
+        * PCMPGTW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPGTW, self).__init__("PCMPGTW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPGTW\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPGTW" requires 2 operands')
         self.go_name = "PCMPGTW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x65, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x65, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x65]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x65])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x65, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x65, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x65]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x65])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PCMPGTW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPGTW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7138,42 +12865,79 @@ class PCMPGTD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPGTD(mm, mm/m64)       [MMX]
-            * PCMPGTD(xmm, xmm/m128)    [SSE2]
+        * PCMPGTD(mm, mm/m64)       [MMX]
+        * PCMPGTD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPGTD, self).__init__("PCMPGTD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPGTD\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPGTD" requires 2 operands')
         self.go_name = "PCMPGTL"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x66, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x66, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x66]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x66])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x66, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x66, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x66]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x66])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PCMPGTD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPGTD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7184,29 +12948,53 @@ class PCMPGTQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPGTQ(xmm, xmm/m128)    [SSE4.2]
+        * PCMPGTQ(xmm, xmm/m128)    [SSE4.2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPGTQ, self).__init__("PCMPGTQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PCMPGTQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PCMPGTQ" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x37, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x37, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x37]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x37])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PCMPGTQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPGTQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7217,36 +13005,77 @@ class PABSB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PABSB(mm, mm/m64)       [SSSE3]
-            * PABSB(xmm, xmm/m128)    [SSSE3]
+        * PABSB(mm, mm/m64)       [SSSE3]
+        * PABSB(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PABSB, self).__init__("PABSB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PABSB\" requires 2 operands")
+            raise SyntaxError('Instruction "PABSB" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x1C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x1C, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x1C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x1C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x1C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x1C, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x1C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x1C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PABSB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PABSB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7257,36 +13086,77 @@ class PABSW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PABSW(mm, mm/m64)       [SSSE3]
-            * PABSW(xmm, xmm/m128)    [SSSE3]
+        * PABSW(mm, mm/m64)       [SSSE3]
+        * PABSW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PABSW, self).__init__("PABSW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PABSW\" requires 2 operands")
+            raise SyntaxError('Instruction "PABSW" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x1D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x1D, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x1D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x1D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x1D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x1D, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x1D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x1D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PABSW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PABSW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7297,36 +13167,77 @@ class PABSD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PABSD(mm, mm/m64)       [SSSE3]
-            * PABSD(xmm, xmm/m128)    [SSSE3]
+        * PABSD(mm, mm/m64)       [SSSE3]
+        * PABSD(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PABSD, self).__init__("PABSD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PABSD\" requires 2 operands")
+            raise SyntaxError('Instruction "PABSD" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x1E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x1E, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x1E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x1E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x1E, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x1E, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x1E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x1E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PABSD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PABSD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7337,36 +13248,77 @@ class PSIGNB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSIGNB(mm, mm/m64)       [SSSE3]
-            * PSIGNB(xmm, xmm/m128)    [SSSE3]
+        * PSIGNB(mm, mm/m64)       [SSSE3]
+        * PSIGNB(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSIGNB, self).__init__("PSIGNB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSIGNB\" requires 2 operands")
+            raise SyntaxError('Instruction "PSIGNB" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x08, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x08, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x08]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x08])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x08, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x08, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x08]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x08])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PSIGNB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSIGNB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7377,36 +13329,77 @@ class PSIGNW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSIGNW(mm, mm/m64)       [SSSE3]
-            * PSIGNW(xmm, xmm/m128)    [SSSE3]
+        * PSIGNW(mm, mm/m64)       [SSSE3]
+        * PSIGNW(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSIGNW, self).__init__("PSIGNW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSIGNW\" requires 2 operands")
+            raise SyntaxError('Instruction "PSIGNW" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x09, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x09, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x09]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x09])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x09, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x09, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x09]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x09])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PSIGNW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSIGNW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7417,36 +13410,77 @@ class PSIGND(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSIGND(mm, mm/m64)       [SSSE3]
-            * PSIGND(xmm, xmm/m128)    [SSSE3]
+        * PSIGND(mm, mm/m64)       [SSSE3]
+        * PSIGND(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSIGND, self).__init__("PSIGND", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSIGND\" requires 2 operands")
+            raise SyntaxError('Instruction "PSIGND" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x0A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x0A, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x0A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x0A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x0A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x0A, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x0A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x0A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PSIGND " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSIGND "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7457,40 +13491,77 @@ class PAND(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PAND(mm, mm/m64)       [MMX]
-            * PAND(xmm, xmm/m128)    [SSE2]
+        * PAND(mm, mm/m64)       [MMX]
+        * PAND(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PAND, self).__init__("PAND", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PAND\" requires 2 operands")
+            raise SyntaxError('Instruction "PAND" requires 2 operands')
         self.go_name = "PAND"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDB, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDB, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDB]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xDB])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDB, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDB, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDB]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xDB])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PAND " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PAND "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7501,42 +13572,79 @@ class PANDN(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PANDN(mm, mm/m64)       [MMX]
-            * PANDN(xmm, xmm/m128)    [SSE2]
+        * PANDN(mm, mm/m64)       [MMX]
+        * PANDN(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PANDN, self).__init__("PANDN", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PANDN\" requires 2 operands")
+            raise SyntaxError('Instruction "PANDN" requires 2 operands')
         self.go_name = "PANDN"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDF, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDF, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDF]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xDF])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xDF, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xDF, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xDF]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xDF])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PANDN " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PANDN "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7547,40 +13655,77 @@ class POR(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * POR(mm, mm/m64)       [MMX]
-            * POR(xmm, xmm/m128)    [SSE2]
+        * POR(mm, mm/m64)       [MMX]
+        * POR(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(POR, self).__init__("POR", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"POR\" requires 2 operands")
+            raise SyntaxError('Instruction "POR" requires 2 operands')
         self.go_name = "POR"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEB, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEB, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEB]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xEB])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEB, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEB, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEB]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xEB])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: POR " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: POR "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7591,42 +13736,79 @@ class PXOR(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PXOR(mm, mm/m64)       [MMX]
-            * PXOR(xmm, xmm/m128)    [SSE2]
+        * PXOR(mm, mm/m64)       [MMX]
+        * PXOR(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PXOR, self).__init__("PXOR", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PXOR\" requires 2 operands")
+            raise SyntaxError('Instruction "PXOR" requires 2 operands')
         self.go_name = "PXOR"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEF, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEF, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
             self._cancelling_inputs = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEF]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0xEF])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xEF, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xEF, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
             self._cancelling_inputs = True
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xEF]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xEF])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PXOR " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PXOR "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7637,32 +13819,71 @@ class PBLENDW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PBLENDW(xmm, xmm/m128, imm8)    [SSE4.1]
+        * PBLENDW(xmm, xmm/m128, imm8)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PBLENDW, self).__init__("PBLENDW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PBLENDW\" requires 3 operands")
+            raise SyntaxError('Instruction "PBLENDW" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x0E, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x0E,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x0E]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x0E])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PBLENDW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PBLENDW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7673,28 +13894,60 @@ class PBLENDVB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PBLENDVB(xmm, xmm/m128, xmm0)    [SSE4.1]
+        * PBLENDVB(xmm, xmm/m128, xmm0)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PBLENDVB, self).__init__("PBLENDVB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PBLENDVB\" requires 3 operands")
+            raise SyntaxError('Instruction "PBLENDVB" requires 3 operands')
         self.in_regs = (True, True, True)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_xmm0(self.operands[2]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_xmm0(self.operands[2]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x10]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_xmm0(self.operands[2])
+        ):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x10, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_xmm0(self.operands[2])
+        ):
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x10])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PBLENDVB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PBLENDVB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7705,40 +13958,77 @@ class PUNPCKLBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKLBW(mm, mm/m32)       [MMX]
-            * PUNPCKLBW(xmm, xmm/m128)    [SSE2]
+        * PUNPCKLBW(mm, mm/m32)       [MMX]
+        * PUNPCKLBW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PUNPCKLBW, self).__init__("PUNPCKLBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKLBW\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKLBW" requires 2 operands')
         self.go_name = "PUNPCKLBW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x60, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x60, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x60]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x60])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x60, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x60, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x60]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x60])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKLBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKLBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7749,40 +14039,77 @@ class PUNPCKLWD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKLWD(mm, mm/m32)       [MMX]
-            * PUNPCKLWD(xmm, xmm/m128)    [SSE2]
+        * PUNPCKLWD(mm, mm/m32)       [MMX]
+        * PUNPCKLWD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PUNPCKLWD, self).__init__("PUNPCKLWD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKLWD\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKLWD" requires 2 operands')
         self.go_name = "PUNPCKLWL"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x61, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x61, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x61]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x61])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x61, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x61, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x61]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x61])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKLWD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKLWD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7793,40 +14120,77 @@ class PUNPCKLDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKLDQ(mm, mm/m32)       [MMX]
-            * PUNPCKLDQ(xmm, xmm/m128)    [SSE2]
+        * PUNPCKLDQ(mm, mm/m32)       [MMX]
+        * PUNPCKLDQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PUNPCKLDQ, self).__init__("PUNPCKLDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKLDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKLDQ" requires 2 operands')
         self.go_name = "PUNPCKLLQ"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x62, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x62, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x62]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x62])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x62, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x62, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x62]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x62])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKLDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKLDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7837,17 +14201,23 @@ class PUNPCKLQDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKLQDQ(xmm, xmm/m128)    [SSE2]
+        * PUNPCKLQDQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
-        super(PUNPCKLQDQ, self).__init__("PUNPCKLQDQ", origin=origin, prototype=prototype)
+        super(PUNPCKLQDQ, self).__init__(
+            "PUNPCKLQDQ", origin=origin, prototype=prototype
+        )
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKLQDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKLQDQ" requires 2 operands')
         self.go_name = "PUNPCKLQDQ"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -7855,11 +14225,29 @@ class PUNPCKLQDQ(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x6C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKLQDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKLQDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7870,40 +14258,77 @@ class PUNPCKHBW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKHBW(mm, mm/m64)       [MMX]
-            * PUNPCKHBW(xmm, xmm/m128)    [SSE2]
+        * PUNPCKHBW(mm, mm/m64)       [MMX]
+        * PUNPCKHBW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PUNPCKHBW, self).__init__("PUNPCKHBW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKHBW\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKHBW" requires 2 operands')
         self.go_name = "PUNPCKHBW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x68, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x68, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x68]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x68])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x68, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x68, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x68]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x68])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKHBW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKHBW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7914,40 +14339,77 @@ class PUNPCKHWD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKHWD(mm, mm/m64)       [MMX]
-            * PUNPCKHWD(xmm, xmm/m128)    [SSE2]
+        * PUNPCKHWD(mm, mm/m64)       [MMX]
+        * PUNPCKHWD(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PUNPCKHWD, self).__init__("PUNPCKHWD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKHWD\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKHWD" requires 2 operands')
         self.go_name = "PUNPCKHWL"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x69, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x69, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x69]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x69])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x69, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x69, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x69]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x69])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKHWD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKHWD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -7958,40 +14420,77 @@ class PUNPCKHDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKHDQ(mm, mm/m64)       [MMX]
-            * PUNPCKHDQ(xmm, xmm/m128)    [SSE2]
+        * PUNPCKHDQ(mm, mm/m64)       [MMX]
+        * PUNPCKHDQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PUNPCKHDQ, self).__init__("PUNPCKHDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKHDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKHDQ" requires 2 operands')
         self.go_name = "PUNPCKHLQ"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x6A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x6A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKHDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKHDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8002,17 +14501,23 @@ class PUNPCKHQDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PUNPCKHQDQ(xmm, xmm/m128)    [SSE2]
+        * PUNPCKHQDQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
-        super(PUNPCKHQDQ, self).__init__("PUNPCKHQDQ", origin=origin, prototype=prototype)
+        super(PUNPCKHQDQ, self).__init__(
+            "PUNPCKHQDQ", origin=origin, prototype=prototype
+        )
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PUNPCKHQDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PUNPCKHQDQ" requires 2 operands')
         self.go_name = "PUNPCKHQDQ"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -8020,11 +14525,29 @@ class PUNPCKHQDQ(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x6D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PUNPCKHQDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PUNPCKHQDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8035,40 +14558,77 @@ class PACKSSWB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PACKSSWB(mm, mm/m64)       [MMX]
-            * PACKSSWB(xmm, xmm/m128)    [SSE2]
+        * PACKSSWB(mm, mm/m64)       [MMX]
+        * PACKSSWB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PACKSSWB, self).__init__("PACKSSWB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PACKSSWB\" requires 2 operands")
+            raise SyntaxError('Instruction "PACKSSWB" requires 2 operands')
         self.go_name = "PACKSSWB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x63, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x63, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x63]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x63])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x63, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x63, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x63]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x63])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PACKSSWB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PACKSSWB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8079,40 +14639,77 @@ class PACKSSDW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PACKSSDW(mm, mm/m64)       [MMX]
-            * PACKSSDW(xmm, xmm/m128)    [SSE2]
+        * PACKSSDW(mm, mm/m64)       [MMX]
+        * PACKSSDW(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PACKSSDW, self).__init__("PACKSSDW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PACKSSDW\" requires 2 operands")
+            raise SyntaxError('Instruction "PACKSSDW" requires 2 operands')
         self.go_name = "PACKSSLW"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6B, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x6B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x6B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x6B, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x6B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x6B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PACKSSDW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PACKSSDW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8123,40 +14720,77 @@ class PACKUSWB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PACKUSWB(mm, mm/m64)       [MMX]
-            * PACKUSWB(xmm, xmm/m128)    [SSE2]
+        * PACKUSWB(mm, mm/m64)       [MMX]
+        * PACKUSWB(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PACKUSWB, self).__init__("PACKUSWB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PACKUSWB\" requires 2 operands")
+            raise SyntaxError('Instruction "PACKUSWB" requires 2 operands')
         self.go_name = "PACKUSWB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x67, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x67, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x67]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x67])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
             self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x67, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x67, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x67]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x67])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PACKUSWB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PACKUSWB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8167,28 +14801,52 @@ class PACKUSDW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PACKUSDW(xmm, xmm/m128)    [SSE4.1]
+        * PACKUSDW(xmm, xmm/m128)    [SSE4.1]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PACKUSDW, self).__init__("PACKUSDW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PACKUSDW\" requires 2 operands")
+            raise SyntaxError('Instruction "PACKUSDW" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_1])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x2B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x2B, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x2B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x2B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PACKUSDW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PACKUSDW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8199,37 +14857,78 @@ class PSHUFB(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSHUFB(mm, mm/m64)       [SSSE3]
-            * PSHUFB(xmm, xmm/m128)    [SSSE3]
+        * PSHUFB(mm, mm/m64)       [SSSE3]
+        * PSHUFB(xmm, xmm/m128)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSHUFB, self).__init__("PSHUFB", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSHUFB\" requires 2 operands")
+            raise SyntaxError('Instruction "PSHUFB" requires 2 operands')
         self.go_name = "PSHUFB"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
         if is_mm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x00, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x00, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.mmx_mode = True
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x00]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x38, 0x00])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x38, 0x00, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [0x0F, 0x38, 0x00, 0xC0 | op[0].lcode << 3 | op[1].lcode]
+                    ),
+                )
+            )
             self.avx_mode = False
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x38, 0x00]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x38, 0x00])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PSHUFB " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSHUFB "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8240,33 +14939,71 @@ class PSHUFW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSHUFW(mm, mm/m64, imm8)    [MMX+]
+        * PSHUFW(mm, mm/m64, imm8)    [MMX+]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSHUFW, self).__init__("PSHUFW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PSHUFW\" requires 3 operands")
+            raise SyntaxError('Instruction "PSHUFW" requires 3 operands')
         self.go_name = "PSHUFW"
         self.in_regs = (False, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.mmx_mode = True
         self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx_plus])
-        if is_mm(self.operands[0]) and is_mm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_mm(self.operands[0])
+            and is_mm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x70, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_mm(self.operands[0]) and is_m64(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x70,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_mm(self.operands[0])
+            and is_m64(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x70]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x70])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PSHUFW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSHUFW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8277,33 +15014,71 @@ class PSHUFLW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSHUFLW(xmm, xmm/m128, imm8)    [SSE2]
+        * PSHUFLW(xmm, xmm/m128, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSHUFLW, self).__init__("PSHUFLW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PSHUFLW\" requires 3 operands")
+            raise SyntaxError('Instruction "PSHUFLW" requires 3 operands')
         self.go_name = "PSHUFLW"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x70, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x70,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x70]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x70])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PSHUFLW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSHUFLW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8314,33 +15089,71 @@ class PSHUFHW(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSHUFHW(xmm, xmm/m128, imm8)    [SSE2]
+        * PSHUFHW(xmm, xmm/m128, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSHUFHW, self).__init__("PSHUFHW", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PSHUFHW\" requires 3 operands")
+            raise SyntaxError('Instruction "PSHUFHW" requires 3 operands')
         self.go_name = "PSHUFHW"
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x70, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x70,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x70]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x70])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PSHUFHW " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSHUFHW "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8351,33 +15164,71 @@ class PSHUFD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSHUFD(xmm, xmm/m128, imm8)    [SSE2]
+        * PSHUFD(xmm, xmm/m128, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSHUFD, self).__init__("PSHUFD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PSHUFD\" requires 3 operands")
+            raise SyntaxError('Instruction "PSHUFD" requires 3 operands')
         self.go_name = "PSHUFL"
         self.in_regs = (False, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x70, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x70,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x70]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x70])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: PSHUFD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSHUFD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8388,29 +15239,43 @@ class PSLLDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSLLDQ(xmm, imm8)    [SSE2]
+        * PSLLDQ(xmm, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSLLDQ, self).__init__("PSLLDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSLLDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PSLLDQ" requires 2 operands')
         if is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
             self.go_name = "PSLLO"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x73, 0xF8 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x73, 0xF8 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSLLDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSLLDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8421,29 +15286,43 @@ class PSRLDQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PSRLDQ(xmm, imm8)    [SSE2]
+        * PSRLDQ(xmm, imm8)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PSRLDQ, self).__init__("PSRLDQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"PSRLDQ\" requires 2 operands")
+            raise SyntaxError('Instruction "PSRLDQ" requires 2 operands')
         if is_xmm(self.operands[0]) and is_imm(self.operands[1]):
             if not is_imm8(self.operands[1]):
                 raise ValueError("Argument #1 can not be encoded as imm8")
             self.go_name = "PSRLO"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(0, op[0], rex) + bytearray([0x0F, 0x73, 0xD8 | op[0].lcode, op[1] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(0, op[0], rex)
+                    + bytearray([0x0F, 0x73, 0xD8 | op[0].lcode, op[1] & 0xFF]),
+                )
+            )
             self.in_regs = (True, False)
             self.out_regs = (True, False)
             self.out_operands = (True, False)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         else:
-            raise SyntaxError("Invalid operand types: PSRLDQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PSRLDQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8454,44 +15333,115 @@ class PALIGNR(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PALIGNR(mm, mm/m64, imm8)       [SSSE3]
-            * PALIGNR(xmm, xmm/m128, imm8)    [SSSE3]
+        * PALIGNR(mm, mm/m64, imm8)       [SSSE3]
+        * PALIGNR(xmm, xmm/m128, imm8)    [SSSE3]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PALIGNR, self).__init__("PALIGNR", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PALIGNR\" requires 3 operands")
+            raise SyntaxError('Instruction "PALIGNR" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (True, False, False)
         self.out_operands = (True, False, False)
         self.isa_extensions = frozenset([nervapy.x86_64.isa.ssse3])
-        if is_mm(self.operands[0]) and is_mm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_mm(self.operands[0])
+            and is_mm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x0F, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x0F,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.mmx_mode = True
-        elif is_mm(self.operands[0]) and is_m64(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_mm(self.operands[0])
+            and is_m64(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x0F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x3A, 0x0F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.mmx_mode = True
-        elif is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x0F, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x0F,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self.avx_mode = False
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x0F]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x0F])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self.avx_mode = False
         else:
-            raise SyntaxError("Invalid operand types: PALIGNR " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PALIGNR "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8502,36 +15452,75 @@ class PCMPESTRI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPESTRI(xmm, xmm/m128, imm8)    [SSE4.2]
+        * PCMPESTRI(xmm, xmm/m128, imm8)    [SSE4.2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPESTRI, self).__init__("PCMPESTRI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PCMPESTRI\" requires 3 operands")
+            raise SyntaxError('Instruction "PCMPESTRI" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (False, False, False)
         self.out_operands = (False, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x61, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x61,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self._implicit_in_regs = {0: 7, 2: 7}
             self._implicit_out_regs = {1: 7}
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x61]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x61])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self._implicit_in_regs = {0: 7, 2: 7}
             self._implicit_out_regs = {1: 7}
         else:
-            raise SyntaxError("Invalid operand types: PCMPESTRI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPESTRI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8542,36 +15531,75 @@ class PCMPESTRM(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPESTRM(xmm, xmm/m128, imm8)    [SSE4.2]
+        * PCMPESTRM(xmm, xmm/m128, imm8)    [SSE4.2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPESTRM, self).__init__("PCMPESTRM", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PCMPESTRM\" requires 3 operands")
+            raise SyntaxError('Instruction "PCMPESTRM" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (False, False, False)
         self.out_operands = (False, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x60, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x60,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self._implicit_in_regs = {0: 7, 2: 7}
             self._implicit_out_regs = {0: 256}
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x60]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x60])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self._implicit_in_regs = {0: 7, 2: 7}
             self._implicit_out_regs = {0: 256}
         else:
-            raise SyntaxError("Invalid operand types: PCMPESTRM " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPESTRM "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8582,34 +15610,73 @@ class PCMPISTRI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPISTRI(xmm, xmm/m128, imm8)    [SSE4.2]
+        * PCMPISTRI(xmm, xmm/m128, imm8)    [SSE4.2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPISTRI, self).__init__("PCMPISTRI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PCMPISTRI\" requires 3 operands")
+            raise SyntaxError('Instruction "PCMPISTRI" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (False, False, False)
         self.out_operands = (False, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x63, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x63,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self._implicit_out_regs = {1: 7}
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x63]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x63])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self._implicit_out_regs = {1: 7}
         else:
-            raise SyntaxError("Invalid operand types: PCMPISTRI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPISTRI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8620,34 +15687,73 @@ class PCMPISTRM(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * PCMPISTRM(xmm, xmm/m128, imm8)    [SSE4.2]
+        * PCMPISTRM(xmm, xmm/m128, imm8)    [SSE4.2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(PCMPISTRM, self).__init__("PCMPISTRM", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 3:
-            raise SyntaxError("Instruction \"PCMPISTRM\" requires 3 operands")
+            raise SyntaxError('Instruction "PCMPISTRM" requires 3 operands')
         self.in_regs = (True, True, False)
         self.out_regs = (False, False, False)
         self.out_operands = (False, False, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse4_2])
-        if is_xmm(self.operands[0]) and is_xmm(self.operands[1]) and is_imm(self.operands[2]):
+        if (
+            is_xmm(self.operands[0])
+            and is_xmm(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x3A, 0x62, 0xC0 | op[0].lcode << 3 | op[1].lcode, op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray(
+                        [
+                            0x0F,
+                            0x3A,
+                            0x62,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                            op[2] & 0xFF,
+                        ]
+                    ),
+                )
+            )
             self._implicit_out_regs = {0: 256}
-        elif is_xmm(self.operands[0]) and is_m128(self.operands[1]) and is_imm(self.operands[2]):
+        elif (
+            is_xmm(self.operands[0])
+            and is_m128(self.operands[1])
+            and is_imm(self.operands[2])
+        ):
             if not is_imm8(self.operands[2]):
                 raise ValueError("Argument #2 can not be encoded as imm8")
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x3A, 0x62]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp) + bytearray([op[2] & 0xFF])))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x3A, 0x62])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)
+                    + bytearray([op[2] & 0xFF]),
+                )
+            )
             self._implicit_out_regs = {0: 256}
         else:
-            raise SyntaxError("Invalid operand types: PCMPISTRM " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: PCMPISTRM "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8658,18 +15764,22 @@ class CVTSS2SI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTSS2SI(r32, xmm/m32)    [SSE]
-            * CVTSS2SI(r64, xmm/m32)    [SSE]
+        * CVTSS2SI(r32, xmm/m32)    [SSE]
+        * CVTSS2SI(r64, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTSS2SI, self).__init__("CVTSS2SI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTSS2SI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTSS2SI" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
@@ -8677,18 +15787,57 @@ class CVTSS2SI(Instruction):
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_r32(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTSS2SL"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_r32(self.operands[0]) and is_m32(self.operands[1]):
             self.go_name = "CVTSS2SL"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         elif is_r64(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTSS2SQ"
-            self.encodings.append((0x00, lambda op: bytearray([0xF3, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xF3,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x2D,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
         elif is_r64(self.operands[0]) and is_m32(self.operands[1]):
             self.go_name = "CVTSS2SQ"
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0xF3]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x2D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0xF3])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x2D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTSS2SI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTSS2SI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8699,18 +15848,22 @@ class CVTTSS2SI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTTSS2SI(r32, xmm/m32)    [SSE]
-            * CVTTSS2SI(r64, xmm/m32)    [SSE]
+        * CVTTSS2SI(r32, xmm/m32)    [SSE]
+        * CVTTSS2SI(r64, xmm/m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTTSS2SI, self).__init__("CVTTSS2SI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTTSS2SI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTTSS2SI" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
@@ -8718,18 +15871,57 @@ class CVTTSS2SI(Instruction):
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_r32(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTTSS2SL"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_r32(self.operands[0]) and is_m32(self.operands[1]):
             self.go_name = "CVTTSS2SL"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         elif is_r64(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTTSS2SQ"
-            self.encodings.append((0x00, lambda op: bytearray([0xF3, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xF3,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x2C,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
         elif is_r64(self.operands[0]) and is_m32(self.operands[1]):
             self.go_name = "CVTTSS2SQ"
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0xF3]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x2C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0xF3])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x2C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTTSS2SI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTTSS2SI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8740,18 +15932,22 @@ class CVTSI2SS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTSI2SS(xmm, r32/m32)    [SSE]
-            * CVTSI2SS(xmm, r64/m64)    [SSE]
+        * CVTSI2SS(xmm, r32/m32)    [SSE]
+        * CVTSI2SS(xmm, r64/m64)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTSI2SS, self).__init__("CVTSI2SS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTSI2SS\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTSI2SS" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
@@ -8759,18 +15955,57 @@ class CVTSI2SS(Instruction):
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_r32(self.operands[1]):
             self.go_name = "CVTSL2SS"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_r64(self.operands[1]):
             self.go_name = "CVTSQ2SS"
-            self.encodings.append((0x00, lambda op: bytearray([0xF3, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xF3,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x2A,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
             self.go_name = "CVTSL2SS"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
             self.go_name = "CVTSQ2SS"
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0xF3]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x2A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0xF3])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x2A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTSI2SS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTSI2SS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8781,18 +16016,22 @@ class CVTSD2SI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTSD2SI(r32, xmm/m64)    [SSE2]
-            * CVTSD2SI(r64, xmm/m64)    [SSE2]
+        * CVTSD2SI(r32, xmm/m64)    [SSE2]
+        * CVTSD2SI(r64, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTSD2SI, self).__init__("CVTSD2SI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTSD2SI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTSD2SI" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
@@ -8800,18 +16039,57 @@ class CVTSD2SI(Instruction):
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_r32(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTSD2SL"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_r32(self.operands[0]) and is_m64(self.operands[1]):
             self.go_name = "CVTSD2SL"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         elif is_r64(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTSD2SQ"
-            self.encodings.append((0x00, lambda op: bytearray([0xF2, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xF2,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x2D,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
         elif is_r64(self.operands[0]) and is_m64(self.operands[1]):
             self.go_name = "CVTSD2SQ"
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0xF2]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x2D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0xF2])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x2D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTSD2SI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTSD2SI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8822,18 +16100,22 @@ class CVTTSD2SI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTTSD2SI(r32, xmm/m64)    [SSE2]
-            * CVTTSD2SI(r64, xmm/m64)    [SSE2]
+        * CVTTSD2SI(r32, xmm/m64)    [SSE2]
+        * CVTTSD2SI(r64, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTTSD2SI, self).__init__("CVTTSD2SI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTTSD2SI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTTSD2SI" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
@@ -8841,18 +16123,57 @@ class CVTTSD2SI(Instruction):
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_r32(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTTSD2SL"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_r32(self.operands[0]) and is_m64(self.operands[1]):
             self.go_name = "CVTTSD2SL"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         elif is_r64(self.operands[0]) and is_xmm(self.operands[1]):
             self.go_name = "CVTTSD2SQ"
-            self.encodings.append((0x00, lambda op: bytearray([0xF2, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xF2,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x2C,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
         elif is_r64(self.operands[0]) and is_m64(self.operands[1]):
             self.go_name = "CVTTSD2SQ"
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0xF2]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x2C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0xF2])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x2C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTTSD2SI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTTSD2SI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8863,18 +16184,22 @@ class CVTSI2SD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTSI2SD(xmm, r32/m32)    [SSE2]
-            * CVTSI2SD(xmm, r64/m64)    [SSE2]
+        * CVTSI2SD(xmm, r32/m32)    [SSE2]
+        * CVTSI2SD(xmm, r64/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTSI2SD, self).__init__("CVTSI2SD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTSI2SD\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTSI2SD" requires 2 operands')
         self.in_regs = (True, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
@@ -8882,18 +16207,57 @@ class CVTSI2SD(Instruction):
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_r32(self.operands[1]):
             self.go_name = "CVTSL2SD"
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_r64(self.operands[1]):
             self.go_name = "CVTSQ2SD"
-            self.encodings.append((0x00, lambda op: bytearray([0xF2, 0x48 | op[0].hcode << 2 | op[1].hcode, 0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x00,
+                    lambda op: bytearray(
+                        [
+                            0xF2,
+                            0x48 | op[0].hcode << 2 | op[1].hcode,
+                            0x0F,
+                            0x2A,
+                            0xC0 | op[0].lcode << 3 | op[1].lcode,
+                        ]
+                    ),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
             self.go_name = "CVTSL2SD"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
             self.go_name = "CVTSQ2SD"
-            self.encodings.append((0x10, lambda op, sib=False, min_disp=0: bytearray([0xF2]) + rex(1, op[0].hcode, op[1].address) + bytearray([0x0F, 0x2A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x10,
+                    lambda op, sib=False, min_disp=0: bytearray([0xF2])
+                    + rex(1, op[0].hcode, op[1].address)
+                    + bytearray([0x0F, 0x2A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTSI2SD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTSI2SD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8904,28 +16268,50 @@ class CVTPS2DQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPS2DQ(xmm, xmm/m128)    [SSE2]
+        * CVTPS2DQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPS2DQ, self).__init__("CVTPS2DQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPS2DQ\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPS2DQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5B, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPS2DQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPS2DQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8936,28 +16322,50 @@ class CVTTPS2DQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTTPS2DQ(xmm, xmm/m128)    [SSE2]
+        * CVTTPS2DQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTTPS2DQ, self).__init__("CVTTPS2DQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTTPS2DQ\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTTPS2DQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5B, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTTPS2DQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTTPS2DQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -8968,28 +16376,50 @@ class CVTDQ2PS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTDQ2PS(xmm, xmm/m128)    [SSE2]
+        * CVTDQ2PS(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTDQ2PS, self).__init__("CVTDQ2PS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTDQ2PS\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTDQ2PS" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5B, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5B, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5B]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x5B])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTDQ2PS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTDQ2PS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9000,28 +16430,50 @@ class CVTPD2DQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPD2DQ(xmm, xmm/m128)    [SSE2]
+        * CVTPD2DQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPD2DQ, self).__init__("CVTPD2DQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPD2DQ\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPD2DQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE6, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE6, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE6]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE6])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPD2DQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPD2DQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9032,28 +16484,50 @@ class CVTTPD2DQ(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTTPD2DQ(xmm, xmm/m128)    [SSE2]
+        * CVTTPD2DQ(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTTPD2DQ, self).__init__("CVTTPD2DQ", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTTPD2DQ\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTTPD2DQ" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE6, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE6, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE6]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE6])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTTPD2DQ " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTTPD2DQ "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9064,28 +16538,50 @@ class CVTDQ2PD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTDQ2PD(xmm, xmm/m64)    [SSE2]
+        * CVTDQ2PD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTDQ2PD, self).__init__("CVTDQ2PD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTDQ2PD\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTDQ2PD" requires 2 operands')
         self.in_regs = (False, True)
         self.out_regs = (True, False)
         self.out_operands = (True, False)
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0xE6, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0xE6, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0xE6]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0xE6])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTDQ2PD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTDQ2PD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9096,17 +16592,21 @@ class CVTPS2PI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPS2PI(mm, xmm/m64)    [SSE]
+        * CVTPS2PI(mm, xmm/m64)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPS2PI, self).__init__("CVTPS2PI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPS2PI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPS2PI" requires 2 operands')
         self.go_name = "CVTPS2PL"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -9114,12 +16614,30 @@ class CVTPS2PI(Instruction):
         self.mmx_mode = True
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_mm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x2D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPS2PI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPS2PI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9130,17 +16648,21 @@ class CVTTPS2PI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTTPS2PI(mm, xmm/m64)    [SSE]
+        * CVTTPS2PI(mm, xmm/m64)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTTPS2PI, self).__init__("CVTTPS2PI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTTPS2PI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTTPS2PI" requires 2 operands')
         self.go_name = "CVTTPS2PL"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -9148,12 +16670,30 @@ class CVTTPS2PI(Instruction):
         self.mmx_mode = True
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_mm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
         elif is_mm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x2C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTTPS2PI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTTPS2PI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9164,17 +16704,21 @@ class CVTPI2PS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPI2PS(xmm, mm/m64)    [SSE]
+        * CVTPI2PS(xmm, mm/m64)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPI2PS, self).__init__("CVTPI2PS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPI2PS\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPI2PS" requires 2 operands')
         self.go_name = "CVTPL2PS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -9183,11 +16727,29 @@ class CVTPI2PS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_xmm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x2A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPI2PS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPI2PS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9198,17 +16760,21 @@ class CVTPD2PI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPD2PI(mm, xmm/m128)    [SSE]
+        * CVTPD2PI(mm, xmm/m128)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPD2PI, self).__init__("CVTPD2PI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPD2PI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPD2PI" requires 2 operands')
         self.go_name = "CVTPD2PL"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -9216,12 +16782,30 @@ class CVTPD2PI(Instruction):
         self.mmx_mode = True
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         if is_mm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2D, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
         elif is_mm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2D]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2D])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPD2PI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPD2PI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9232,17 +16816,21 @@ class CVTTPD2PI(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTTPD2PI(mm, xmm/m128)    [SSE2]
+        * CVTTPD2PI(mm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTTPD2PI, self).__init__("CVTTPD2PI", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTTPD2PI\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTTPD2PI" requires 2 operands')
         self.go_name = "CVTTPD2PL"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -9250,12 +16838,30 @@ class CVTTPD2PI(Instruction):
         self.mmx_mode = True
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_mm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2C, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.avx_mode = False
         elif is_mm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2C]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2C])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTTPD2PI " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTTPD2PI "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9266,17 +16872,21 @@ class CVTPI2PD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPI2PD(xmm, mm/m64)    [SSE2]
+        * CVTPI2PD(xmm, mm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPI2PD, self).__init__("CVTPI2PD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPI2PD\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPI2PD" requires 2 operands')
         self.go_name = "CVTPL2PD"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -9284,12 +16894,30 @@ class CVTPI2PD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_mm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x2A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
             self.mmx_mode = True
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x2A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x2A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPI2PD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPI2PD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9300,17 +16928,21 @@ class CVTSD2SS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTSD2SS(xmm, xmm/m64)    [SSE2]
+        * CVTSD2SS(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTSD2SS, self).__init__("CVTSD2SS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTSD2SS\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTSD2SS" requires 2 operands')
         self.go_name = "CVTSD2SS"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -9318,11 +16950,29 @@ class CVTSD2SS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF2])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTSD2SS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTSD2SS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9333,17 +16983,21 @@ class CVTSS2SD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTSS2SD(xmm, xmm/m32)    [SSE2]
+        * CVTSS2SD(xmm, xmm/m32)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTSS2SD, self).__init__("CVTSS2SD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTSS2SD\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTSS2SD" requires 2 operands')
         self.go_name = "CVTSS2SD"
         self.in_regs = (True, True)
         self.out_regs = (True, False)
@@ -9351,11 +17005,29 @@ class CVTSS2SD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m32(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0xF3])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTSS2SD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTSS2SD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9366,17 +17038,21 @@ class CVTPD2PS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPD2PS(xmm, xmm/m128)    [SSE2]
+        * CVTPD2PS(xmm, xmm/m128)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPD2PS, self).__init__("CVTPD2PS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPD2PS\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPD2PS" requires 2 operands')
         self.go_name = "CVTPD2PS"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -9384,11 +17060,29 @@ class CVTPD2PS(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: bytearray([0x66]) + optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m128(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66]) + optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: bytearray([0x66])
+                    + optional_rex(op[0].hcode, op[1].address, rex)
+                    + bytearray([0x0F, 0x5A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPD2PS " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPD2PS "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9399,17 +17093,21 @@ class CVTPS2PD(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * CVTPS2PD(xmm, xmm/m64)    [SSE2]
+        * CVTPS2PD(xmm, xmm/m64)    [SSE2]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(CVTPS2PD, self).__init__("CVTPS2PD", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 2:
-            raise SyntaxError("Instruction \"CVTPS2PD\" requires 2 operands")
+            raise SyntaxError('Instruction "CVTPS2PD" requires 2 operands')
         self.go_name = "CVTPS2PD"
         self.in_regs = (False, True)
         self.out_regs = (True, False)
@@ -9417,11 +17115,29 @@ class CVTPS2PD(Instruction):
         self.avx_mode = False
         self.isa_extensions = frozenset([nervapy.x86_64.isa.sse2])
         if is_xmm(self.operands[0]) and is_xmm(self.operands[1]):
-            self.encodings.append((0x20, lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex) + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode])))
+            self.encodings.append(
+                (
+                    0x20,
+                    lambda op, rex=False: optional_rex(op[0].hcode, op[1], rex)
+                    + bytearray([0x0F, 0x5A, 0xC0 | op[0].lcode << 3 | op[1].lcode]),
+                )
+            )
         elif is_xmm(self.operands[0]) and is_m64(self.operands[1]):
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(op[0].hcode, op[1].address, rex) + bytearray([0x0F, 0x5A]) + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        op[0].hcode, op[1].address, rex
+                    )
+                    + bytearray([0x0F, 0x5A])
+                    + modrm_sib_disp(op[0].lcode, op[1].address, sib, min_disp),
+                )
+            )
         else:
-            raise SyntaxError("Invalid operand types: CVTPS2PD " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: CVTPS2PD "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9432,27 +17148,43 @@ class LDMXCSR(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * LDMXCSR(m32)    [SSE]
+        * LDMXCSR(m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(LDMXCSR, self).__init__("LDMXCSR", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 1:
-            raise SyntaxError("Instruction \"LDMXCSR\" requires 1 operands")
+            raise SyntaxError('Instruction "LDMXCSR" requires 1 operands')
         if is_m32(self.operands[0]):
             self.go_name = "LDMXCSR"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(0, op[0].address, rex) + bytearray([0x0F, 0xAE]) + modrm_sib_disp(2, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        0, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0xAE])
+                    + modrm_sib_disp(2, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True,)
             self.out_regs = (False,)
             self.out_operands = (False,)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         else:
-            raise SyntaxError("Invalid operand types: LDMXCSR " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: LDMXCSR "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9463,27 +17195,43 @@ class STMXCSR(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * STMXCSR(m32)    [SSE]
+        * STMXCSR(m32)    [SSE]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(STMXCSR, self).__init__("STMXCSR", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 1:
-            raise SyntaxError("Instruction \"STMXCSR\" requires 1 operands")
+            raise SyntaxError('Instruction "STMXCSR" requires 1 operands')
         if is_m32(self.operands[0]):
             self.go_name = "STMXCSR"
-            self.encodings.append((0x30, lambda op, rex=False, sib=False, min_disp=0: optional_rex(0, op[0].address, rex) + bytearray([0x0F, 0xAE]) + modrm_sib_disp(3, op[0].address, sib, min_disp)))
+            self.encodings.append(
+                (
+                    0x30,
+                    lambda op, rex=False, sib=False, min_disp=0: optional_rex(
+                        0, op[0].address, rex
+                    )
+                    + bytearray([0x0F, 0xAE])
+                    + modrm_sib_disp(3, op[0].address, sib, min_disp),
+                )
+            )
             self.in_regs = (True,)
             self.out_regs = (False,)
             self.out_operands = (True,)
             self.avx_mode = False
             self.isa_extensions = frozenset([nervapy.x86_64.isa.sse])
         else:
-            raise SyntaxError("Invalid operand types: STMXCSR " + ", ".join(map(format_operand_type, self.operands)))
+            raise SyntaxError(
+                "Invalid operand types: STMXCSR "
+                + ", ".join(map(format_operand_type, self.operands))
+            )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
 
@@ -9494,22 +17242,24 @@ class EMMS(Instruction):
     def __init__(self, *args, **kwargs):
         """Supported forms:
 
-            * EMMS()    [MMX]
+        * EMMS()    [MMX]
         """
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
-        if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:
+        if (
+            origin is None
+            and prototype is None
+            and nervapy.x86_64.options.get_debug_level() > 0
+        ):
             origin = inspect.stack()
         super(EMMS, self).__init__("EMMS", origin=origin, prototype=prototype)
         self.operands = tuple(map(check_operand, args))
         if len(self.operands) != 0:
-            raise SyntaxError("Instruction \"EMMS\" requires 0 operands")
+            raise SyntaxError('Instruction "EMMS" requires 0 operands')
         self.go_name = "EMMS"
         self.encodings.append((0x00, lambda op: bytearray([0x0F, 0x77])))
         self.mmx_mode = True
         self.isa_extensions = frozenset([nervapy.x86_64.isa.mmx])
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(self)
-
-

@@ -41,7 +41,7 @@ def load_register(dst_reg, src_reg, data_type, prototype):
                         (4, True): VMOVAPS,
                         (4, False): MOVSS,
                         (8, True): VMOVAPD,
-                        (8, False): MOVSD
+                        (8, False): MOVSD,
                     }[(data_type.size, bool(prototype.avx_mode))]
                     return xmm_fp_mov(dst_reg, src_reg, prototype=prototype)
                 else:
@@ -52,16 +52,12 @@ def load_register(dst_reg, src_reg, data_type, prototype):
                         (m128d, True): VMOVAPD,
                         (m128d, False): MOVAPD,
                         (m128i, True): VMOVDQA,
-                        (m128i, False): MOVDQA
+                        (m128i, False): MOVDQA,
                     }[(data_type, bool(prototype.avx_mode))]
                     return xmm_mov(dst_reg, src_reg, prototype=prototype)
         elif isinstance(dst_reg, YMMRegister):
             if dst_reg != src_reg:
-                ymm_mov = {
-                    m256: VMOVAPS,
-                    m256d: VMOVAPD,
-                    m256i: VMOVDQA
-                }[data_type]
+                ymm_mov = {m256: VMOVAPS, m256d: VMOVAPD, m256i: VMOVDQA}[data_type]
                 return ymm_mov(dst_reg, src_reg, prototype=prototype)
         else:
             assert False, "Unexpected type: " + dst_reg.__class__
@@ -78,20 +74,24 @@ def load_memory(dst_reg, src_address, src_type, prototype):
                 if src_type.is_signed_integer:
                     return MOVSXD(dst_reg, dword[src_address], prototype=prototype)
                 else:
-                    return MOV(dst_reg.as_dword, dword[src_address], prototype=prototype)
+                    return MOV(
+                        dst_reg.as_dword, dword[src_address], prototype=prototype
+                    )
             else:
-                size_spec = {
-                    1: byte,
-                    2: word,
-                    4: dword
-                }[src_type.size]
+                size_spec = {1: byte, 2: word, 4: dword}[src_type.size]
                 if src_type.is_signed_integer:
                     return MOVSX(dst_reg, size_spec[src_address], prototype=prototype)
                 else:
                     if dst_reg.size == 8:
-                        return MOVZX(dst_reg.as_dword, size_spec[src_address], prototype=prototype)
+                        return MOVZX(
+                            dst_reg.as_dword,
+                            size_spec[src_address],
+                            prototype=prototype,
+                        )
                     else:
-                        return MOVZX(dst_reg, size_spec[src_address], prototype=prototype)
+                        return MOVZX(
+                            dst_reg, size_spec[src_address], prototype=prototype
+                        )
         elif isinstance(dst_reg, MMXRegister):
             return MOVQ(dst_reg, [src_address], prototype)
         elif isinstance(dst_reg, XMMRegister):

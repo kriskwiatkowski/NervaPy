@@ -36,92 +36,162 @@ class Encoder:
     @staticmethod
     def int8(n):
         """Converts signed 8-bit integer to bytearray representation"""
-        assert -128 <= n <= 127, "%u can not be represented as an 8-bit signed integer" % n
+        assert -128 <= n <= 127, (
+            "%u can not be represented as an 8-bit signed integer" % n
+        )
         return bytearray([n & 0xFF])
 
     @staticmethod
     def uint8(n):
         """Converts unsigned 8-bit integer to bytearray representation"""
-        assert 0 <= n <= 255, "%u can not be represented as an 8-bit unsigned integer" % n
+        assert 0 <= n <= 255, (
+            "%u can not be represented as an 8-bit unsigned integer" % n
+        )
         return bytearray([n])
 
     @staticmethod
     def int16le(n):
         """Converts signed 16-bit integer to little-endian bytearray representation"""
-        assert -32768 <= n <= 32767, "%u can not be represented as a 16-bit signed integer" % n
+        assert -32768 <= n <= 32767, (
+            "%u can not be represented as a 16-bit signed integer" % n
+        )
         return bytearray([n & 0xFF, (n >> 8) & 0xFF])
 
     @staticmethod
     def int16be(n):
         """Converts signed 16-bit integer to big-endian bytearray representation"""
-        assert -32768 <= n <= 32767, "%u can not be represented as a 16-bit signed integer" % n
+        assert -32768 <= n <= 32767, (
+            "%u can not be represented as a 16-bit signed integer" % n
+        )
         return bytearray([n >> 8, (n & 0xFF) & 0xFF])
 
     @staticmethod
     def uint16le(n):
         """Converts unsigned 16-bit integer to little-endian bytearray representation"""
-        assert 0 <= n <= 65535, "%u can not be represented as a 16-bit unsigned integer" % n
+        assert 0 <= n <= 65535, (
+            "%u can not be represented as a 16-bit unsigned integer" % n
+        )
         return bytearray([n & 0xFF, n >> 8])
 
     @staticmethod
     def uint16be(n):
         """Converts unsigned 16-bit integer to big-endian bytearray representation"""
-        assert 0 <= n <= 65535, "%u can not be represented as a 16-bit unsigned integer" % n
+        assert 0 <= n <= 65535, (
+            "%u can not be represented as a 16-bit unsigned integer" % n
+        )
         return bytearray([n >> 8, n & 0xFF])
 
     @staticmethod
     def int32le(n):
         """Converts signed 32-bit integer to little-endian bytearray representation"""
-        assert -2147483648 <= n <= 2147483647, "%u can not be represented as a 32-bit signed integer" % n
-        return bytearray([n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, (n >> 24) & 0xFF])
+        assert -2147483648 <= n <= 2147483647, (
+            "%u can not be represented as a 32-bit signed integer" % n
+        )
+        return bytearray(
+            [n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, (n >> 24) & 0xFF]
+        )
 
     @staticmethod
     def int32be(n):
         """Converts signed 32-bit integer to big-endian bytearray representation"""
-        assert -2147483648 <= n <= 2147483647, "%u can not be represented as a 32-bit signed integer" % n
-        return bytearray([(n >> 24) & 0xFF, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF])
+        assert -2147483648 <= n <= 2147483647, (
+            "%u can not be represented as a 32-bit signed integer" % n
+        )
+        return bytearray(
+            [(n >> 24) & 0xFF, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF]
+        )
 
     @staticmethod
     def uint32le(n):
         """Converts unsigned 32-bit integer to little-endian bytearray representation"""
-        assert 0 <= n <= 4294967295, "%u can not be represented as a 32-bit unsigned integer" % n
+        assert 0 <= n <= 4294967295, (
+            "%u can not be represented as a 32-bit unsigned integer" % n
+        )
         return bytearray([n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, n >> 24])
 
     @staticmethod
     def uint32be(n):
         """Converts unsigned 32-bit integer to big-endian bytearray representation"""
-        assert 0 <= n <= 4294967295, "%u can not be represented as a 32-bit unsigned integer" % n
+        assert 0 <= n <= 4294967295, (
+            "%u can not be represented as a 32-bit unsigned integer" % n
+        )
         return bytearray([n >> 24, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF])
 
     @staticmethod
     def int64le(n):
         """Converts signed 64-bit integer to little-endian bytearray representation"""
-        assert -9223372036854775808 <= n <= 9223372036854775807, \
+        assert -9223372036854775808 <= n <= 9223372036854775807, (
             "%u can not be represented as a 64-bit signed integer" % n
-        return bytearray([n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, (n >> 24) & 0xFF,
-                          (n >> 32) & 0xFF, (n >> 40) & 0xFF, (n >> 48) & 0xFF, (n >> 56) & 0xFF])
+        )
+        return bytearray(
+            [
+                n & 0xFF,
+                (n >> 8) & 0xFF,
+                (n >> 16) & 0xFF,
+                (n >> 24) & 0xFF,
+                (n >> 32) & 0xFF,
+                (n >> 40) & 0xFF,
+                (n >> 48) & 0xFF,
+                (n >> 56) & 0xFF,
+            ]
+        )
 
     @staticmethod
     def int64be(n):
         """Converts signed 64-bit integer to big-endian bytearray representation"""
-        assert -9223372036854775808 <= n <= 9223372036854775807, \
+        assert -9223372036854775808 <= n <= 9223372036854775807, (
             "%u can not be represented as a 64-bit signed integer" % n
-        return bytearray([(n >> 56) & 0xFF, (n >> 48) & 0xFF, (n >> 40) & 0xFF, (n >> 32) & 0xFF,
-                         (n >> 24) & 0xFF, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF])
+        )
+        return bytearray(
+            [
+                (n >> 56) & 0xFF,
+                (n >> 48) & 0xFF,
+                (n >> 40) & 0xFF,
+                (n >> 32) & 0xFF,
+                (n >> 24) & 0xFF,
+                (n >> 16) & 0xFF,
+                (n >> 8) & 0xFF,
+                n & 0xFF,
+            ]
+        )
 
     @staticmethod
     def uint64le(n):
         """Converts unsigned 64-bit integer to little-endian bytearray representation"""
-        assert 0 <= n <= 18446744073709551615, "%u can not be represented as a 64-bit unsigned integer" % n
-        return bytearray([n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, (n >> 24) & 0xFF,
-                          (n >> 32) & 0xFF, (n >> 40) & 0xFF, (n >> 48) & 0xFF, (n >> 56) & 0xFF])
+        assert 0 <= n <= 18446744073709551615, (
+            "%u can not be represented as a 64-bit unsigned integer" % n
+        )
+        return bytearray(
+            [
+                n & 0xFF,
+                (n >> 8) & 0xFF,
+                (n >> 16) & 0xFF,
+                (n >> 24) & 0xFF,
+                (n >> 32) & 0xFF,
+                (n >> 40) & 0xFF,
+                (n >> 48) & 0xFF,
+                (n >> 56) & 0xFF,
+            ]
+        )
 
     @staticmethod
     def uint64be(n):
         """Converts unsigned 64-bit integer to big-endian bytearray representation"""
-        assert 0 <= n <= 18446744073709551615, "%u can not be represented as a 64-bit unsigned integer" % n
-        return bytearray([(n >> 56) & 0xFF, (n >> 48) & 0xFF, (n >> 40) & 0xFF, (n >> 32) & 0xFF,
-                         (n >> 24) & 0xFF, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF])
+        assert 0 <= n <= 18446744073709551615, (
+            "%u can not be represented as a 64-bit unsigned integer" % n
+        )
+        return bytearray(
+            [
+                (n >> 56) & 0xFF,
+                (n >> 48) & 0xFF,
+                (n >> 40) & 0xFF,
+                (n >> 32) & 0xFF,
+                (n >> 24) & 0xFF,
+                (n >> 16) & 0xFF,
+                (n >> 8) & 0xFF,
+                n & 0xFF,
+            ]
+        )
 
     def int16(self, n):
         """Converts signed 16-bit integer to bytearray representation according to encoder endianness"""
@@ -150,10 +220,13 @@ class Encoder:
     @staticmethod
     def fixed_string(string, size):
         """Converts string to fixed-length bytearray representation"""
-        assert isinstance(size, six.integer_types) and size > 0, "size %u is not a positive integer" % size
+        assert isinstance(size, six.integer_types) and size > 0, (
+            "size %u is not a positive integer" % size
+        )
         if string is None:
             return bytearray(size)
         import codecs
+
         byte_string = codecs.encode(string, "utf8")
         if len(byte_string) > size:
             raise ValueError("The length of %s exceeds the target %d" % (string, size))
@@ -168,4 +241,6 @@ class Encoder:
 
     def unsigned_offset(self, n):
         """Converts unsigned integer offset to bytearray representation according to encoder bitness and endianness"""
-        raise ValueError("Can not encode unsigned offset: encoder bitness not specified")
+        raise ValueError(
+            "Can not encode unsigned offset: encoder bitness not specified"
+        )

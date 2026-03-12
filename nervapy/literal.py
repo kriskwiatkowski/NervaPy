@@ -8,19 +8,39 @@ from nervapy.parse import parse_assigned_variable_name
 
 class Constant:
     _supported_sizes = [1, 2, 4, 8, 16, 32, 64]
-    _supported_types = [uint8_t, uint16_t, uint32_t, uint64_t,
-                        int8_t, int16_t, int32_t, int64_t,
-                        float_, double_]
+    _supported_types = [
+        uint8_t,
+        uint16_t,
+        uint32_t,
+        uint64_t,
+        int8_t,
+        int16_t,
+        int32_t,
+        int64_t,
+        float_,
+        double_,
+    ]
 
     def __init__(self, size, repeats, data, element_ctype, name):
         assert isinstance(size, six.integer_types), "Constant size must be an integer"
-        assert size in Constant._supported_sizes, "Unsupported size %s: the only supported sizes are %s" \
-            % (str(size), ", ".join(map(str, sorted(Constant._supported_sizes))))
-        assert isinstance(repeats, six.integer_types), "The number of constant repeats must be an integer"
-        assert size % repeats == 0, "The number of constant repeats must divide constant size without remainder"
-        assert isinstance(element_ctype, Type), "Element type must be an instance of nervapy.c.Type"
-        assert element_ctype in Constant._supported_types, "The only supported types are %s" \
-            % ", ".join(Constant._supported_types)
+        assert (
+            size in Constant._supported_sizes
+        ), "Unsupported size %s: the only supported sizes are %s" % (
+            str(size),
+            ", ".join(map(str, sorted(Constant._supported_sizes))),
+        )
+        assert isinstance(
+            repeats, six.integer_types
+        ), "The number of constant repeats must be an integer"
+        assert (
+            size % repeats == 0
+        ), "The number of constant repeats must divide constant size without remainder"
+        assert isinstance(
+            element_ctype, Type
+        ), "Element type must be an instance of nervapy.c.Type"
+        assert (
+            element_ctype in Constant._supported_types
+        ), "The only supported types are %s" % ", ".join(Constant._supported_types)
         assert isinstance(name, Name)
 
         self.size = size
@@ -41,16 +61,21 @@ class Constant:
         return hash(self.data) ^ hash(self.size) ^ hash(self.repeats)
 
     def __eq__(self, other):
-        return isinstance(other, Constant) and self.data == other.data and self.element_ctype == other.element_ctype
+        return (
+            isinstance(other, Constant)
+            and self.data == other.data
+            and self.element_ctype == other.element_ctype
+        )
 
     def encode(self, encoder):
         from nervapy.encoder import Encoder
+
         assert isinstance(encoder, Encoder)
         encode_function = {
             1: encoder.uint8,
             2: encoder.uint16,
             4: encoder.uint32,
-            8: encoder.uint64
+            8: encoder.uint64,
         }[self.size / self.repeats]
         return bytearray().join([encode_function(data) for data in self.data])
 
@@ -64,6 +89,7 @@ class Constant:
     @property
     def as_hex(self):
         from nervapy.encoder import Encoder, Endianness
+
         bytestring = self.encode(Encoder(Endianness.Little))
         return "".join("%02X" % byte for byte in bytestring)
 
@@ -76,6 +102,7 @@ class Constant:
     @staticmethod
     def _uint64xN(name, n, *args):
         from nervapy.util import is_int, is_int64
+
         assert is_int(n)
         args = [arg for arg in args if arg is not None]
         if len(args) == 0:
@@ -96,6 +123,7 @@ class Constant:
     @staticmethod
     def _uint32xN(name, n, *args):
         from nervapy.util import is_int, is_int32
+
         assert is_int(n)
         args = [arg for arg in args if arg is not None]
         if len(args) == 0:
@@ -116,6 +144,7 @@ class Constant:
     @staticmethod
     def _uint16xN(name, n, *args):
         from nervapy.util import is_int, is_int32
+
         assert is_int(n)
         args = [arg for arg in args if arg is not None]
         if len(args) == 0:
@@ -164,7 +193,10 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint64"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint64")
+            )
 
         return Constant._uint64xN(name, 1, number)
 
@@ -175,7 +207,12 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint64x2"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint64x2"
+                )
+            )
 
         return Constant._uint64xN(name, 2, number1, number2)
 
@@ -186,23 +223,51 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint64x4"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint64x4"
+                )
+            )
 
         return Constant._uint64xN(name, 4, number1, number2, number3, number4)
 
     @staticmethod
-    def uint64x8(number1, number2=None, number3=None, number4=None,
-                 number5=None, number6=None, number7=None, number8=None,
-                 name=None):
+    def uint64x8(
+        number1,
+        number2=None,
+        number3=None,
+        number4=None,
+        number5=None,
+        number6=None,
+        number7=None,
+        number8=None,
+        name=None,
+    ):
         if name is not None:
             Name.check_name(name)
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint64x8"))
 
-        return Constant._uint64xN(name, 8,
-                                  number1, number2, number3, number4, number5, number6, number7, number8)
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint64x8"
+                )
+            )
+
+        return Constant._uint64xN(
+            name,
+            8,
+            number1,
+            number2,
+            number3,
+            number4,
+            number5,
+            number6,
+            number7,
+            number8,
+        )
 
     @staticmethod
     def uint32(number, name=None):
@@ -211,7 +276,10 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint32"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint32")
+            )
 
         return Constant._uint32xN(name, 1, number)
 
@@ -222,7 +290,12 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint32x2"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint32x2"
+                )
+            )
 
         return Constant._uint32xN(name, 2, number1, number2)
 
@@ -233,71 +306,194 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint32x4"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint32x4"
+                )
+            )
 
         return Constant._uint32xN(name, 4, number1, number2, number3, number4)
 
     @staticmethod
-    def uint32x8(number1, number2=None, number3=None, number4=None,
-                 number5=None, number6=None, number7=None, number8=None,
-                 name=None):
+    def uint32x8(
+        number1,
+        number2=None,
+        number3=None,
+        number4=None,
+        number5=None,
+        number6=None,
+        number7=None,
+        number8=None,
+        name=None,
+    ):
         if name is not None:
             Name.check_name(name)
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint32x8"))
 
-        return Constant._uint32xN(name, 8,
-                                  number1, number2, number3, number4, number5, number6, number7, number8)
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint32x8"
+                )
+            )
+
+        return Constant._uint32xN(
+            name,
+            8,
+            number1,
+            number2,
+            number3,
+            number4,
+            number5,
+            number6,
+            number7,
+            number8,
+        )
 
     @staticmethod
-    def uint32x16(number1, number2=None, number3=None, number4=None,
-                  number5=None, number6=None, number7=None, number8=None,
-                  number9=None, number10=None, number11=None, number12=None,
-                  number13=None, number14=None, number15=None, number16=None,
-                  name=None):
+    def uint32x16(
+        number1,
+        number2=None,
+        number3=None,
+        number4=None,
+        number5=None,
+        number6=None,
+        number7=None,
+        number8=None,
+        number9=None,
+        number10=None,
+        number11=None,
+        number12=None,
+        number13=None,
+        number14=None,
+        number15=None,
+        number16=None,
+        name=None,
+    ):
         if name is not None:
             Name.check_name(name)
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint32x16"))
 
-        return Constant._uint32xN(name, 16,
-                                  number1, number2, number3, number4, number5, number6, number7, number8,
-                                  number9, number10, number11, number12, number13, number14, number15, number16)
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint32x16"
+                )
+            )
+
+        return Constant._uint32xN(
+            name,
+            16,
+            number1,
+            number2,
+            number3,
+            number4,
+            number5,
+            number6,
+            number7,
+            number8,
+            number9,
+            number10,
+            number11,
+            number12,
+            number13,
+            number14,
+            number15,
+            number16,
+        )
 
     @staticmethod
-    def uint16x8(number1, number2=None, number3=None, number4=None,
-                 number5=None, number6=None, number7=None, number8=None,
-                 name=None):
+    def uint16x8(
+        number1,
+        number2=None,
+        number3=None,
+        number4=None,
+        number5=None,
+        number6=None,
+        number7=None,
+        number8=None,
+        name=None,
+    ):
         if name is not None:
             Name.check_name(name)
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint16x8"))
 
-        return Constant._uint16xN(name, 8,
-                                  number1, number2, number3, number4, number5, number6, number7, number8)
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint16x8"
+                )
+            )
+
+        return Constant._uint16xN(
+            name,
+            8,
+            number1,
+            number2,
+            number3,
+            number4,
+            number5,
+            number6,
+            number7,
+            number8,
+        )
 
     @staticmethod
-    def uint16x16(number1, number2=None, number3=None, number4=None,
-                  number5=None, number6=None, number7=None, number8=None,
-                  number9=None, number10=None, number11=None, number12=None,
-                  number13=None, number14=None, number15=None, number16=None,
-                  name=None):
+    def uint16x16(
+        number1,
+        number2=None,
+        number3=None,
+        number4=None,
+        number5=None,
+        number6=None,
+        number7=None,
+        number8=None,
+        number9=None,
+        number10=None,
+        number11=None,
+        number12=None,
+        number13=None,
+        number14=None,
+        number15=None,
+        number16=None,
+        name=None,
+    ):
         if name is not None:
             Name.check_name(name)
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.uint16x16"))
 
-        return Constant._uint16xN(name, 16,
-                                  number1, number2, number3, number4, number5, number6, number7, number8,
-                                  number9, number10, number11, number12, number13, number14, number15, number16)
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.uint16x16"
+                )
+            )
+
+        return Constant._uint16xN(
+            name,
+            16,
+            number1,
+            number2,
+            number3,
+            number4,
+            number5,
+            number6,
+            number7,
+            number8,
+            number9,
+            number10,
+            number11,
+            number12,
+            number13,
+            number14,
+            number15,
+            number16,
+        )
 
     @staticmethod
     def float64(number, name=None):
@@ -306,7 +502,12 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.float64"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.float64"
+                )
+            )
 
         return Constant._float64xN(name, 1, number)
 
@@ -317,7 +518,12 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.float64x2"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.float64x2"
+                )
+            )
 
         return Constant._float64xN(name, 2, number1, number2)
 
@@ -328,7 +534,12 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.float64x4"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.float64x4"
+                )
+            )
 
         return Constant._float64xN(name, 4, number1, number2, number3, number4)
 
@@ -339,7 +550,12 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.float32"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.float32"
+                )
+            )
 
         return Constant._float32xN(name, 1, number)
 
@@ -350,7 +566,12 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.float32x2"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.float32x2"
+                )
+            )
 
         return Constant._float32xN(name, 2, number1, number2)
 
@@ -361,28 +582,57 @@ class Constant:
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.float32x4"))
+
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.float32x4"
+                )
+            )
 
         return Constant._float32xN(name, 4, number1, number2, number3, number4)
 
     @staticmethod
-    def float32x8(number1, number2=None, number3=None, number4=None,
-                  number5=None, number6=None, number7=None, number8=None,
-                  name=None):
+    def float32x8(
+        number1,
+        number2=None,
+        number3=None,
+        number4=None,
+        number5=None,
+        number6=None,
+        number7=None,
+        number8=None,
+        name=None,
+    ):
         if name is not None:
             Name.check_name(name)
             name = Name(name=name)
         else:
             import inspect
-            name = Name(prename=parse_assigned_variable_name(inspect.stack(), "Constant.float32x8"))
 
-        return Constant._float32xN(name, 8,
-                                   number1, number2, number3, number4, number5, number6, number7, number8)
+            name = Name(
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "Constant.float32x8"
+                )
+            )
+
+        return Constant._float32xN(
+            name,
+            8,
+            number1,
+            number2,
+            number3,
+            number4,
+            number5,
+            number6,
+            number7,
+            number8,
+        )
 
     @staticmethod
     def _convert_to_float32(number):
         import array
-        float_array = array.array('f', [number])
+
+        float_array = array.array("f", [number])
         return float_array[0]
 
     @staticmethod
@@ -394,7 +644,9 @@ class Constant:
             try:
                 number = float.hex(Constant._convert_to_float32(float.fromhex(number)))
             except ValueError:
-                raise ValueError("The string %s is not a hexadecimal floating-point number" % number)
+                raise ValueError(
+                    "The string %s is not a hexadecimal floating-point number" % number
+                )
         else:
             raise TypeError("Unsupported type of constant number %s" % str(number))
         if number == "inf" or number == "+inf":
@@ -404,16 +656,16 @@ class Constant:
         elif number == "nan":
             return 0x7FC00000
         is_negative = number.startswith("-")
-        point_position = number.index('.')
-        exp_position = number.rindex('p')
-        number_prefix = number[int(is_negative):point_position]
-        assert number_prefix == '0x0' or number_prefix == '0x1'
-        mantissa = number[point_position + 1:exp_position]
-        if number_prefix == '0x0' and int(mantissa) == 0:
+        point_position = number.index(".")
+        exp_position = number.rindex("p")
+        number_prefix = number[int(is_negative) : point_position]
+        assert number_prefix == "0x0" or number_prefix == "0x1"
+        mantissa = number[point_position + 1 : exp_position]
+        if number_prefix == "0x0" and int(mantissa) == 0:
             # Zero
             return int(is_negative) << 31
         else:
-            exponent = number[exp_position + 1:]
+            exponent = number[exp_position + 1 :]
             mantissa_bits = len(mantissa) * 4
             if mantissa_bits == 23:
                 mantissa = int(mantissa, 16)
@@ -437,7 +689,9 @@ class Constant:
             try:
                 number = float.hex(float.fromhex(number))
             except ValueError:
-                raise ValueError("The string %s is not a hexadecimal floating-point number" % number)
+                raise ValueError(
+                    "The string %s is not a hexadecimal floating-point number" % number
+                )
         else:
             raise TypeError("Unsupported type of constant number %s" % str(number))
         if number == "inf" or number == "+inf":
@@ -447,17 +701,17 @@ class Constant:
         if number == "nan":
             return 0x7FF8000000000000
         is_negative = number.startswith("-")
-        point_position = number.index('.')
-        exp_position = number.rindex('p')
-        number_prefix = number[int(is_negative):point_position]
-        assert number_prefix == '0x0' or number_prefix == '0x1'
-        mantissa = number[point_position + 1:exp_position]
-        if number_prefix == '0x0':
+        point_position = number.index(".")
+        exp_position = number.rindex("p")
+        number_prefix = number[int(is_negative) : point_position]
+        assert number_prefix == "0x0" or number_prefix == "0x1"
+        mantissa = number[point_position + 1 : exp_position]
+        if number_prefix == "0x0":
             # Zero
             assert int(mantissa) == 0
             return int(is_negative) << 63
         else:
-            exponent = number[exp_position + 1:]
+            exponent = number[exp_position + 1 :]
             mantissa_bits = len(mantissa) * 4
             if mantissa_bits == 52:
                 mantissa = int(mantissa, 16)

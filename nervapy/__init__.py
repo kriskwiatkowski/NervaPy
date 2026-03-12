@@ -2,7 +2,7 @@
 #    See license.rst for the full text of the license.
 
 __version_info__ = (0, 2, 0)
-__version__ = '.'.join(map(str, __version_info__))
+__version__ = ".".join(map(str, __version_info__))
 
 from nervapy.c.types import (Float16, Float32, Float64, Type, Yep8s, Yep8u,
                              Yep16f, Yep16s, Yep16u, Yep32f, Yep32s, Yep32u,
@@ -38,10 +38,10 @@ class ConstantBucket:
     def __init__(self, capacity):
         self.capacity = capacity
         self.constants = []
-    
+
     def add(self, constant):
         self.constants.append(constant)
-    
+
     def is_full(self):
         return False  # Simple implementation for now
 

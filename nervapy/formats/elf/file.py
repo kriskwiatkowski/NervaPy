@@ -101,9 +101,9 @@ class FileIdentification:
     def as_bytearray(self):
         identification = bytearray(16)
         identification[0] = 0x7F
-        identification[1] = ord('E')
-        identification[2] = ord('L')
-        identification[3] = ord('F')
+        identification[1] = ord("E")
+        identification[2] = ord("L")
+        identification[3] = ord("F")
         identification[4] = self.abi.elf_class
         identification[5] = self.abi.elf_data_encoding
         identification[6] = self.file_version
@@ -114,6 +114,7 @@ class FileHeader:
     def __init__(self, abi):
         import nervapy.abi
         import nervapy.formats.elf.section
+
         if not isinstance(abi, nervapy.abi.ABI):
             raise TypeError("ABI %s must be represented by an ABI object" % str(abi))
         if not abi.is_elf_compatible:
@@ -149,24 +150,29 @@ class FileHeader:
         self.section_header_entries_count = 0
         # Index of the section header for a section which contains section name string table.
         # Usually this section is called ".shstrtab"
-        self.section_name_string_table_index = nervapy.formats.elf.section.SectionIndex.undefined
+        self.section_name_string_table_index = (
+            nervapy.formats.elf.section.SectionIndex.undefined
+        )
 
     @property
     def as_bytearray(self):
         import nervapy.encoder
+
         encoder = nervapy.encoder.Encoder(self.abi.endianness, self.abi.elf_bitness)
 
-        return self.identification.as_bytearray + \
-            encoder.uint16(self.file_type) + \
-            encoder.uint16(self.abi.elf_machine_type) + \
-            encoder.uint32(self.file_version) + \
-            encoder.unsigned_offset(self.entry_address or 0) + \
-            encoder.unsigned_offset(self.program_header_table_offset or 0) + \
-            encoder.unsigned_offset(self.section_header_table_offset or 0) + \
-            encoder.uint32(self.flags) + \
-            encoder.uint16(self.file_header_size) + \
-            encoder.uint16(self.program_header_entry_size) + \
-            encoder.uint16(self.program_header_entries_count) + \
-            encoder.uint16(self.section_header_entry_size) + \
-            encoder.uint16(self.section_header_entries_count) + \
-            encoder.uint16(self.section_name_string_table_index)
+        return (
+            self.identification.as_bytearray
+            + encoder.uint16(self.file_type)
+            + encoder.uint16(self.abi.elf_machine_type)
+            + encoder.uint32(self.file_version)
+            + encoder.unsigned_offset(self.entry_address or 0)
+            + encoder.unsigned_offset(self.program_header_table_offset or 0)
+            + encoder.unsigned_offset(self.section_header_table_offset or 0)
+            + encoder.uint32(self.flags)
+            + encoder.uint16(self.file_header_size)
+            + encoder.uint16(self.program_header_entry_size)
+            + encoder.uint16(self.program_header_entries_count)
+            + encoder.uint16(self.section_header_entry_size)
+            + encoder.uint16(self.section_header_entries_count)
+            + encoder.uint16(self.section_name_string_table_index)
+        )

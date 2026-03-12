@@ -46,6 +46,7 @@ class Symbol:
     @staticmethod
     def get_entry_size(abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.pointer_size in [4, 8]
 
@@ -53,6 +54,7 @@ class Symbol:
 
     def encode(self, encoder, name_index_map, section_index_map, section_address_map):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert self.name in name_index_map
         assert self.section is None or self.section in section_index_map
@@ -62,17 +64,21 @@ class Symbol:
         if self.section is not None:
             section_index = section_index_map[self.section]
         if encoder.bitness == 32:
-            return encoder.uint32(name_index) + \
-                encoder.uint8(self.type | self.visibility) + \
-                encoder.uint8(section_index) + \
-                encoder.uint16(self.description | self.flags) + \
-                encoder.uint32(self.value)
+            return (
+                encoder.uint32(name_index)
+                + encoder.uint8(self.type | self.visibility)
+                + encoder.uint8(section_index)
+                + encoder.uint16(self.description | self.flags)
+                + encoder.uint32(self.value)
+            )
         else:
-            return encoder.uint32(name_index) + \
-                encoder.uint8(self.type | self.visibility) + \
-                encoder.uint8(section_index) + \
-                encoder.uint16(self.description | self.flags) + \
-                encoder.uint64(self.value + section_address_map[self.section])
+            return (
+                encoder.uint32(name_index)
+                + encoder.uint8(self.type | self.visibility)
+                + encoder.uint8(section_index)
+                + encoder.uint16(self.description | self.flags)
+                + encoder.uint64(self.value + section_address_map[self.section])
+            )
 
 
 class RelocationType(IntEnum):
@@ -118,10 +124,12 @@ class Relocation:
 
     def __init__(self, type, offset, size, symbol, is_pc_relative=False):
         from nervapy.util import is_sint32
+
         assert is_sint32(offset)
         assert offset >= 0
         assert size in [1, 2, 4, 8]
         from nervapy.formats.macho.section import Section
+
         assert symbol is None or isinstance(symbol, (Section, Symbol))
 
         self.type = type

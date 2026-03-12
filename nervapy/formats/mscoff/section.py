@@ -47,19 +47,25 @@ class Section(object):
         1024: 0x00B00000,
         2048: 0x00C00000,
         4096: 0x00D00000,
-        8192: 0x00E00000
+        8192: 0x00E00000,
     }
 
-    _flag_alignment_map = {flag: alignment for (alignment, flag) in six.iteritems(_alignment_flag_map)}
+    _flag_alignment_map = {
+        flag: alignment for (alignment, flag) in six.iteritems(_alignment_flag_map)
+    }
 
     _alignment_mask = 0x00F00000
 
     def __init__(self, name, flags, alignment=None):
         from nervapy.util import is_uint32
+
         if not isinstance(name, str):
             raise TypeError("Section name %s is not a string" % str(name))
         if not is_uint32(flags):
-            raise TypeError("Flags %s are not representable as a 32-bit unsigned integer" % str(flags))
+            raise TypeError(
+                "Flags %s are not representable as a 32-bit unsigned integer"
+                % str(flags)
+            )
 
         super(Section, self).__init__()
         # Section name
@@ -83,6 +89,7 @@ class Section(object):
     @alignment.setter
     def alignment(self, alignment):
         from nervapy.util import is_int
+
         if not is_int(alignment):
             raise TypeError("Alignment %s is not an integer" % str(alignment))
         if alignment < 0:
@@ -90,11 +97,18 @@ class Section(object):
         if alignment & (alignment - 1) != 0:
             raise ValueError("Alignment %d is not a power of 2" % alignment)
         if alignment not in Section._alignment_flag_map:
-            raise ValueError("Alignment %d exceeds maximum alignment (8192)" % alignment)
-        self.flags = (self.flags & ~Section._alignment_mask) | Section._alignment_flag_map[alignment]
+            raise ValueError(
+                "Alignment %d exceeds maximum alignment (8192)" % alignment
+            )
+        self.flags = (
+            self.flags & ~Section._alignment_mask
+        ) | Section._alignment_flag_map[alignment]
 
-    def encode_header(self, encoder, name_index_map, offset, relocations_offset=None, address=None):
+    def encode_header(
+        self, encoder, name_index_map, offset, relocations_offset=None, address=None
+    ):
         from nervapy.encoder import Encoder
+
         assert isinstance(encoder, Encoder)
         assert isinstance(name_index_map, dict)
 
@@ -109,30 +123,34 @@ class Section(object):
         except ValueError:
             name_index = name_index_map[self.name]
             name_8_bytes = encoder.fixed_string("/" + str(name_index), 8)
-        return name_8_bytes + \
-            encoder.uint32(self.content_size) + \
-            encoder.uint32(address) + \
-            encoder.uint32(self.content_size) + \
-            encoder.uint32(offset) + \
-            encoder.uint32(relocations_offset) + \
-            encoder.uint32(line_numbers_offset) + \
-            encoder.uint16(len(self.relocations)) + \
-            encoder.uint16(line_numbers_count) + \
-            encoder.uint32(self.flags)
+        return (
+            name_8_bytes
+            + encoder.uint32(self.content_size)
+            + encoder.uint32(address)
+            + encoder.uint32(self.content_size)
+            + encoder.uint32(offset)
+            + encoder.uint32(relocations_offset)
+            + encoder.uint32(line_numbers_offset)
+            + encoder.uint16(len(self.relocations))
+            + encoder.uint16(line_numbers_count)
+            + encoder.uint32(self.flags)
+        )
 
 
 class TextSection(Section):
     def __init__(self, name=".text", alignment=None):
-        super(TextSection, self).__init__(name,
-                                          SectionFlags.code | SectionFlags.readable | SectionFlags.executable,
-                                          alignment)
+        super(TextSection, self).__init__(
+            name,
+            SectionFlags.code | SectionFlags.readable | SectionFlags.executable,
+            alignment,
+        )
 
 
 class ReadOnlyDataSection(Section):
     def __init__(self, name=".rdata", alignment=None):
-        super(ReadOnlyDataSection, self).__init__(name,
-                                           SectionFlags.initialized_data | SectionFlags.readable,
-                                           alignment)
+        super(ReadOnlyDataSection, self).__init__(
+            name, SectionFlags.initialized_data | SectionFlags.readable, alignment
+        )
 
 
 class StringTable:

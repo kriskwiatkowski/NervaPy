@@ -41,6 +41,7 @@ class Symbol:
     @staticmethod
     def get_entry_size(abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.elf_bitness in [32, 64]
 
@@ -48,11 +49,17 @@ class Symbol:
 
     def encode(self, encoder, name_index_map, section_index_map):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert encoder.bitness in [32, 64]
         assert self.name in name_index_map
         from nervapy.formats.elf.section import SectionIndex
-        assert self.section is None or isinstance(self.section, SectionIndex) or self.section in section_index_map
+
+        assert (
+            self.section is None
+            or isinstance(self.section, SectionIndex)
+            or self.section in section_index_map
+        )
 
         name_index = name_index_map[self.name]
         section_index = SectionIndex.absolute
@@ -62,19 +69,23 @@ class Symbol:
             else:
                 section_index = section_index_map[self.section]
         if encoder.bitness == 32:
-            return encoder.uint32(name_index) + \
-                encoder.uint32(self.value) + \
-                encoder.uint32(self.size) + \
-                encoder.uint8((self.binding << 4) | (self.type & 0xF)) + \
-                encoder.uint8(0) + \
-                encoder.uint16(section_index)
+            return (
+                encoder.uint32(name_index)
+                + encoder.uint32(self.value)
+                + encoder.uint32(self.size)
+                + encoder.uint8((self.binding << 4) | (self.type & 0xF))
+                + encoder.uint8(0)
+                + encoder.uint16(section_index)
+            )
         else:
-            return encoder.uint32(name_index) + \
-                encoder.uint8((self.binding << 4) | (self.type & 0xF)) + \
-                encoder.uint8(0) + \
-                encoder.uint16(section_index) + \
-                encoder.uint64(self.value) + \
-                encoder.uint64(self.size)
+            return (
+                encoder.uint32(name_index)
+                + encoder.uint8((self.binding << 4) | (self.type & 0xF))
+                + encoder.uint8(0)
+                + encoder.uint16(section_index)
+                + encoder.uint64(self.value)
+                + encoder.uint64(self.size)
+            )
 
 
 class RelocationType(IntEnum):
@@ -233,6 +244,7 @@ class RelocationType(IntEnum):
 class RelocationWithAddend:
     def __init__(self, type, offset, symbol, addend):
         from nervapy.util import is_sint64, is_uint64
+
         assert isinstance(type, RelocationType)
         assert is_uint64(offset)
         assert isinstance(symbol, Symbol)
@@ -246,6 +258,7 @@ class RelocationWithAddend:
     @staticmethod
     def get_entry_size(abi):
         from nervapy.abi import ABI
+
         assert isinstance(abi, ABI)
         assert abi.elf_bitness in [32, 64]
 
@@ -253,6 +266,7 @@ class RelocationWithAddend:
 
     def encode(self, encoder, symbol_index_map):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert encoder.bitness in [32, 64]
         assert self.symbol in symbol_index_map
@@ -260,6 +274,8 @@ class RelocationWithAddend:
         symbol_index = symbol_index_map[self.symbol]
         info = (symbol_index << 32) | self.type
 
-        return encoder.unsigned_offset(self.offset) + \
-            encoder.unsigned_offset(info) + \
-            encoder.signed_offset(self.addend)
+        return (
+            encoder.unsigned_offset(self.offset)
+            + encoder.unsigned_offset(info)
+            + encoder.signed_offset(self.addend)
+        )

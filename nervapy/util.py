@@ -21,11 +21,17 @@ def is_int(n):
 
 
 def is_int64(n):
-    return isinstance(n, six.integer_types) and -9223372036854775808 <= n <= 18446744073709551615
+    return (
+        isinstance(n, six.integer_types)
+        and -9223372036854775808 <= n <= 18446744073709551615
+    )
 
 
 def is_sint64(n):
-    return isinstance(n, six.integer_types) and -9223372036854775808 <= n <= 9223372036854775807
+    return (
+        isinstance(n, six.integer_types)
+        and -9223372036854775808 <= n <= 9223372036854775807
+    )
 
 
 def is_uint64(n):
@@ -70,6 +76,7 @@ def is_sint8(n):
 
 def roundup(n, q):
     import math
+
     return int(math.ceil(float(n) / float(q)) * q)
 
 
@@ -107,6 +114,7 @@ def append_unique(value, sequence=None):
 
 def pairwise(iterable):
     import itertools
+
     a, b = itertools.tee(iterable)
     next(b, None)
     return itertools.izip(a, b)
@@ -114,4 +122,5 @@ def pairwise(iterable):
 
 def diff(sequence):
     import operator
+
     return map(operator.__sub__, pairwise(sequence))

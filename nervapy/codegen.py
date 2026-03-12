@@ -16,12 +16,12 @@ class CodeGenerator(object):
         self.indentationLevel -= 1
         return self
 
-    def add_line(self, string='', indent=None):
+    def add_line(self, string="", indent=None):
         if indent == None:
             indent = self.indentationLevel
         elif indent < 0:
             indent += self.indentationLevel
-        if string == '':
+        if string == "":
             self.code.append(string)
         else:
             if self.use_tabs:
@@ -97,4 +97,3 @@ class CodeGenerator(object):
 
     def get_code(self):
         return "\n".join(self.code)
-

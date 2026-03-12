@@ -8,8 +8,9 @@ class Name:
     def __init__(self, name=None, prename=None):
         assert name is None or isinstance(name, str)
         assert prename is None or isinstance(prename, str)
-        assert name is None or prename is None, \
-            "Either name or prename, but not both, can be specified"
+        assert (
+            name is None or prename is None
+        ), "Either name or prename, but not both, can be specified"
         self.name = name
         self.prename = prename
 
@@ -31,7 +32,9 @@ class Name:
         return isinstance(other, Name) and (self is other or self.name == other.name)
 
     def __ne__(self, other):
-        return not isinstance(other, Name) or (self is not other and self.name != other.name)
+        return not isinstance(other, Name) or (
+            self is not other and self.name != other.name
+        )
 
     @staticmethod
     def check_name(name):
@@ -39,10 +42,14 @@ class Name:
         if not isinstance(name, str):
             raise TypeError("Invalid name %s: string required" % str(name))
         import re
+
         if not re.match("^[_a-zA-Z]\\w*$", name):
             raise ValueError("Invalid name: " + name)
         if name.startswith("__"):
-            raise ValueError("Invalid name %s: names starting with __ are reserved for PeachPy purposes" % name)
+            raise ValueError(
+                "Invalid name %s: names starting with __ are reserved for PeachPy purposes"
+                % name
+            )
 
 
 class Namespace:
@@ -78,7 +85,9 @@ class Namespace:
         if scope_name.name:
             assert scope_name.prename is None
             if scope_name.name in self.names:
-                if subscoped_name and isinstance(self.names[scope_name.name], Namespace):
+                if subscoped_name and isinstance(
+                    self.names[scope_name.name], Namespace
+                ):
                     self.names[scope_name.name].add_scoped_name(subscoped_name)
                 else:
                     raise ValueError("Name %s already exists" % scope_name.name)
@@ -89,7 +98,10 @@ class Namespace:
             self.prenames.setdefault(scope_name.prename, set())
             if subscoped_name:
                 for subscope in iter(self.prenames[scope_name.prename]):
-                    if isinstance(subscope, Namespace) and subscope.scope_name is scope_name:
+                    if (
+                        isinstance(subscope, Namespace)
+                        and subscope.scope_name is scope_name
+                    ):
                         subscope.add_scoped_name(subscoped_name)
                         return
             self.prenames[scope_name.prename].add(scope)

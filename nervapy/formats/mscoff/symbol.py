@@ -10,6 +10,7 @@ class StorageClass(IntEnum):
     External symbol. If section number is undefined (0), value specifies symbol size. Otherwise value specifies offset
     within section.
     """
+
     external = 2
 
     """Static symbol. value specifies offset within section. value of 0 means that symbol represents section name."""
@@ -43,6 +44,7 @@ class Symbol:
 
     def encode_entry(self, encoder, name_index_map, section_index_map):
         from nervapy.encoder import Encoder
+
         assert isinstance(encoder, Encoder)
 
         try:
@@ -52,12 +54,14 @@ class Symbol:
             name_8_bytes = encoder.uint32(0) + encoder.uint32(name_index)
         section_index = section_index_map[self.section]
         auxiliary_entries = 0
-        return name_8_bytes + \
-            encoder.uint32(self.value) + \
-            encoder.uint16(section_index) + \
-            encoder.uint16(self.symbol_type) + \
-            encoder.uint8(self.storage_class) + \
-            encoder.uint8(auxiliary_entries)
+        return (
+            name_8_bytes
+            + encoder.uint32(self.value)
+            + encoder.uint16(section_index)
+            + encoder.uint16(self.symbol_type)
+            + encoder.uint8(self.storage_class)
+            + encoder.uint8(auxiliary_entries)
+        )
 
 
 class RelocationType(IntEnum):
@@ -112,12 +116,17 @@ class Relocation:
 
     def __init__(self, type, offset, symbol):
         from nervapy.util import is_int, is_uint32
+
         if not isinstance(type, RelocationType):
-            raise TypeError("Relocation type %s is not in RelocationType enumeration" % str(type))
+            raise TypeError(
+                "Relocation type %s is not in RelocationType enumeration" % str(type)
+            )
         if not is_int(offset):
             raise TypeError("Offset %s is not an integer" % str(offset))
         if not is_uint32(offset):
-            raise ValueError("Offset %d can not be represented as a 32-bit unsigned integer" % offset)
+            raise ValueError(
+                "Offset %d can not be represented as a 32-bit unsigned integer" % offset
+            )
         if not isinstance(symbol, Symbol):
             raise TypeError("Symbol %s is not an instance of Symbol type" % str(symbol))
 
@@ -127,10 +136,13 @@ class Relocation:
 
     def encode_entry(self, encoder, symbol_index_map, section_address=0):
         import nervapy.encoder
+
         assert isinstance(encoder, nervapy.encoder.Encoder)
         assert self.symbol in symbol_index_map
 
         symbol_index = symbol_index_map[self.symbol]
-        return encoder.uint32(section_address + self.offset) + \
-            encoder.uint32(symbol_index) + \
-            encoder.uint16(self.type)
+        return (
+            encoder.uint32(section_address + self.offset)
+            + encoder.uint32(symbol_index)
+            + encoder.uint16(self.type)
+        )
