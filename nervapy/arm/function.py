@@ -605,6 +605,29 @@ class Function(object):
         for instruction in instructions:
             self.add_instruction(instruction)
 
+    def preserve(self, *registers):
+        """Force additional registers into the function prologue/epilogue.
+
+        Use this when you need registers preserved that the automatic analysis
+        would not detect (e.g. registers used only via inline logic or explicit
+        control flow).  The registers are merged with the auto-detected ones so
+        the prologue emits a single PUSH / PUSH.W covering everything.
+
+        Accepts individual registers or a single tuple/list, mirroring the
+        calling convention of PUSH::
+
+            with Function("my_func", ...) as f:
+                f.preserve(r8, r9)       # varargs style
+                f.preserve((r8, r9))     # tuple style (like PUSH)
+                f.preserve(lr)
+        """
+        for item in registers:
+            if isinstance(item, (tuple, list)):
+                for register in item:
+                    self.stack_frame.force_preserve_register(register)
+            else:
+                self.stack_frame.force_preserve_register(item)
+
     def decompose_instructions(self):
         from nervapy.arm.pseudo import ReturnInstruction
 
@@ -1428,7 +1451,7 @@ class Function(object):
             if not isinstance(instruction, Instruction):
                 continue
 
-            # Skip prologue instructions (PUSH/VPUSH/STMDB at start of function)
+            # Skip prologue instructions (PUSH/VPUSH/STMDB/SUB-sp at start of function)
             if prologue_instructions_seen < prologue_size:
                 if isinstance(instruction, PushPopInstruction) and instruction.name in (
                     "PUSH",
@@ -1445,6 +1468,20 @@ class Function(object):
                     if instruction.writeback and instruction.name.startswith("STM"):
                         prologue_instructions_seen += 1
                         continue
+                # Also skip SUB sp, sp, #imm used for alignment padding
+                elif isinstance(instruction, ArithmeticInstruction):
+                    if len(instruction.operands) >= 3:
+                        dest = instruction.operands[0]
+                        src1 = instruction.operands[1]
+                        if (
+                            hasattr(dest, "register")
+                            and dest.register == sp
+                            and hasattr(src1, "register")
+                            and src1.register == sp
+                            and instruction.name.startswith("SUB")
+                        ):
+                            prologue_instructions_seen += 1
+                            continue
 
             # Track PUSH instructions (user code)
             if isinstance(instruction, PushPopInstruction):
@@ -1510,7 +1547,7 @@ class Function(object):
                         "Stack is not 8-byte aligned before {0} instruction.\n"
                         "Current stack offset: {1} bytes (misaligned by {2} bytes).\n"
                         "ARMv7-M/ARMv8-M requires 8-byte stack alignment at function calls (AAPCS requirement).\n"
-                        "Add a dummy register to PUSH instructions or adjust stack manually to maintain alignment.".format(
+                        "Add registers in pairs to PUSH instructions or adjust the stack manually to maintain alignment.".format(
                             instruction.name, stack_offset, stack_offset % 8
                         )
                     )
@@ -1753,6 +1790,32 @@ class StackFrame(object):
         else:
             raise TypeError("Unsupported register type {0}".format(type(register)))
 
+    def force_preserve_register(self, register):
+        """Add *register* to the preservation list unconditionally (no ABI check)."""
+        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
+                                           QRegister, SRegister)
+
+        if isinstance(register, GeneralPurposeRegister):
+            if register not in self.general_purpose_registers:
+                self.general_purpose_registers.append(register)
+        elif isinstance(register, SRegister):
+            if not register.is_virtual():
+                register = register.get_parent()
+                if register not in self.d_registers:
+                    self.d_registers.append(register)
+        elif isinstance(register, DRegister):
+            if register not in self.d_registers:
+                self.d_registers.append(register)
+        elif isinstance(register, QRegister):
+            d_low = register.get_low_part()
+            d_high = register.get_high_part()
+            if d_low not in self.d_registers:
+                self.d_registers.append(d_low)
+            if d_high not in self.d_registers:
+                self.d_registers.append(d_high)
+        else:
+            raise TypeError("Unsupported register type {0}".format(type(register)))
+
     def add_variable(self, variable):
         if variable.get_size() == 16:
             if variable not in self.sse_variables:
@@ -1771,9 +1834,9 @@ class StackFrame(object):
 
     def generate_prologue(self):
         from nervapy.arm.formats import HighRegisterStrategy
-        from nervapy.arm.generic import PUSH, PUSH_W, STMDB
+        from nervapy.arm.generic import PUSH, PUSH_W, STMDB, SUB
         from nervapy.arm.isa import Extension
-        from nervapy.arm.registers import r3, sp
+        from nervapy.arm.registers import sp
         from nervapy.arm.vfpneon import VPUSH
         from nervapy.stream import InstructionStream
 
@@ -1786,7 +1849,6 @@ class StackFrame(object):
                 is_armv7m = function and Extension.V7M in function.target.extensions
 
                 if is_armv7m:
-                    # Separate low registers (r0-r7) from high registers (r8-r15)
                     low_registers = [
                         reg
                         for reg in general_purpose_registers
@@ -1798,11 +1860,31 @@ class StackFrame(object):
                         if reg.get_physical_number() > 7
                     ]
 
-                    # Handle low registers with standard PUSH (16-bit encoding)
-                    if low_registers:
-                        # Ensure even number of registers for stack alignment
-                        if len(low_registers) % 2 == 1:
-                            low_registers.append(r3)
+                    if high_registers:
+                        # Merge low and high into one instruction so the
+                        # prologue is a single PUSH.W / STMDB covering all
+                        # callee-saved registers.
+                        all_registers = low_registers + high_registers
+                        needs_pad = len(all_registers) % 2 == 1
+                        sorted_regs = tuple(
+                            sorted(
+                                all_registers,
+                                key=lambda reg: reg.get_physical_number(),
+                            )
+                        )
+                        strategy = function.high_register_strategy
+                        if strategy == HighRegisterStrategy.STMDB or (
+                            strategy == HighRegisterStrategy.AUTO
+                            and function.assembly_format.name == "ARMCC"
+                        ):
+                            STMDB(sp, sorted_regs)
+                        else:
+                            PUSH_W(sorted_regs)
+                        if needs_pad:
+                            SUB(sp, sp, 4)
+                    elif low_registers:
+                        # Only low registers — use efficient 16-bit PUSH
+                        needs_pad = len(low_registers) % 2 == 1
                         PUSH(
                             tuple(
                                 sorted(
@@ -1811,52 +1893,11 @@ class StackFrame(object):
                                 )
                             )
                         )
-
-                    # Handle high registers based on strategy
-                    if high_registers:
-                        strategy = function.high_register_strategy
-
-                        if strategy == HighRegisterStrategy.PUSH_W or (
-                            strategy == HighRegisterStrategy.AUTO
-                            and function.assembly_format.name == "GAS"
-                        ):
-                            # Use PUSH.W for high registers (modern Thumb-2)
-                            PUSH_W(
-                                tuple(
-                                    sorted(
-                                        high_registers,
-                                        key=lambda reg: reg.get_physical_number(),
-                                    )
-                                )
-                            )
-                        elif strategy == HighRegisterStrategy.STMDB or (
-                            strategy == HighRegisterStrategy.AUTO
-                            and function.assembly_format.name == "ARMCC"
-                        ):
-                            # Use STMDB for maximum compatibility
-                            STMDB(
-                                sp,
-                                tuple(
-                                    sorted(
-                                        high_registers,
-                                        key=lambda reg: reg.get_physical_number(),
-                                    )
-                                ),
-                            )
-                        else:
-                            # Fallback to PUSH.W
-                            PUSH_W(
-                                tuple(
-                                    sorted(
-                                        high_registers,
-                                        key=lambda reg: reg.get_physical_number(),
-                                    )
-                                )
-                            )
+                        if needs_pad:
+                            SUB(sp, sp, 4)
                 else:
                     # Standard ARM (non-Cortex-M) handling
-                    if len(general_purpose_registers) % 2 == 1:
-                        general_purpose_registers.append(r3)
+                    needs_pad = len(general_purpose_registers) % 2 == 1
                     PUSH(
                         tuple(
                             sorted(
@@ -1865,6 +1906,8 @@ class StackFrame(object):
                             )
                         )
                     )
+                    if needs_pad:
+                        SUB(sp, sp, 4)
 
             if self.d_registers:
                 VPUSH(
@@ -1878,9 +1921,9 @@ class StackFrame(object):
 
     def generate_epilogue(self):
         from nervapy.arm.formats import HighRegisterStrategy
-        from nervapy.arm.generic import LDMIA, POP, POP_W
+        from nervapy.arm.generic import ADD, LDMIA, POP, POP_W
         from nervapy.arm.isa import Extension
-        from nervapy.arm.registers import r3, sp
+        from nervapy.arm.registers import sp
         from nervapy.arm.vfpneon import VPOP
         from nervapy.stream import InstructionStream
 
@@ -1902,7 +1945,6 @@ class StackFrame(object):
                 is_armv7m = function and Extension.V7M in function.target.extensions
 
                 if is_armv7m:
-                    # Separate low registers (r0-r7) from high registers (r8-r15)
                     low_registers = [
                         reg
                         for reg in general_purpose_registers
@@ -1914,53 +1956,31 @@ class StackFrame(object):
                         if reg.get_physical_number() > 7
                     ]
 
-                    # Handle high registers first (reverse order of prologue)
                     if high_registers:
-                        strategy = function.high_register_strategy
-
-                        if strategy == HighRegisterStrategy.PUSH_W or (
-                            strategy == HighRegisterStrategy.AUTO
-                            and function.assembly_format.name == "GAS"
-                        ):
-                            # Use POP.W for high registers
-                            POP_W(
-                                tuple(
-                                    sorted(
-                                        high_registers,
-                                        key=lambda reg: reg.get_physical_number(),
-                                    )
-                                )
+                        # Mirror of prologue: one instruction restoring all regs
+                        all_registers = low_registers + high_registers
+                        needs_pad = len(all_registers) % 2 == 1
+                        sorted_regs = tuple(
+                            sorted(
+                                all_registers,
+                                key=lambda reg: reg.get_physical_number(),
                             )
-                        elif strategy == HighRegisterStrategy.STMDB or (
+                        )
+                        strategy = function.high_register_strategy
+                        if needs_pad:
+                            ADD(sp, sp, 4)
+                        if strategy == HighRegisterStrategy.STMDB or (
                             strategy == HighRegisterStrategy.AUTO
                             and function.assembly_format.name == "ARMCC"
                         ):
-                            # Use LDMIA for compatibility
-                            LDMIA(
-                                sp,
-                                tuple(
-                                    sorted(
-                                        high_registers,
-                                        key=lambda reg: reg.get_physical_number(),
-                                    )
-                                ),
-                            )
+                            LDMIA(sp, sorted_regs)
                         else:
-                            # Fallback to POP.W
-                            POP_W(
-                                tuple(
-                                    sorted(
-                                        high_registers,
-                                        key=lambda reg: reg.get_physical_number(),
-                                    )
-                                )
-                            )
-
-                    # Handle low registers with standard POP (16-bit encoding)
-                    if low_registers:
-                        # Ensure even number of registers for stack alignment
-                        if len(low_registers) % 2 == 1:
-                            low_registers.append(r3)
+                            POP_W(sorted_regs)
+                    elif low_registers:
+                        # Only low registers — use efficient 16-bit POP
+                        needs_pad = len(low_registers) % 2 == 1
+                        if needs_pad:
+                            ADD(sp, sp, 4)
                         POP(
                             tuple(
                                 sorted(
@@ -1971,8 +1991,9 @@ class StackFrame(object):
                         )
                 else:
                     # Standard ARM (non-Cortex-M) handling
-                    if len(general_purpose_registers) % 2 == 1:
-                        general_purpose_registers.append(r3)
+                    needs_pad = len(general_purpose_registers) % 2 == 1
+                    if needs_pad:
+                        ADD(sp, sp, 4)
                     POP(
                         tuple(
                             sorted(
