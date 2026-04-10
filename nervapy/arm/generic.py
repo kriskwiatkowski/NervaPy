@@ -420,7 +420,7 @@ class ArithmeticInstruction(Instruction):
 
 class ShiftInstruction(Instruction):
     def __init__(self, name, destination, source_x, source_y, origin=None):
-        allowed_instructions = ["LSL", "LSR", "ASR"]
+        allowed_instructions = ["LSL", "LSR", "ASR", "ROR"]
         super(ShiftInstruction, self).__init__(
             name, [destination, source_x, source_y], origin=origin
         )
@@ -7385,6 +7385,27 @@ def ASR(destination, source_x, source_y=None):
     return instruction
 
 
+def ROR(destination, source_x, source_y=None):
+    """ROR - Rotate Right.
+
+    ROR rd, rn, #imm   (immediate shift, imm in 1..31)
+    ROR rd, rn, rm     (register-controlled shift)
+    ROR rd, #imm       (two-operand: destination is also source)
+    ROR rd, rm         (two-operand register form)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    if source_y is None:
+        destination, source_x, source_y = (destination, destination, source_x)
+    instruction = ShiftInstruction(
+        "ROR", Operand(destination), Operand(source_x), Operand(source_y), origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
 def CMP(source_x, source_y):
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
@@ -9342,6 +9363,224 @@ def TTAT(destination, source):
     instruction = TestTargetInstruction(
         "TTAT", Operand(destination), Operand(source), origin=origin
     )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+class BitFieldInstruction(Instruction):
+    """BFI / BFC - bit-field insert / clear.
+
+    Requires Thumb2 (ARMv7-M, ARMv8-M.main).  Not available on ARMv8-M.base.
+    """
+
+    def __init__(self, name, operands, origin=None):
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+
+        allowed = {"BFI", "BFC"}
+        if name not in allowed:
+            raise ValueError(
+                "Instruction {0} is not one of the allowed instructions ({1})".format(
+                    name, ", ".join(sorted(allowed))
+                )
+            )
+        if active_function and Extension.Thumb2 not in active_function.target.extensions:
+            raise ValueError(
+                "{0} requires Thumb-2 (ARMv7-M or ARMv8-M.main); "
+                "not available on the current target".format(name)
+            )
+        super(BitFieldInstruction, self).__init__(name, operands, origin=origin)
+
+    def get_input_registers_list(self):
+        # Both BFI and BFC read the destination (bits outside the field are preserved).
+        # BFI also reads the source register (operands[1]).
+        inputs = self.operands[0].get_registers_list()
+        if self.name == "BFI":
+            inputs = inputs + self.operands[1].get_registers_list()
+        return inputs
+
+    def get_output_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+def BFI(destination, source, lsb, width):
+    """BFI - Bit Field Insert  (Thumb-2 / ARMv7-M, ARMv8-M.main).
+
+    Copies *width* bits starting at bit 0 of *source* into *destination*
+    starting at bit *lsb*, leaving all other bits of *destination* unchanged.
+
+        BFI rd, rn, #lsb, #width
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    dst = Operand(destination)
+    src = Operand(source)
+    lsb_op = Operand(lsb)
+    width_op = Operand(width)
+    if not dst.is_general_purpose_register():
+        raise ValueError("BFI: destination must be a general-purpose register")
+    if not src.is_general_purpose_register():
+        raise ValueError("BFI: source must be a general-purpose register")
+    if not lsb_op.is_immediate() or not (0 <= lsb_op.immediate <= 31):
+        raise ValueError("BFI: lsb must be an immediate in [0, 31]")
+    if not width_op.is_immediate() or not (1 <= width_op.immediate <= 32 - lsb_op.immediate):
+        raise ValueError("BFI: width must be an immediate in [1, 32-lsb]")
+    instruction = BitFieldInstruction("BFI", [dst, src, lsb_op, width_op], origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def BFC(destination, lsb, width):
+    """BFC - Bit Field Clear  (Thumb-2 / ARMv7-M, ARMv8-M.main).
+
+    Clears *width* bits in *destination* starting at bit *lsb*, leaving all
+    other bits unchanged.
+
+        BFC rd, #lsb, #width
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    dst = Operand(destination)
+    lsb_op = Operand(lsb)
+    width_op = Operand(width)
+    if not dst.is_general_purpose_register():
+        raise ValueError("BFC: destination must be a general-purpose register")
+    if not lsb_op.is_immediate() or not (0 <= lsb_op.immediate <= 31):
+        raise ValueError("BFC: lsb must be an immediate in [0, 31]")
+    if not width_op.is_immediate() or not (1 <= width_op.immediate <= 32 - lsb_op.immediate):
+        raise ValueError("BFC: width must be an immediate in [1, 32-lsb]")
+    instruction = BitFieldInstruction("BFC", [dst, lsb_op, width_op], origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+class CompareAndBranchInstruction(Instruction):
+    """CBZ / CBNZ - compare and branch if (non-)zero without modifying flags.
+
+    Available on all Thumb targets (ARMv6-M and later, all Cortex-M).
+    Forward-branch only; assembler enforces the ±126-byte range.
+    """
+
+    def __init__(self, name, register, destination, origin=None):
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+
+        allowed = {"CBZ", "CBNZ"}
+        if name not in allowed:
+            raise ValueError(
+                "Instruction {0} is not one of the allowed instructions ({1})".format(
+                    name, ", ".join(sorted(allowed))
+                )
+            )
+        if active_function and Extension.Thumb not in active_function.target.extensions:
+            raise ValueError(
+                "{0} requires Thumb support; not available on the current target".format(name)
+            )
+        super(CompareAndBranchInstruction, self).__init__(
+            name, [register, destination], origin=origin
+        )
+
+    def __str__(self):
+        return "{0} {1}, L{2}".format(self.name, self.operands[0], self.operands[1])
+
+    def get_input_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+    def get_output_registers_list(self):
+        return []
+
+
+def CBZ(source, destination):
+    """CBZ - Compare and Branch if Zero  (Thumb / all Cortex-M).
+
+    Branches to *destination* if *source* == 0, without modifying flags.
+
+        CBZ rn, label
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    src = Operand(source)
+    dst = Operand(destination)
+    if not src.is_general_purpose_register():
+        raise ValueError("CBZ: source must be a general-purpose register")
+    if not dst.is_label():
+        raise ValueError("CBZ: destination must be a label")
+    instruction = CompareAndBranchInstruction("CBZ", src, dst, origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def CBNZ(source, destination):
+    """CBNZ - Compare and Branch if Non-Zero  (Thumb / all Cortex-M).
+
+    Branches to *destination* if *source* != 0, without modifying flags.
+
+        CBNZ rn, label
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    src = Operand(source)
+    dst = Operand(destination)
+    if not src.is_general_purpose_register():
+        raise ValueError("CBNZ: source must be a general-purpose register")
+    if not dst.is_label():
+        raise ValueError("CBNZ: destination must be a label")
+    instruction = CompareAndBranchInstruction("CBNZ", src, dst, origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+class AdrInstruction(Instruction):
+    """ADR - form PC-relative address.
+
+    Adds an immediate offset to the PC and writes the result to a register.
+    Used to obtain the address of a nearby label without a load from memory.
+
+        ADR rd, label
+    """
+
+    def __init__(self, destination, label, origin=None):
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+
+        if active_function and Extension.Thumb not in active_function.target.extensions:
+            raise ValueError(
+                "ADR requires Thumb support; not available on the current target"
+            )
+        super(AdrInstruction, self).__init__("ADR", [destination, label], origin=origin)
+
+    def __str__(self):
+        return "ADR {0}, L{1}".format(self.operands[0], self.operands[1])
+
+    def get_input_registers_list(self):
+        return []
+
+    def get_output_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+
+def ADR(destination, label):
+    """ADR - Form PC-relative address  (Thumb / all Cortex-M).
+
+    Writes the address of *label* into *destination*.
+
+        ADR rd, label
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    dst = Operand(destination)
+    lbl = Operand(label)
+    if not dst.is_general_purpose_register():
+        raise ValueError("ADR: destination must be a general-purpose register")
+    if not lbl.is_label():
+        raise ValueError("ADR: second operand must be a label")
+    instruction = AdrInstruction(dst, lbl, origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction

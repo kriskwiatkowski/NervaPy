@@ -10,12 +10,12 @@ According to ARM Architecture Reference Manual ARMv7-M and AAPCS:
 
 import unittest
 
-from nervapy.arm import Function, BL, BLX, BX, PUSH, POP, SUB, ADD
+from nervapy.arm import ADD, BL, BLX, BX, POP, PUSH, SUB, Function
 from nervapy.arm.abi import arm_gnueabi
 from nervapy.arm.formats import AssemblyFormat
 from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.pseudo import IMPORT
-from nervapy.arm.registers import r0, r1, r2, r3, r4, r5, r6, r7, sp, lr
+from nervapy.arm.registers import lr, r0, r1, r2, r3, r4, r5, r6, r7, sp
 
 
 class TestARMv7MStackAlignment(unittest.TestCase):

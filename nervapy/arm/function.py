@@ -1883,7 +1883,7 @@ class StackFrame(object):
                         if needs_pad:
                             SUB(sp, sp, 4)
                     elif low_registers:
-                        # Only low registers — use efficient 16-bit PUSH
+                        # Only low registers - use efficient 16-bit PUSH
                         needs_pad = len(low_registers) % 2 == 1
                         PUSH(
                             tuple(
@@ -1977,7 +1977,7 @@ class StackFrame(object):
                         else:
                             POP_W(sorted_regs)
                     elif low_registers:
-                        # Only low registers — use efficient 16-bit POP
+                        # Only low registers - use efficient 16-bit POP
                         needs_pad = len(low_registers) % 2 == 1
                         if needs_pad:
                             ADD(sp, sp, 4)

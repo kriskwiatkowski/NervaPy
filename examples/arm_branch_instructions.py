@@ -6,11 +6,11 @@ Example: ARMv7-M Branch Instructions
 This example demonstrates all ARMv7-M branch instructions available in NervaPy.
 """
 
-from nervapy.arm.registers import r0, r1, r2, r3, lr
-from nervapy.arm.generic import B, BLO, BX, BL, BLX, BEQ, BNE, CMP
-from nervapy.arm.pseudo import Label
 import nervapy.arm.function
 import nervapy.stream
+from nervapy.arm.generic import BEQ, BL, BLO, BLX, BNE, BX, CMP, B
+from nervapy.arm.pseudo import Label
+from nervapy.arm.registers import lr, r0, r1, r2, r3
 
 
 # Setup mock context

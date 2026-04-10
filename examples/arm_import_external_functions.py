@@ -7,8 +7,8 @@ This example demonstrates how to declare external functions for ARMCC assembly
 using the IMPORT directive.
 """
 
-from nervapy.arm import (Function, IMPORT, BL, BX, MOV, CMP, BEQ,
-                         r0, r1, r2, lr, Label)
+from nervapy.arm import (BEQ, BL, BX, CMP, IMPORT, MOV, Function, Label, lr,
+                         r0, r1, r2)
 from nervapy.arm.abi import arm_gnueabi
 from nervapy.arm.formats import AssemblyFormat
 from nervapy.arm.microarchitecture import Microarchitecture

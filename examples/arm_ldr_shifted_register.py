@@ -10,10 +10,12 @@ This addressing mode is useful for accessing array elements with different
 element sizes.
 """
 
-from nervapy.arm.registers import r0, r1, r2, r3, r4, r5, r6, ShiftedGeneralPurposeRegister
-from nervapy.arm.generic import LDR_W, LDR, STR_W, STR, LDRH_W, STRH_W, LDRB_W, STRB_W
 import nervapy.arm.function
 import nervapy.stream
+from nervapy.arm.generic import (LDR, LDR_W, LDRB_W, LDRH_W, STR, STR_W,
+                                 STRB_W, STRH_W)
+from nervapy.arm.registers import (ShiftedGeneralPurposeRegister, r0, r1, r2,
+                                   r3, r4, r5, r6)
 
 
 # Setup mock context for instruction generation (not using full Function API)

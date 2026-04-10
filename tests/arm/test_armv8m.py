@@ -152,7 +152,7 @@ class TestARMv8MMain(unittest.TestCase):
     def test_cortex_m33_stack_alignment_validated(self):
         """Stack alignment check also applies to ARMv8-M.main (AAPCS requirement)."""
         from nervapy.arm.pseudo import IMPORT
-        from nervapy.arm.registers import r4, r5, lr
+        from nervapy.arm.registers import lr, r4, r5
 
         with self.assertRaises(ValueError) as ctx:
             with Function("misaligned_m33", (), None,
@@ -173,7 +173,7 @@ class TestARMv8MMain(unittest.TestCase):
     def test_cortex_m33_aligned_bl_accepted(self):
         """Properly aligned stack before BL is accepted on Cortex-M33."""
         from nervapy.arm.pseudo import IMPORT
-        from nervapy.arm.registers import r4, r5, lr
+        from nervapy.arm.registers import lr, r4, r5
 
         with Function("aligned_m33", (), None,
                       target=Microarchitecture.CortexM33,
@@ -474,7 +474,7 @@ class TestRustOutput(unittest.TestCase):
     def test_gas_extern_for_external_function(self):
         """GAS output emits .extern for external function calls."""
         from nervapy.arm.pseudo import IMPORT
-        from nervapy.arm.registers import r4, r5, lr
+        from nervapy.arm.registers import lr, r4, r5
         with Function('call_external', (), None,
                       target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
                       report_generation=False) as f:

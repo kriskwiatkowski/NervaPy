@@ -230,7 +230,7 @@ class Operand(object):
         return self.type == Operand.ImmediateType
 
     def is_immediate5(self):
-        return self.is_immediate and 0 <= self.immediate <= 31
+        return self.is_immediate() and 0 <= self.immediate <= 31
 
     def is_modified_immediate12(self):
         def rotate32(x, n):
