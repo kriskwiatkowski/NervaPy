@@ -175,7 +175,6 @@ Microarchitecture.CortexM33 = Microarchitecture(
         Extension.V8MMain,
         Extension.Thumb2,
         Extension.DSP,
-        Extension.VFP4,
         Extension.TrustZone,
     ],
 )
@@ -185,7 +184,6 @@ Microarchitecture.CortexM35P = Microarchitecture(
         Extension.V8MMain,
         Extension.Thumb2,
         Extension.DSP,
-        Extension.VFP4,
         Extension.TrustZone,
     ],
 )

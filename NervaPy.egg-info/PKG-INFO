@@ -1,12 +1,12 @@
 Metadata-Version: 2.1
 Name: NervaPy
-Version: 0.0.3
-Summary: Experimental Python framework for exploring advanced program synthesis and transformation techniques
-Home-page: https://github.com/Maratyszcza/PeachPy/
-Author: Marat Dukhan
-Author-email: maratek@gmail.com
+Version: 0.0.5
+Summary: Framework for exploring advanced program synthesis and transformation techniques
+Home-page: https://github.com/kriskwiatkowski/NervaPy.git
+Author: Kris Kwiatkowski
+Author-email: kris@amongbytes.com
 Keywords: assembly,codegen,x86-64
-Classifier: Development Status :: 3 - Alpha
+Classifier: Development Status :: 2 - Beta
 Classifier: Intended Audience :: Developers
 Classifier: Intended Audience :: Science/Research
 Classifier: License :: OSI Approved :: BSD License
@@ -17,13 +17,11 @@ Classifier: Operating System :: POSIX :: FreeBSD
 Classifier: Operating System :: MacOS :: MacOS X
 Classifier: Programming Language :: Assembly
 Classifier: Programming Language :: Python
-Classifier: Programming Language :: Python :: 2
-Classifier: Programming Language :: Python :: 2.7
-Classifier: Programming Language :: Python :: 3
-Classifier: Programming Language :: Python :: 3.2
-Classifier: Programming Language :: Python :: 3.3
-Classifier: Programming Language :: Python :: 3.4
-Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
 Classifier: Programming Language :: Python :: Implementation :: CPython
 Classifier: Programming Language :: Python :: Implementation :: PyPy
 Classifier: Natural Language :: English
@@ -52,12 +50,12 @@ NervaPy aims to simplify writing optimized assembly kernels while preserving all
   * NervaPy can directly generate ELF, MS COFF and Mach-O object files and assembly listings for Golang toolchain
 
 - Automatic adaption of function to different calling conventions and ABIs.
-  
+
   * Functions for different platforms can be generated from the same assembly source
   * Supports Microsoft x64 ABI, System V x86-64 ABI (Linux, OS X, and FreeBSD), Linux x32 ABI, Native Client x86-64 SFI ABI, Golang AMD64 ABI, Golang AMD64p32 ABI
-      
+
 - Automatic register allocation.
-  
+
   * NervaPy is flexible and lets mix auto-allocated and hardcoded registers in the same code.
 
 - Automation of routine tasks in assembly programming:
@@ -67,7 +65,7 @@ NervaPy aims to simplify writing optimized assembly kernels while preserving all
   * Analysis of ISA extensions used in a function
 
 - Supports x86-64 instructions up to AVX-512 and SHA
-  
+
   * Including 3dnow!+, XOP, FMA3, FMA4, TBM and BMI2.
   * Excluding x87 FPU and most system instructions.
 
@@ -106,13 +104,13 @@ Using NervaPy as a command-line tool
 ------------------------------------
 
 .. code-block:: python
-  
+
   # These two lines are not needed for NervaPy, but will help you get autocompletion in good code editors
   from nervapy import *
   from nervapy.x86_64 import *
 
   # Lets write a function float DotProduct(const float* x, const float* y)
-  
+
   # If you want maximum cross-platform compatibility, arguments must have names
   x = Argument(ptr(const_float_), name="x")
   # If name is not specified, it is auto-detected
@@ -123,7 +121,7 @@ Using NervaPy as a command-line tool
     # Enable instructions up to SSE4.2
     # NervaPy will report error if you accidentally use a newer instruction
     target=uarch.default + isa.sse4_2):
-  
+
     # Request two 64-bit general-purpose registers. No need to specify exact names.
     reg_x, reg_y = GeneralPurposeRegister64(), GeneralPurposeRegister64()
 
@@ -227,7 +225,7 @@ NervaPy can be used to explore instruction length, opcodes, and alternative enco
   ADD(eax, 5).encode() # -> bytearray(b'\x83\xc0\x05')
 
   MOVAPS(xmm0, xmm1).encode_options() # -> [bytearray(b'\x0f(\xc1'), bytearray(b'\x0f)\xc8')]
-  
+
   VPSLLVD(ymm0, ymm1, [rsi + 8]).encode_length_options() # -> {6: bytearray(b'\xc4\xe2uGF\x08'),
                                                          #     7: bytearray(b'\xc4\xe2uGD&\x08'),
                                                          #     9: bytearray(b'\xc4\xe2uG\x86\x08\x00\x00\x00')}

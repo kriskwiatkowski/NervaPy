@@ -1358,3 +1358,101 @@ q12 = QRegister("q12")
 q13 = QRegister("q13")
 q14 = QRegister("q14")
 q15 = QRegister("q15")
+
+
+class PRegister(Register):
+    """MVE/Helium Predicate Register (P0-P7)"""
+    MVEPredicateType = 4
+
+    _name_to_number_map = {
+        "p0": 0x30001,
+        "p1": 0x31001,
+        "p2": 0x32001,
+        "p3": 0x33001,
+        "p4": 0x34001,
+        "p5": 0x35001,
+        "p6": 0x36001,
+        "p7": 0x37001,
+    }
+
+    _number_to_name_map = {
+        0x30001: "p0",
+        0x31001: "p1",
+        0x32001: "p2",
+        0x33001: "p3",
+        0x34001: "p4",
+        0x35001: "p5",
+        0x36001: "p6",
+        0x37001: "p7",
+    }
+
+    def __init__(self, id=None):
+        super(PRegister, self).__init__()
+        if id is None:
+            from nervapy.arm.function import active_function
+
+            self.number = active_function.allocate_p_register()
+            self.type = PRegister.MVEPredicateType
+            self.size = 2
+        elif isinstance(id, int):
+            self.number = id
+            self.type = PRegister.MVEPredicateType
+            self.size = 2
+        elif isinstance(id, str):
+            if id in PRegister._name_to_number_map:
+                self.number = PRegister._name_to_number_map[id]
+                self.type = PRegister.MVEPredicateType
+                self.size = 2
+            else:
+                raise ValueError("Unknown register name: {0}".format(id))
+        elif isinstance(id, PRegister):
+            self.number = id.number
+            self.type = id.type
+            self.size = id.size
+        else:
+            raise TypeError("Invalid predicate register id")
+
+    def get_physical_number(self):
+        return {
+            0x30001: 0,
+            0x31001: 1,
+            0x32001: 2,
+            0x33001: 3,
+            0x34001: 4,
+            0x35001: 5,
+            0x36001: 6,
+            0x37001: 7,
+        }[self.number]
+
+    def __str__(self):
+        if self.is_virtual:
+            return "p-vreg<{0}>".format((self.number - 0x40000) >> 12)
+        else:
+            return PRegister._number_to_name_map[self.number]
+
+
+p0 = PRegister("p0")
+p1 = PRegister("p1")
+p2 = PRegister("p2")
+p3 = PRegister("p3")
+p4 = PRegister("p4")
+p5 = PRegister("p5")
+p6 = PRegister("p6")
+p7 = PRegister("p7")
+
+
+class VPRRegister(Register):
+    """MVE/Helium Vector Predicate Register (VPR)"""
+    MVEVectorPredicateType = 5
+
+    def __init__(self):
+        super(VPRRegister, self).__init__()
+        self.number = 0x40001
+        self.type = VPRRegister.MVEVectorPredicateType
+        self.size = 4
+
+    def __str__(self):
+        return "vpr"
+
+
+vpr = VPRRegister()

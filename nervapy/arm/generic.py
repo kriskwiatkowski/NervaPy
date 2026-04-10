@@ -234,6 +234,7 @@ class ArithmeticInstruction(Instruction):
             "ANDLT",
             "ANDGT",
             "ANDLE",
+            "AND.W",
             "ANDS",
             "ANDSEQ",
             "ANDSNE",
@@ -336,6 +337,7 @@ class ArithmeticInstruction(Instruction):
             "EORLT",
             "EORGT",
             "EORLE",
+            "EOR.W",
             "EORS",
             "EORSEQ",
             "EORSNE",
@@ -572,6 +574,7 @@ class MovInstruction(Instruction):
     def __init__(self, name, destination, source, origin=None):
         allowed_instructions = [
             "MOV",
+            "MOV.W",
             "MOVEQ",
             "MOVNE",
             "MOVCS",
@@ -606,6 +609,7 @@ class MovInstruction(Instruction):
             "MOVSGT",
             "MOVSLE",
             "MOVT",
+            "MOVW",
             "MVN",
         ]
         if name in allowed_instructions:
@@ -628,6 +632,15 @@ class MovInstruction(Instruction):
             and source.is_general_purpose_register()
         ):
             pass
+        elif name in ("MOVW", "MOVT") and destination.is_general_purpose_register() and source.is_immediate():
+            # MOVW and MOVT accept 16-bit immediate values
+            imm_value = source.immediate
+            if 0 <= imm_value <= 0xFFFF:
+                pass
+            else:
+                raise ValueError(
+                    "MOVW/MOVT immediate must be 16-bit (0-65535), got {0}".format(imm_value)
+                )
         else:
             raise ValueError(
                 "Invalid operands in instruction {0} {1}, {2}".format(
@@ -1247,7 +1260,6 @@ class TestTargetInstruction(Instruction):
 
     def __str__(self):
         return "{0} {1}, {2}".format(self.name, self.operands[0], self.operands[1])
-
 
 def BX(destination):
     instruction = BranchExchangeInstruction(Operand(destination))
@@ -5213,6 +5225,24 @@ def ANDLE(destination, source_x, source_y=None):
     return instruction
 
 
+def AND_W(destination, source_x, source_y=None):
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    if source_y is None:
+        destination, source_x, source_y = (destination, destination, source_x)
+    instruction = ArithmeticInstruction(
+        "AND.W",
+        Operand(destination),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
 def ANDS(destination, source_x, source_y=None):
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
@@ -7037,6 +7067,24 @@ def EORLE(destination, source_x, source_y=None):
     return instruction
 
 
+def EOR_W(destination, source_x, source_y=None):
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    if source_y is None:
+        destination, source_x, source_y = (destination, destination, source_x)
+    instruction = ArithmeticInstruction(
+        "EOR.W",
+        Operand(destination),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
 def EORS(destination, source_x, source_y=None):
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
@@ -7379,6 +7427,27 @@ def ASR(destination, source_x, source_y=None):
         destination, source_x, source_y = (destination, destination, source_x)
     instruction = ShiftInstruction(
         "ASR", Operand(destination), Operand(source_x), Operand(source_y), origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def ROR(destination, source_x, source_y=None):
+    """ROR - Rotate Right.
+
+    ROR rd, rn, #imm   (immediate shift, imm in 1..31)
+    ROR rd, rn, rm     (register-controlled shift)
+    ROR rd, #imm       (two-operand: destination is also source)
+    ROR rd, rm         (two-operand register form)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    if source_y is None:
+        destination, source_x, source_y = (destination, destination, source_x)
+    instruction = ShiftInstruction(
+        "ROR", Operand(destination), Operand(source_x), Operand(source_y), origin=origin
     )
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
@@ -8234,6 +8303,18 @@ def MOV(destination, source):
     return instruction
 
 
+def MOV_W(destination, source):
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MovInstruction(
+        "MOV.W", Operand(destination), Operand(source), origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
 def MOVEQ(destination, source):
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
@@ -8664,6 +8745,8 @@ def MOVW(destination, source):
     return instruction
 
 
+# Add MOV.W as an alias that can be used to force wide encoding
+# This is functionally identical to MOV but uses the .W suffix
 def MOVT(destination, source):
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
@@ -8760,10 +8843,56 @@ def LDMDB(base_register, register_list, writeback=False):
     return instruction
 
 
-def LDR(register, address, increment=None):
+def LDR(register, address=None, increment=None, literal=None, label=None):
+    """
+    Load Register instruction.
+    
+    Two modes:
+    1. Normal LDR: Load from memory address
+       LDR(rd, [address], increment)
+       
+    2. Literal pool LDR: Load constant using literal pool (pseudo-instruction)
+       LDR(rd, literal=value)
+       LDR(rd, literal=Literal(value, label="NAME"))
+       
+    Args:
+        register: Destination register
+        address: Memory address (for normal LDR)
+        increment: Optional offset/increment (for normal LDR)
+        literal: Literal value to load (int, Literal, or ConstantData)
+        label: Optional label for literal (deprecated, use Literal(value, label) instead)
+        
+    Examples:
+        # Normal LDR from memory
+        LDR(r0, [r1])
+        LDR(r0, [r1], 4)
+        
+        # Load literal constant
+        LDR(r0, literal=0x11111111)
+        
+        # Load literal with custom label
+        LDR(r0, literal=Literal(0x11111111, label="MASK"))
+        
+        # Load from ConstantData
+        magic = ConstantData.uint32(0x12345678, name="MAGIC")
+        LDR(r0, literal=magic)
+    """
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
     )
+
+    # Handle LDR with literal pseudo-instruction: LDR rd, =value
+    if literal is not None:
+        from nervapy.arm.literal_pool import LiteralLoadInstruction
+        instruction = LiteralLoadInstruction(register, literal, label=label, origin=origin)
+        if nervapy.stream.active_stream is not None:
+            nervapy.stream.active_stream.add_instruction(instruction)
+        return instruction
+
+    # Normal LDR instruction
+    if address is None:
+        raise ValueError("LDR requires either 'address' or 'literal' parameter")
+
     instruction = LoadStoreInstruction(
         "LDR", Operand(register), Operand(address), Operand(increment), origin=origin
     )
@@ -9430,7 +9559,6 @@ def BFI(destination, source, lsb, width):
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
-
 def BFC(destination, lsb, width):
     """BFC - Bit Field Clear  (Thumb-2 / ARMv7-M, ARMv8-M.main).
 
@@ -9581,6 +9709,1110 @@ def ADR(destination, label):
     if not lbl.is_label():
         raise ValueError("ADR: second operand must be a label")
     instruction = AdrInstruction(dst, lbl, origin=origin)
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+class MultiplyLongInstruction(Instruction):
+    """Long multiply instructions (UMULL, UMLAL, SMULL, SMLAL, UMAAL)"""
+
+    allowed_instructions = ["UMULL", "UMLAL", "SMULL", "SMLAL", "UMAAL", "UMAALGE"]
+
+    def __init__(
+        self, name, register_low, register_high, source_x, source_y, origin=None
+    ):
+        if name not in self.allowed_instructions:
+            raise ValueError(
+                "Instruction {0} is not one of the allowed instructions ({1})".format(
+                    name, ", ".join(self.allowed_instructions)
+                )
+            )
+
+        # Validate that all registers are general-purpose registers
+        if not (
+            register_low.is_general_purpose_register()
+            and register_high.is_general_purpose_register()
+            and source_x.is_general_purpose_register()
+            and source_y.is_general_purpose_register()
+        ):
+            raise ValueError(
+                "All operands must be general-purpose registers in instruction {0}".format(
+                    name
+                )
+            )
+
+        super(MultiplyLongInstruction, self).__init__(
+            name, [register_low, register_high, source_x, source_y], origin=origin
+        )
+
+    def get_input_registers_list(self):
+        # Source operands are inputs
+        input_registers = (
+            self.operands[2].get_registers_list()
+            + self.operands[3].get_registers_list()
+        )
+        # For accumulating variants (UMLAL, SMLAL, UMAAL, UMAALGE), destination registers are also inputs
+        if self.name in ["UMLAL", "SMLAL", "UMAAL", "UMAALGE"]:
+            input_registers += (
+                self.operands[0].get_registers_list()
+                + self.operands[1].get_registers_list()
+            )
+        return input_registers
+
+    def get_output_registers_list(self):
+        # Destination registers (low and high) are outputs
+        return (
+            self.operands[0].get_registers_list()
+            + self.operands[1].get_registers_list()
+        )
+
+    def __str__(self):
+        return "{0} {1}, {2}, {3}, {4}".format(
+            self.name,
+            self.operands[0],
+            self.operands[1],
+            self.operands[2],
+            self.operands[3],
+        )
+
+def UMULL(register_low, register_high, source_x, source_y):
+    """Unsigned Multiply Long - multiplies two 32-bit values to produce a 64-bit result.
+    
+    Args:
+        register_low: Destination register for the lower 32 bits of the result
+        register_high: Destination register for the upper 32 bits of the result
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+    
+    Usage example:
+        UMULL(r0, r1, r2, r3)  # r1:r0 = r2 * r3 (unsigned)
+    
+    The result is 64-bit: {register_high, register_low} = source_x * source_y
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyLongInstruction(
+        "UMULL",
+        Operand(register_low),
+        Operand(register_high),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def UMLAL(register_low, register_high, source_x, source_y):
+    """Unsigned Multiply Accumulate Long - multiplies two 32-bit values and adds to a 64-bit accumulator.
+    
+    Args:
+        register_low: Lower 32 bits of accumulator and destination
+        register_high: Upper 32 bits of accumulator and destination
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+    
+    Usage example:
+        UMLAL(r0, r1, r2, r3)  # r1:r0 += r2 * r3 (unsigned)
+    
+    The result is 64-bit: {register_high, register_low} += source_x * source_y
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyLongInstruction(
+        "UMLAL",
+        Operand(register_low),
+        Operand(register_high),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMULL(register_low, register_high, source_x, source_y):
+    """Signed Multiply Long - multiplies two 32-bit signed values to produce a 64-bit result.
+    
+    Args:
+        register_low: Destination register for the lower 32 bits of the result
+        register_high: Destination register for the upper 32 bits of the result
+        source_x: First 32-bit signed source operand
+        source_y: Second 32-bit signed source operand
+    
+    Usage example:
+        SMULL(r0, r1, r2, r3)  # r1:r0 = r2 * r3 (signed)
+    
+    The result is 64-bit: {register_high, register_low} = source_x * source_y
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyLongInstruction(
+        "SMULL",
+        Operand(register_low),
+        Operand(register_high),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLAL(register_low, register_high, source_x, source_y):
+    """Signed Multiply Accumulate Long - multiplies two 32-bit signed values and adds to a 64-bit accumulator.
+    
+    Args:
+        register_low: Lower 32 bits of accumulator and destination
+        register_high: Upper 32 bits of accumulator and destination
+        source_x: First 32-bit signed source operand
+        source_y: Second 32-bit signed source operand
+    
+    Usage example:
+        SMLAL(r0, r1, r2, r3)  # r1:r0 += r2 * r3 (signed)
+    
+    The result is 64-bit: {register_high, register_low} += source_x * source_y
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyLongInstruction(
+        "SMLAL",
+        Operand(register_low),
+        Operand(register_high),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def UMAAL(register_low, register_high, source_x, source_y):
+    """Unsigned Multiply Accumulate Accumulate Long - multiplies two 32-bit values and adds two 32-bit accumulators.
+    
+    Args:
+        register_low: First 32-bit accumulator and lower 32 bits of destination
+        register_high: Second 32-bit accumulator and upper 32 bits of destination
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+    
+    Usage example:
+        UMAAL(r0, r1, r2, r3)  # r1:r0 = (r2 * r3) + r0 + r1 (unsigned)
+    
+    The result is 64-bit: {register_high, register_low} = (source_x * source_y) + register_low + register_high
+    Note: Available in ARMv6 and later
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyLongInstruction(
+        "UMAAL",
+        Operand(register_low),
+        Operand(register_high),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def UMAALGE(register_low, register_high, source_x, source_y):
+    """Unsigned Multiply Accumulate Accumulate Long (Greater or Equal) - conditional UMAAL.
+    
+    Args:
+        register_low: First 32-bit accumulator and lower 32 bits of destination
+        register_high: Second 32-bit accumulator and upper 32 bits of destination
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+    
+    Usage example:
+        UMAALGE(r0, r1, r2, r3)  # if GE: r1:r0 = (r2 * r3) + r0 + r1 (unsigned)
+    
+    Executes UMAAL only if the GE (Greater or Equal) condition is true.
+    The result is 64-bit: {register_high, register_low} = (source_x * source_y) + register_low + register_high
+    Note: Available in ARMv6 and later
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyLongInstruction(
+        "UMAALGE",
+        Operand(register_low),
+        Operand(register_high),
+        Operand(source_x),
+        Operand(source_y),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+class MultiplyInstruction(Instruction):
+    """Basic multiply instructions (MUL, MLA, MLS)"""
+
+    allowed_instructions = ["MUL", "MLA", "MLS"]
+
+    def __init__(self, name, destination, source_x, source_y, accumulator=None, origin=None):
+        if name not in self.allowed_instructions:
+            raise ValueError(
+                "Instruction {0} is not one of the allowed instructions ({1})".format(
+                    name, ", ".join(self.allowed_instructions)
+                )
+            )
+
+        # Validate registers
+        if not (
+            destination.is_general_purpose_register()
+            and source_x.is_general_purpose_register()
+            and source_y.is_general_purpose_register()
+        ):
+            raise ValueError(
+                "Destination and source operands must be general-purpose registers in instruction {0}".format(
+                    name
+                )
+            )
+
+        # MLA and MLS require an accumulator
+        if name in ["MLA", "MLS"]:
+            if accumulator is None or not accumulator.is_general_purpose_register():
+                raise ValueError(
+                    "Instruction {0} requires a valid accumulator register".format(name)
+                )
+            operands = [destination, source_x, source_y, accumulator]
+        else:
+            operands = [destination, source_x, source_y]
+
+        super(MultiplyInstruction, self).__init__(name, operands, origin=origin)
+
+    def get_input_registers_list(self):
+        # Source operands are always inputs
+        input_registers = (
+            self.operands[1].get_registers_list()
+            + self.operands[2].get_registers_list()
+        )
+        # For MLA and MLS, accumulator is also input
+        if len(self.operands) > 3:
+            input_registers += self.operands[3].get_registers_list()
+        return input_registers
+
+    def get_output_registers_list(self):
+        # Destination register is output
+        return self.operands[0].get_registers_list()
+
+    def __str__(self):
+        if len(self.operands) == 4:
+            return "{0} {1}, {2}, {3}, {4}".format(
+                self.name,
+                self.operands[0],
+                self.operands[1],
+                self.operands[2],
+                self.operands[3],
+            )
+        else:
+            return "{0} {1}, {2}, {3}".format(
+                self.name, self.operands[0], self.operands[1], self.operands[2]
+            )
+
+def MUL(destination, source_x, source_y):
+    """Multiply - 32-bit multiplication.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+    
+    Usage example:
+        MUL(r0, r1, r2)  # r0 = r1 * r2
+    
+    The result is 32-bit (lower 32 bits of the product).
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyInstruction(
+        "MUL", Operand(destination), Operand(source_x), Operand(source_y), origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def MLA(destination, source_x, source_y, accumulator):
+    """Multiply Accumulate - multiplies two 32-bit values and adds an accumulator.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        MLA(r0, r1, r2, r3)  # r0 = (r1 * r2) + r3
+    
+    The result is 32-bit: destination = (source_x * source_y) + accumulator
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyInstruction(
+        "MLA",
+        Operand(destination),
+        Operand(source_x),
+        Operand(source_y),
+        Operand(accumulator),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def MLS(destination, source_x, source_y, accumulator):
+    """Multiply Subtract - multiplies two 32-bit values and subtracts from an accumulator.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+        accumulator: 32-bit accumulator value to subtract from
+    
+    Usage example:
+        MLS(r0, r1, r2, r3)  # r0 = r3 - (r1 * r2)
+    
+    The result is 32-bit: destination = accumulator - (source_x * source_y)
+    Note: Available in ARMv7 and later
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = MultiplyInstruction(
+        "MLS",
+        Operand(destination),
+        Operand(source_x),
+        Operand(source_y),
+        Operand(accumulator),
+        origin=origin,
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+class DSPMultiplyInstruction(Instruction):
+    """DSP multiply instructions (SMUL*, SMLA*, SMM*, SMLAD, SMLSD, etc.)"""
+
+    # Instructions with 2 source operands + destination (3 total operands)
+    two_operand_instructions = [
+        "SMMUL", "SMULTB", "SMULTBEQ", "SMULBB",
+        "SMULWB", "SMULWT", "SMUAD", "SMUSD", "SMUSDXNE"
+    ]
+
+    # Instructions with 2 source operands + accumulator + destination (4 total operands)
+    three_operand_instructions = [
+        "SMMLA", "SMMLS", "SMLAD", "SMLSD", "SMLABBNE", "SMLABT",
+        "SMLAWT", "SMLAWB"
+    ]
+
+    # Instructions with 2 source operands + 64-bit accumulator (RdLo, RdHi) - 4 total operands
+    long_accumulate_instructions = [
+        "SMLALD", "SMLSLD", "SMLALBB", "SMLALBT", "SMLALTT", "SMLALTB"
+    ]
+
+    # WMMX instructions with 3 source operands (3 total operands)
+    wmmx_instructions = ["MIA", "MIAPH"]
+
+    def __init__(self, name, *operands_tuple, origin=None):
+        # Convert to list for easier handling
+        operands_list = list(operands_tuple)
+
+        # Determine instruction type
+        all_instructions = (
+            self.two_operand_instructions
+            + self.three_operand_instructions
+            + self.long_accumulate_instructions
+            + self.wmmx_instructions
+        )
+
+        if name not in all_instructions:
+            raise ValueError(
+                "Instruction {0} is not a valid DSP multiply instruction".format(name)
+            )
+
+        # Validate based on instruction type
+        if name in self.two_operand_instructions:
+            # Format: INST Rd, Rn, Rm
+            if len(operands_list) != 3:
+                raise ValueError(
+                    "Instruction {0} requires 3 operands (destination, source_x, source_y)".format(
+                        name
+                    )
+                )
+            operands = operands_list
+
+        elif name in self.three_operand_instructions:
+            # Format: INST Rd, Rn, Rm, Ra
+            if len(operands_list) != 4:
+                raise ValueError(
+                    "Instruction {0} requires 4 operands (destination, source_x, source_y, accumulator)".format(
+                        name
+                    )
+                )
+            operands = operands_list
+
+        elif name in self.long_accumulate_instructions:
+            # Format: INST RdLo, RdHi, Rn, Rm
+            if len(operands_list) != 4:
+                raise ValueError(
+                    "Instruction {0} requires 4 operands (dest_low, dest_high, source_x, source_y)".format(
+                        name
+                    )
+                )
+            operands = operands_list
+
+        elif name in self.wmmx_instructions:
+            # Format: MIA acc, Rn, Rm (WMMX)
+            if len(operands_list) != 3:
+                raise ValueError(
+                    "Instruction {0} requires 3 operands (accumulator, source_x, source_y)".format(
+                        name
+                    )
+                )
+            operands = operands_list
+        else:
+            operands = operands_list
+
+        # Convert to Operand objects
+        operand_objects = [Operand(op) for op in operands]
+
+        super(DSPMultiplyInstruction, self).__init__(
+            name, operand_objects, origin=origin
+        )
+
+    def get_input_registers_list(self):
+        input_registers = []
+
+        if self.name in self.two_operand_instructions:
+            # Rn, Rm are inputs
+            input_registers = (
+                self.operands[1].get_registers_list()
+                + self.operands[2].get_registers_list()
+            )
+        elif self.name in self.three_operand_instructions:
+            # Rn, Rm, Ra are inputs
+            input_registers = (
+                self.operands[1].get_registers_list()
+                + self.operands[2].get_registers_list()
+                + self.operands[3].get_registers_list()
+            )
+        elif self.name in self.long_accumulate_instructions:
+            # RdLo, RdHi (as accumulators), Rn, Rm are inputs
+            input_registers = (
+                self.operands[0].get_registers_list()
+                + self.operands[1].get_registers_list()
+                + self.operands[2].get_registers_list()
+                + self.operands[3].get_registers_list()
+            )
+        elif self.name in self.wmmx_instructions:
+            # acc (as accumulator), Rn, Rm are inputs
+            input_registers = (
+                self.operands[0].get_registers_list()
+                + self.operands[1].get_registers_list()
+                + self.operands[2].get_registers_list()
+            )
+
+        return input_registers
+
+    def get_output_registers_list(self):
+        if self.name in self.long_accumulate_instructions:
+            # RdLo, RdHi are outputs
+            return (
+                self.operands[0].get_registers_list()
+                + self.operands[1].get_registers_list()
+            )
+        else:
+            # First operand is output (destination or accumulator)
+            return self.operands[0].get_registers_list()
+
+    def __str__(self):
+        operands_str = ", ".join(str(op) for op in self.operands)
+        return "{0} {1}".format(self.name, operands_str)
+
+def SMULTBEQ(destination, source_x, source_y):
+    """Signed Multiply Top Bottom (conditional EQ) - multiplies signed halfwords.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (top halfword used)
+        source_y: Second source operand (bottom halfword used)
+    
+    Usage example:
+        SMULTBEQ(r0, r1, r2)  # if EQ: r0 = r1[31:16] * r2[15:0] (signed)
+    
+    Only executes if the EQ (Equal) condition is true.
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMULTBEQ", destination, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLABBNE(destination, source_x, source_y, accumulator):
+    """Signed Multiply Accumulate Bottom Bottom (conditional NE) - multiplies signed halfwords with accumulate.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (bottom halfword used)
+        source_y: Second source operand (bottom halfword used)
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        SMLABBNE(r0, r1, r2, r3)  # if NE: r0 = (r1[15:0] * r2[15:0]) + r3 (signed)
+    
+    Only executes if the NE (Not Equal) condition is true.
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLABBNE", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLABT(destination, source_x, source_y, accumulator):
+    """Signed Multiply Accumulate Bottom Top - multiplies signed halfwords with accumulate.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (bottom halfword used)
+        source_y: Second source operand (top halfword used)
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        SMLABT(r0, r1, r2, r3)  # r0 = (r1[15:0] * r2[31:16]) + r3 (signed)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLABT", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMMUL(destination, source_x, source_y):
+    """Signed Most Significant Word Multiply - returns top 32 bits of signed 64-bit product.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit signed source operand
+        source_y: Second 32-bit signed source operand
+    
+    Usage example:
+        SMMUL(r0, r1, r2)  # r0 = (r1 * r2)[63:32] (signed, top 32 bits)
+    
+    Useful for fixed-point arithmetic.
+    Note: Available in ARMv6 and later
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMMUL", destination, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMMLA(destination, source_x, source_y, accumulator):
+    """Signed Most Significant Word Multiply Accumulate.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit signed source operand
+        source_y: Second 32-bit signed source operand
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        SMMLA(r0, r1, r2, r3)  # r0 = ((r1 * r2)[63:32]) + r3 (signed)
+    
+    Note: Available in ARMv6 and later
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMMLA", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMMLS(destination, source_x, source_y, accumulator):
+    """Signed Most Significant Word Multiply Subtract.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit signed source operand
+        source_y: Second 32-bit signed source operand
+        accumulator: 32-bit accumulator value to subtract from
+    
+    Usage example:
+        SMMLS(r0, r1, r2, r3)  # r0 = r3 - ((r1 * r2)[63:32]) (signed)
+    
+    Note: Available in ARMv6 and later
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMMLS", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLAD(destination, source_x, source_y, accumulator):
+    """Signed Multiply Accumulate Dual - performs two 16-bit multiplies and accumulates.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values)
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        SMLAD(r0, r1, r2, r3)  # r0 = (r1[15:0] * r2[15:0]) + (r1[31:16] * r2[31:16]) + r3
+    
+    Note: Available in ARMv6 and later (SIMD extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLAD", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLSD(destination, source_x, source_y, accumulator):
+    """Signed Multiply Subtract Dual - performs two 16-bit multiplies and subtracts.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values)
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        SMLSD(r0, r1, r2, r3)  # r0 = (r1[15:0] * r2[15:0]) - (r1[31:16] * r2[31:16]) + r3
+    
+    Note: Available in ARMv6 and later (SIMD extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLSD", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLALD(dest_low, dest_high, source_x, source_y):
+    """Signed Multiply Accumulate Long Dual - 64-bit accumulate of two 16-bit products.
+    
+    Args:
+        dest_low: Lower 32 bits of accumulator and destination
+        dest_high: Upper 32 bits of accumulator and destination
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values)
+    
+    Usage example:
+        SMLALD(r0, r1, r2, r3)  # r1:r0 += (r2[15:0] * r3[15:0]) + (r2[31:16] * r3[31:16])
+    
+    Note: Available in ARMv6 and later (SIMD extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLALD", dest_low, dest_high, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLSLD(dest_low, dest_high, source_x, source_y):
+    """Signed Multiply Subtract Long Dual - 64-bit accumulate with subtraction.
+    
+    Args:
+        dest_low: Lower 32 bits of accumulator and destination
+        dest_high: Upper 32 bits of accumulator and destination
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values)
+    
+    Usage example:
+        SMLSLD(r0, r1, r2, r3)  # r1:r0 += (r2[15:0] * r3[15:0]) - (r2[31:16] * r3[31:16])
+    
+    Note: Available in ARMv6 and later (SIMD extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLSLD", dest_low, dest_high, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def MIA(accumulator, source_x, source_y):
+    """Multiply with Internal Accumulate (WMMX) - 32-bit multiply with 64-bit accumulate.
+    
+    Args:
+        accumulator: WMMX accumulator register (wcgr0-wcgr3)
+        source_x: First 32-bit source operand
+        source_y: Second 32-bit source operand
+    
+    Usage example:
+        MIA(wcgr0, r1, r2)  # wcgr0 += r1 * r2 (64-bit accumulate)
+    
+    Note: Wireless MMX (WMMX) instruction, Intel XScale processors
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "MIA", accumulator, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def MIAPH(accumulator, source_x, source_y):
+    """Multiply with Internal Accumulate Packed Halfwords (WMMX).
+    
+    Args:
+        accumulator: WMMX accumulator register (wcgr0-wcgr3)
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values)
+    
+    Usage example:
+        MIAPH(wcgr0, r1, r2)  # wcgr0 += (r1[15:0] * r2[15:0]) + (r1[31:16] * r2[31:16])
+    
+    Note: Wireless MMX (WMMX) instruction, Intel XScale processors
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "MIAPH", accumulator, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+
+def SMULWB(destination, source_x, source_y):
+    """Signed Multiply Word by Halfword Bottom.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit signed source operand
+        source_y: Second source operand (bottom halfword used)
+    
+    Usage example:
+        SMULWB(r0, r1, r2)  # r0 = (r1 * r2[15:0])[47:16] (signed, top 32 bits of 48-bit product)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMULWB", destination, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMULWT(destination, source_x, source_y):
+    """Signed Multiply Word by Halfword Top.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit signed source operand
+        source_y: Second source operand (top halfword used)
+    
+    Usage example:
+        SMULWT(r0, r1, r2)  # r0 = (r1 * r2[31:16])[47:16] (signed, top 32 bits of 48-bit product)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMULWT", destination, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLAWT(destination, source_x, source_y, accumulator):
+    """Signed Multiply Accumulate Word by Halfword Top.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit signed source operand
+        source_y: Second source operand (top halfword used)
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        SMLAWT(r0, r1, r2, r3)  # r0 = ((r1 * r2[31:16])[47:16]) + r3 (signed)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLAWT", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLAWB(destination, source_x, source_y, accumulator):
+    """Signed Multiply Accumulate Word by Halfword Bottom.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First 32-bit signed source operand
+        source_y: Second source operand (bottom halfword used)
+        accumulator: 32-bit accumulator value to add
+    
+    Usage example:
+        SMLAWB(r0, r1, r2, r3)  # r0 = ((r1 * r2[15:0])[47:16]) + r3 (signed)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLAWB", destination, source_x, source_y, accumulator, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLALBB(dest_low, dest_high, source_x, source_y):
+    """Signed Multiply Accumulate Long Bottom Bottom - 64-bit accumulate.
+    
+    Args:
+        dest_low: Lower 32 bits of accumulator and destination
+        dest_high: Upper 32 bits of accumulator and destination
+        source_x: First source operand (bottom halfword used)
+        source_y: Second source operand (bottom halfword used)
+    
+    Usage example:
+        SMLALBB(r0, r1, r2, r3)  # r1:r0 += r2[15:0] * r3[15:0] (signed)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLALBB", dest_low, dest_high, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLALBT(dest_low, dest_high, source_x, source_y):
+    """Signed Multiply Accumulate Long Bottom Top - 64-bit accumulate.
+    
+    Args:
+        dest_low: Lower 32 bits of accumulator and destination
+        dest_high: Upper 32 bits of accumulator and destination
+        source_x: First source operand (bottom halfword used)
+        source_y: Second source operand (top halfword used)
+    
+    Usage example:
+        SMLALBT(r0, r1, r2, r3)  # r1:r0 += r2[15:0] * r3[31:16] (signed)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLALBT", dest_low, dest_high, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLALTT(dest_low, dest_high, source_x, source_y):
+    """Signed Multiply Accumulate Long Top Top - 64-bit accumulate.
+    
+    Args:
+        dest_low: Lower 32 bits of accumulator and destination
+        dest_high: Upper 32 bits of accumulator and destination
+        source_x: First source operand (top halfword used)
+        source_y: Second source operand (top halfword used)
+    
+    Usage example:
+        SMLALTT(r0, r1, r2, r3)  # r1:r0 += r2[31:16] * r3[31:16] (signed)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLALTT", dest_low, dest_high, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMLALTB(dest_low, dest_high, source_x, source_y):
+    """Signed Multiply Accumulate Long Top Bottom - 64-bit accumulate.
+    
+    Args:
+        dest_low: Lower 32 bits of accumulator and destination
+        dest_high: Upper 32 bits of accumulator and destination
+        source_x: First source operand (top halfword used)
+        source_y: Second source operand (bottom halfword used)
+    
+    Usage example:
+        SMLALTB(r0, r1, r2, r3)  # r1:r0 += r2[31:16] * r3[15:0] (signed)
+    
+    Note: Available in ARMv5TE and later (DSP extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMLALTB", dest_low, dest_high, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMUAD(destination, source_x, source_y):
+    """Signed Dual Multiply Add - performs two 16-bit multiplies and adds results.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values)
+    
+    Usage example:
+        SMUAD(r0, r1, r2)  # r0 = (r1[15:0] * r2[15:0]) + (r1[31:16] * r2[31:16])
+    
+    Note: Available in ARMv6 and later (SIMD extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMUAD", destination, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMUSD(destination, source_x, source_y):
+    """Signed Dual Multiply Subtract - performs two 16-bit multiplies and subtracts.
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values)
+    
+    Usage example:
+        SMUSD(r0, r1, r2)  # r0 = (r1[15:0] * r2[15:0]) - (r1[31:16] * r2[31:16])
+    
+    Note: Available in ARMv6 and later (SIMD extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMUSD", destination, source_x, source_y, origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
+def SMUSDXNE(destination, source_x, source_y):
+    """Signed Dual Multiply Subtract Exchanged (conditional NE).
+    
+    Args:
+        destination: Destination register for the result
+        source_x: First source operand (two packed 16-bit values)
+        source_y: Second source operand (two packed 16-bit values, exchanged)
+    
+    Usage example:
+        SMUSDXNE(r0, r1, r2)  # if NE: r0 = (r1[15:0] * r2[31:16]) - (r1[31:16] * r2[15:0])
+    
+    Only executes if the NE (Not Equal) condition is true.
+    Note: Available in ARMv6 and later (SIMD extensions)
+    """
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = DSPMultiplyInstruction(
+        "SMUSDXNE", destination, source_x, source_y, origin=origin
+    )
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction

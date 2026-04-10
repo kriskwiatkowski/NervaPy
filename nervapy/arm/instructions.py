@@ -239,6 +239,26 @@ class Operand(object):
         if self.type == Operand.ImmediateType:
             if -2147483648 <= self.immediate <= 4294967295:
                 dword = self.immediate & 0xFFFFFFFF
+                
+                # Check byte replication patterns (ARM ARM A5.3.2)
+                # Pattern 0b00: 0x000000XY
+                if dword <= 0xFF:
+                    return True
+                
+                # Pattern 0b01: 0x00XY00XY
+                if (dword & 0xFF00FF00) == 0 and ((dword >> 16) & 0xFF) == (dword & 0xFF):
+                    return True
+                
+                # Pattern 0b10: 0xXY00XY00
+                if (dword & 0x00FF00FF) == 0 and ((dword >> 24) & 0xFF) == ((dword >> 8) & 0xFF):
+                    return True
+                
+                # Pattern 0b11: 0xXYXYXYXY
+                byte_val = dword & 0xFF
+                if dword == (byte_val << 24) | (byte_val << 16) | (byte_val << 8) | byte_val:
+                    return True
+                
+                # Rotation patterns (original check)
                 ndword = (~self.immediate) & 0xFFFFFFFF
                 return any(
                     [

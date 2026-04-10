@@ -398,7 +398,8 @@ class TestARMv8MExtensions(unittest.TestCase):
         self.assertIn(Extension.V8MMain, target.extensions)
         self.assertIn(Extension.V7M, target.extensions)
         self.assertIn(Extension.DSP, target.extensions)
-        self.assertIn(Extension.VFP4, target.extensions)
+        # FPU is optional on Cortex-M33, so VFP4 should NOT be in default extensions
+        self.assertNotIn(Extension.VFP4, target.extensions)
         self.assertIn(Extension.TrustZone, target.extensions)
 
     def test_v8_1mmain_in_m55_extensions(self):
