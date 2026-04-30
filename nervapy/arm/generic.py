@@ -7453,28 +7453,6 @@ def ROR(destination, source_x, source_y=None):
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
-
-def ROR(destination, source_x, source_y=None):
-    """ROR - Rotate Right.
-
-    ROR rd, rn, #imm   (immediate shift, imm in 1..31)
-    ROR rd, rn, rm     (register-controlled shift)
-    ROR rd, #imm       (two-operand: destination is also source)
-    ROR rd, rm         (two-operand register form)
-    """
-    origin = (
-        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
-    )
-    if source_y is None:
-        destination, source_x, source_y = (destination, destination, source_x)
-    instruction = ShiftInstruction(
-        "ROR", Operand(destination), Operand(source_x), Operand(source_y), origin=origin
-    )
-    if nervapy.stream.active_stream is not None:
-        nervapy.stream.active_stream.add_instruction(instruction)
-    return instruction
-
-
 def CMP(source_x, source_y):
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None

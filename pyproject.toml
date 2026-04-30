@@ -1,0 +1,57 @@
+[project]
+name = "PyNerva"
+version = "0.0.5"
+description = "Framework for exploring advanced program synthesis and transformation techniques"
+authors = [{ name = "Kris Kwiatkowski", email = "kris@amongbytes.com" }]
+keywords = [
+    "assembly",
+    "codegen",
+    "x86-64",
+    "arm",
+    "risc-v",
+    "elf",
+    "assembler",
+    "program synthesis",
+    "code transformation",
+]
+readme = "README.rst"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: POSIX :: BSD :: FreeBSD",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Assembly",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Assemblers",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = ["click>=8.1.8", "requests>=2.32.4"]
+
+[project.urls]
+Homepage = "https://github.com/kriskwiatkowski/NervaPy.git"
+
+[build-system]
+requires = ["hatchling", "Opcodes>=0.3.13"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["nervapy"]
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = "dynacl"
+ignore_missing_imports = true

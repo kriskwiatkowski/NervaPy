@@ -1,10 +1,10 @@
 # NervaPy
 
-[![Test NervaPy](https://github.com/username/NervaPy/actions/workflows/test.yml/badge.svg)](https://github.com/username/NervaPy/actions/workflows/test.yml)
-[![Code Quality](https://github.com/username/NervaPy/actions/workflows/code-quality.yml/badge.svg)](https://github.com/username/NervaPy/actions/workflows/code-quality.yml)
-[![Build and Release](https://github.com/username/NervaPy/actions/workflows/release.yml/badge.svg)](https://github.com/username/NervaPy/actions/workflows/release.yml)
+[![Test NervaPy](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/test.yml/badge.svg)](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/test.yml)
+[![Code Quality](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/code-quality.yml/badge.svg)](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/code-quality.yml)
+[![Build and Release](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/release.yml/badge.svg)](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/release.yml)
 
-**An experimental Python framework for exploring advanced program synthesis and transformation techniques**
+**Framework for exploring advanced program synthesis and transformation techniques**
 
 NervaPy is an experimental Python framework based on [PeachPy](https://github.com/Maratyszcza/PeachPy) that explores advanced program synthesis and transformation techniques. It provides a foundation for research into automated code generation, optimization, and program analysis.
 
@@ -29,9 +29,7 @@ NervaPy is based on PeachPy by Marat Dukhan. PeachPy was originally designed as 
 ## Installation
 
 ```bash
-git clone <repository-url>
-cd NervaPy
-python setup.py develop
+pip install pynerva
 ```
 
 ## Usage
@@ -48,40 +46,24 @@ y = Argument(ptr(const_float_))
 
 with Function("DotProduct", (x, y), float_,
               target=uarch.default + isa.sse4_2):
-    
+
     reg_x, reg_y = GeneralPurposeRegister64(), GeneralPurposeRegister64()
-    
+
     LOAD.ARGUMENT(reg_x, x)
     LOAD.ARGUMENT(reg_y, y)
-    
+
     xmm_x = XMMRegister()
     MOVAPS(xmm_x, [reg_x])
     MOVAPS(xmm2, [reg_y])
-    
+
     DPPS(xmm_x, xmm2, 0xF1)
-    
+
     RETURN(xmm_x)
 ```
 
 ## License
 
 This project maintains the same Simplified BSD License as the original PeachPy.
-
-## Development
-
-### Running Tests Locally
-
-```bash
-# Install test dependencies
-pip install -r tests/requirements.txt
-
-# Run all tests
-pytest tests/ -v
-
-# Run specific test modules
-pytest tests/test_literal.py -v
-pytest tests/x86_64/encoding/ -v
-```
 
 ### Continuous Integration
 
