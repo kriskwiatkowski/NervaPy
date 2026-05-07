@@ -446,6 +446,25 @@ class TestRustOutput(unittest.TestCase):
             RETURN()
         return f
 
+    def _make_accumulate(self, target):
+        data_arg = Argument(ptr(const_uint32_t))
+        n_arg = Argument(size_t)
+        with Function('accumulate', (data_arg, n_arg), uint32_t,
+                      target=target, abi=arm_gnueabihf,
+                      report_generation=False) as f:
+            (data, n) = LOAD.ARGUMENTS()
+            acc = GeneralPurposeRegister()
+            MOV(acc, 0)
+            with Loop() as loop:
+                word = GeneralPurposeRegister()
+                LDR(word, [data], 4)
+                ADD(acc, acc, word)
+                SUBS(n, n, 1)
+                BNE(loop.begin)
+            MOV(r0, acc)
+            RETURN()
+        return f
+
     def test_global_asm_macro_wrapping(self):
         """global_asm property wraps GAS output in core::arch::global_asm!(r#"..."#)."""
         f = self._make_copy_words(Microarchitecture.CortexM33)
@@ -456,12 +475,49 @@ class TestRustOutput(unittest.TestCase):
         self.assertIn('copy_words:', out)
         self.assertIn('.arch armv8-m.main', out)
 
-    def test_global_asm_matches_gas_assembly(self):
-        """global_asm content is identical to function.assembly."""
+    def test_global_asm_matches_escaped_gas_assembly(self):
+        """global_asm content is Rust-escaped GAS assembly."""
         f = self._make_copy_words(Microarchitecture.CortexM33)
         gas = f.assembly
         global_asm = f.global_asm
-        self.assertIn(gas, global_asm)
+        self.assertIn(gas.replace('{', '{{').replace('}', '}}'), global_asm)
+
+    def test_global_asm_escapes_register_lists(self):
+        """global_asm escapes braces so register lists are valid Rust asm templates."""
+        from nervapy.arm.registers import lr, r4, r5
+        with Function('push_pop', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      report_generation=False) as f:
+            PUSH((r4, r5))
+            POP((r4, r5))
+            BX(lr)
+
+        out = f.global_asm
+        self.assertIn('{{r4, r5}}', out)
+
+    def test_rust_extern_declaration_for_arguments(self):
+        """rust_extern_declaration maps pointer and size arguments to Rust FFI types."""
+        f = self._make_copy_words(Microarchitecture.CortexM33)
+        self.assertEqual(
+            f.rust_extern_declaration,
+            'pub fn copy_words(src: *const u32, dst: *mut u32, len: usize);'
+        )
+
+    def test_rust_extern_declaration_for_return_value(self):
+        """rust_extern_declaration includes the Rust return type."""
+        f = self._make_accumulate(Microarchitecture.CortexM33)
+        self.assertEqual(
+            f.rust_extern_declaration,
+            'pub fn accumulate(data: *const u32, n: usize) -> u32;'
+        )
+
+    def test_rust_module_combines_asm_and_extern(self):
+        """rust_module emits both the assembly body and the typed extern declaration."""
+        f = self._make_accumulate(Microarchitecture.CortexM33)
+        out = f.rust_module
+        self.assertIn('core::arch::global_asm!(r#"', out)
+        self.assertIn('unsafe extern "C" {', out)
+        self.assertIn('pub fn accumulate(data: *const u32, n: usize) -> u32;', out)
 
     def test_gas_output_usable_as_s_file(self):
         """GAS output has directives required for a Rust .s file."""

@@ -338,7 +338,67 @@ class Function(object):
             unsafe extern "C" { fn my_func(a: u32) -> u32; }
         """
         gas = self._generate_gas_assembly()
-        return 'core::arch::global_asm!(r#"\n{asm}"#);\n'.format(asm=gas)
+        return 'core::arch::global_asm!(r#"\n{asm}"#);\n'.format(
+            asm=self._escape_rust_asm_template(gas)
+        )
+
+    @staticmethod
+    def _escape_rust_asm_template(asm):
+        return asm.replace("{", "{{").replace("}", "}}")
+
+    def _rust_ffi_type(self, c_type):
+        if c_type.is_pointer:
+            pointee = c_type.base
+            if pointee is None:
+                pointee_type = "core::ffi::c_void"
+                is_const_pointee = c_type.is_const
+            else:
+                pointee_type = self._rust_ffi_type(pointee)
+                is_const_pointee = pointee.is_const
+            return "{0} {1}".format(
+                "*const" if is_const_pointee else "*mut", pointee_type
+            )
+
+        if c_type.is_size_integer:
+            return "usize" if c_type.is_unsigned_integer else "isize"
+        if c_type.is_pointer_integer:
+            return "usize" if c_type.is_unsigned_integer else "isize"
+        if c_type.is_bool:
+            return "bool"
+        if c_type.is_char:
+            return "core::ffi::c_char"
+        if c_type.is_wchar:
+            wchar_size = c_type.get_size(self.abi)
+            return {2: "u16", 4: "u32"}[wchar_size]
+        if c_type.is_floating_point:
+            return {2: "u16", 4: "f32", 8: "f64"}[c_type.get_size(self.abi)]
+        if c_type.is_signed_integer:
+            return {1: "i8", 2: "i16", 4: "i32", 8: "i64"}[c_type.get_size(self.abi)]
+        if c_type.is_unsigned_integer:
+            return {1: "u8", 2: "u16", 4: "u32", 8: "u64"}[c_type.get_size(self.abi)]
+
+        raise ValueError("Unsupported Rust FFI type for {0}".format(c_type))
+
+    @property
+    def rust_extern_declaration(self):
+        args = ", ".join(
+            "{0}: {1}".format(argument.name, self._rust_ffi_type(argument.c_type))
+            for argument in self.arguments
+        )
+        signature = "pub fn {0}({1})".format(self.name, args)
+        if self.return_type is not None:
+            signature += " -> {0}".format(self._rust_ffi_type(self.return_type))
+        return signature + ";"
+
+    @property
+    def rust_extern(self):
+        return "unsafe extern \"C\" {{\n    {0}\n}}\n".format(
+            self.rust_extern_declaration
+        )
+
+    @property
+    def rust_module(self):
+        return self.global_asm + "\n" + self.rust_extern
 
     def _generate_gas_assembly(self):
         """Generate assembly code in GNU Assembler (GAS) format."""
