@@ -1,6 +1,6 @@
 [project]
 name = "PyNerva"
-version = "0.0.5"
+version = "0.0.6"
 description = "Framework for exploring advanced program synthesis and transformation techniques"
 authors = [{ name = "Kris Kwiatkowski", email = "kris@amongbytes.com" }]
 keywords = [
