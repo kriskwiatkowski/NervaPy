@@ -39,7 +39,7 @@ classifiers = [
     "Topic :: Software Development :: Compilers",
     "Topic :: Software Development :: Libraries",
 ]
-dependencies = ["click>=8.1.8", "requests>=2.32.4"]
+dependencies = ["click>=8.1.8", "requests>=2.34.2"]
 
 [project.urls]
 Homepage = "https://github.com/kriskwiatkowski/NervaPy.git"
