@@ -9509,6 +9509,47 @@ class BitFieldInstruction(Instruction):
     def get_output_registers_list(self):
         return self.operands[0].get_registers_list()
 
+
+class UnsignedExtendHalfwordInstruction(Instruction):
+    """UXTH - zero-extend the low halfword of a register."""
+
+    def __init__(self, destination, source, origin=None):
+        from nervapy.arm.function import active_function
+        from nervapy.arm.isa import Extension
+
+        if not (
+            destination.is_general_purpose_register()
+            and source.is_general_purpose_register()
+        ):
+            raise ValueError(
+                "UXTH destination and source operands must be general-purpose registers"
+            )
+        if active_function and Extension.V6 not in active_function.target.extensions:
+            raise ValueError("UXTH is not supported on the current target")
+        super(UnsignedExtendHalfwordInstruction, self).__init__(
+            "UXTH", [destination, source], origin=origin
+        )
+
+    def get_input_registers_list(self):
+        return self.operands[1].get_registers_list()
+
+    def get_output_registers_list(self):
+        return self.operands[0].get_registers_list()
+
+
+def UXTH(destination, source):
+    """UXTH - zero-extend bits 0-15 of *source* into *destination*."""
+    origin = (
+        inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
+    )
+    instruction = UnsignedExtendHalfwordInstruction(
+        Operand(destination), Operand(source), origin=origin
+    )
+    if nervapy.stream.active_stream is not None:
+        nervapy.stream.active_stream.add_instruction(instruction)
+    return instruction
+
+
 def BFI(destination, source, lsb, width):
     """BFI - Bit Field Insert  (Thumb-2 / ARMv7-M, ARMv8-M.main).
 
