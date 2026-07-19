@@ -93,7 +93,7 @@ from nervapy.arm.generic import (ADC, ADCCC, ADCCS, ADCEQ, ADCGE, ADCGT, ADCHI,
                                  TSTCS, TSTEQ, TSTGE, TSTGT, TSTHI, TSTHS,
                                  TSTLE, TSTLO, TSTLS, TSTLT, TSTMI, TSTNE,
                                  TSTPL, TSTVC, TSTVS, TT, TTA, TTAT, TTT,
-                                 UMAAL, UMAALGE, UMLAL, UMULL, B)
+                                 UMAAL, UMAALGE, UMLAL, UMULL, UXTH, B)
 from nervapy.arm.literal_pool import LDR_LITERAL, LDRL
 from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.pseudo import (ALIGN, ASSUME, IMPORT, INIT, LABEL, LOAD,
