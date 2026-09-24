@@ -544,7 +544,6 @@ class TestRustOutput(unittest.TestCase):
         asm = f.assembly
         self.assertIn('.extern memset', asm)
 
-
 class TestCodePrelude(unittest.TestCase):
     """Tests for Function.code_prelude: raw, format-specific text with no section/AREA
     directives of its own (e.g. an ADR-addressed constant table), which Function places
@@ -615,7 +614,109 @@ class TestCodePrelude(unittest.TestCase):
         asm = f.assembly
         self.assertIn('ADR r1, Lmy_table', asm)
         self.assertIn('Lmy_table', asm)
+class TestEntryLabelEmission(unittest.TestCase):
+    """Tests for generate_assembly(emit_entry_label=...), which lets a caller (e.g.
+    ArmAssemblyWriter, packing several functions into one file) suppress just the
+    auto-generated ENTRY label without touching any other label in the function."""
 
+    def _make_function_with_loop(self, assembly_format):
+        from nervapy.arm.registers import lr, r4, r5
+        with Function('loopy', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      assembly_format=assembly_format,
+                      is_thumb=True, report_generation=False) as f:
+            PUSH((r4, r5))
+            with Loop() as loop:
+                SUBS(r4, 1)
+                BNE(loop.begin)
+            POP((r4, r5))
+            BX(lr)
+        return f
+
+    def test_gas_entry_label_emitted_by_default(self):
+        f = self._make_function_with_loop(AssemblyFormat.GAS)
+        asm = f.generate_assembly()
+        self.assertIn('Lloopy.ENTRY:', asm)
+
+    def test_gas_entry_label_suppressed(self):
+        """Only the ENTRY label is dropped; other labels (e.g. the loop) stay."""
+        f = self._make_function_with_loop(AssemblyFormat.GAS)
+        asm = f.generate_assembly(emit_entry_label=False)
+        self.assertNotIn('Lloopy.ENTRY:', asm)
+        self.assertIn('Lloopy.', asm)  # the loop's own label is still present
+
+    def test_armcc_entry_label_emitted_by_default(self):
+        f = self._make_function_with_loop(AssemblyFormat.ARMCC)
+        asm = f.generate_assembly()
+        self.assertIn('loopy_ENTRY', asm)
+
+    def test_armcc_entry_label_suppressed(self):
+        """Only the ENTRY label is dropped; other labels (e.g. the loop) stay."""
+        f = self._make_function_with_loop(AssemblyFormat.ARMCC)
+        asm = f.generate_assembly(emit_entry_label=False)
+        self.assertNotIn('loopy_ENTRY', asm)
+        self.assertIn('loopy_', asm)  # the loop's own label is still present
+
+    def _make_function_with_conditional_label(self, assembly_format):
+        from nervapy.arm.pseudo import Label
+        from nervapy.arm.registers import lr, r4
+        with Function('condy', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      assembly_format=assembly_format,
+                      is_thumb=True, report_generation=False) as f:
+            skip = Label('skip')
+            CMP(r4, 0)
+            BEQ(skip)
+            SUBS(r4, 1)
+            LABEL(skip)
+            BX(lr)
+        return f
+
+    def test_gas_entry_label_suppressed_with_conditional_label(self):
+        """A manually-placed branch target label (not from a Loop) must survive
+        ENTRY suppression too."""
+        f = self._make_function_with_conditional_label(AssemblyFormat.GAS)
+        asm = f.generate_assembly(emit_entry_label=False)
+        self.assertNotIn('Lcondy.ENTRY:', asm)
+        self.assertIn('Lcondy.skip:', asm)
+        self.assertIn('BEQ Lcondy.skip', asm)
+
+    def test_armcc_entry_label_suppressed_with_conditional_label(self):
+        f = self._make_function_with_conditional_label(AssemblyFormat.ARMCC)
+        asm = f.generate_assembly(emit_entry_label=False)
+        self.assertNotIn('condy_ENTRY', asm)
+        self.assertIn('condy_skip', asm)
+        self.assertIn('BEQ condy_skip', asm)
+
+    def test_gas_entry_label_suppressed_with_constants_section(self):
+        """ENTRY suppression must not disturb the literal pool / constants
+        section emitted after the function body."""
+        from nervapy.arm.literal_pool import Literal
+        from nervapy.arm.registers import lr, r4
+        with Function('consty', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      assembly_format=AssemblyFormat.GAS,
+                      is_thumb=True, report_generation=False) as f:
+            LDR(r4, literal=Literal(0x11111111, label='MY_CONSTANT'))
+            BX(lr)
+        asm = f.generate_assembly(emit_entry_label=False)
+        self.assertNotIn('Lconsty.ENTRY:', asm)
+        self.assertIn('MY_CONSTANT:', asm)
+        self.assertIn('.word 0x11111111', asm)
+
+    def test_writer_packed_functions_each_keep_non_entry_labels(self):
+        """End-to-end through ArmAssemblyWriter: ENTRY is suppressed for both
+        packed functions, but each function's own loop/branch label survives."""
+        from nervapy.writer import ArmAssemblyWriter
+        w = ArmAssemblyWriter(None, assembly_format=AssemblyFormat.GAS)
+        w.add_function(self._make_function_with_loop(AssemblyFormat.GAS))
+        w.add_function(self._make_function_with_conditional_label(AssemblyFormat.GAS))
+        out = w.serialize()
+
+        self.assertNotIn('Lloopy.ENTRY:', out)
+        self.assertNotIn('Lcondy.ENTRY:', out)
+        self.assertIn('Lloopy.', out)
+        self.assertIn('Lcondy.skip:', out)
 
 if __name__ == '__main__':
     unittest.main()

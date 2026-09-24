@@ -38,7 +38,6 @@ class Function(object):
         self.alignment = alignment
         self.validate_stack_alignment = validate_stack_alignment
         self.preserve8 = preserve8
-
         # Set default assembly format to GAS if not specified
         if assembly_format is None:
             from nervapy.arm.formats import AssemblyFormat
@@ -309,6 +308,22 @@ class Function(object):
         else:  # Default to GAS format
             return self._generate_gas_assembly()
 
+    def generate_assembly(self, emit_file_preamble=True, emit_entry_label=True):
+        """Generate this function's assembly with optional file directives and
+        entry label. Both default to True so a standalone function is still a
+        complete, self-contained assembly listing."""
+        from nervapy.arm.formats import AssemblyFormat
+
+        if self.assembly_format == AssemblyFormat.ARMCC:
+            return self._generate_armcc_assembly(
+                emit_file_preamble=emit_file_preamble,
+                emit_entry_label=emit_entry_label,
+            )
+        return self._generate_gas_assembly(
+            emit_file_preamble=emit_file_preamble,
+            emit_entry_label=emit_entry_label,
+        )
+
     def _generate_constant_data_section(self):
         """Generate .data section for ConstantData objects"""
         try:
@@ -403,7 +418,7 @@ class Function(object):
     def rust_module(self):
         return self.global_asm + "\n" + self.rust_extern
 
-    def _generate_gas_assembly(self):
+    def _generate_gas_assembly(self, emit_file_preamble=True, emit_entry_label=True):
         """Generate assembly code in GNU Assembler (GAS) format."""
         import os
 
@@ -414,10 +429,11 @@ class Function(object):
         function_label = self.name
         constants_label = self.name + "_constants"
         assembly = ""
-        assembly += "\t.syntax unified" + os.linesep
-        if self.is_thumb:
-            assembly += "\t.thumb" + os.linesep
-        assembly += "\t" + self.gnu_arch_spec + os.linesep
+        if emit_file_preamble:
+            assembly += "\t.syntax unified" + os.linesep
+            if self.is_thumb:
+                assembly += "\t.thumb" + os.linesep
+            assembly += "\t" + self.gnu_arch_spec + os.linesep
 
         # Generate .data section for ConstantData if present
         constant_data_section = self._generate_constant_data_section()
@@ -457,7 +473,8 @@ class Function(object):
                 assembly += ".extern {0}".format(func_name) + os.linesep
             assembly += os.linesep
 
-        assembly += "\n\t.text\n" + os.linesep
+        if emit_file_preamble:
+            assembly += "\n\t.text\n" + os.linesep
         if self.code_prelude:
             assembly += self.code_prelude + os.linesep
         assembly += ".global {Function}".format(Function=function_label) + os.linesep
@@ -486,7 +503,8 @@ class Function(object):
                     constant.prefix = constants_label
                 assembly += "\t" + str(instruction) + os.linesep
             elif isinstance(instruction, LabelQuasiInstruction):
-                assembly += "L{0}.{1}:".format(self.name, instruction.name) + os.linesep
+                if emit_entry_label or instruction.name != "ENTRY":
+                    assembly += "L{0}.{1}:".format(self.name, instruction.name) + os.linesep
             else:
                 assembly += "\t" + str(instruction) + os.linesep
 
@@ -498,7 +516,7 @@ class Function(object):
         assembly += os.linesep
         return assembly
 
-    def _generate_armcc_assembly(self):
+    def _generate_armcc_assembly(self, emit_file_preamble=True, emit_entry_label=True):
         """Generate assembly code in ARM Compiler (ARMCC) format."""
         import os
 
@@ -510,7 +528,7 @@ class Function(object):
         constants_label = self.name + "_constants"
         assembly = ""
 
-        if self.is_thumb:
+        if emit_file_preamble and self.is_thumb:
             assembly += "        THUMB" + os.linesep
 
         # ARMCC constants section
@@ -536,16 +554,17 @@ class Function(object):
                     )
             assembly += os.linesep
 
-        # ARMCC code section
-        assembly += "        AREA    ||.text||, CODE, READONLY"
-        if self.alignment > 0:
-            assembly += ", ALIGN={0}".format(self.alignment)
-        assembly += os.linesep
-        if self.preserve8:
-            assembly += "        PRESERVE8" + os.linesep
-        if self.armcc_fpu_spec:
-            assembly += "        " + self.armcc_fpu_spec + os.linesep
-        assembly += os.linesep
+        if emit_file_preamble:
+            # ARMCC code section
+            assembly += "        AREA    ||.text||, CODE, READONLY"
+            if self.alignment > 0:
+                assembly += ", ALIGN={0}".format(self.alignment)
+            assembly += os.linesep
+            if self.preserve8:
+                assembly += "        PRESERVE8" + os.linesep
+            if self.armcc_fpu_spec:
+                assembly += "        " + self.armcc_fpu_spec + os.linesep
+            assembly += os.linesep
 
         if self.code_prelude:
             assembly += self.code_prelude + os.linesep
@@ -574,7 +593,8 @@ class Function(object):
                     constant.prefix = constants_label
                 assembly += "        " + str(instruction) + os.linesep
             elif isinstance(instruction, LabelQuasiInstruction):
-                assembly += "{0}_{1}".format(self.name, instruction.name) + os.linesep
+                if emit_entry_label or instruction.name != "ENTRY":
+                    assembly += "{0}_{1}".format(self.name, instruction.name) + os.linesep
             else:
                 assembly += "        " + str(instruction) + os.linesep
 
@@ -584,7 +604,8 @@ class Function(object):
             assembly += self.literal_pool.generate_assembly(format='armcc') + os.linesep
 
         assembly += "        ENDP" + os.linesep
-        assembly += "        END" + os.linesep
+        if emit_file_preamble:
+            assembly += "        END" + os.linesep
         return assembly
 
     @property

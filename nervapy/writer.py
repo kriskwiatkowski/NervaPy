@@ -102,6 +102,106 @@ class AssemblyWriter(TextWriter):
         self.content += function_lines
 
 
+class ArmAssemblyWriter(TextWriter):
+    """Write multiple ARM functions with one file-level assembler preamble."""
+
+    def __init__(self, output_path, assembly_format="gas", file_preamble=None):
+        super(ArmAssemblyWriter, self).__init__(output_path)
+        self.assembly_format = self._normalize_format(assembly_format)
+        self.file_preamble = file_preamble
+        self._functions = []
+
+    @staticmethod
+    def _normalize_format(assembly_format):
+        if hasattr(assembly_format, "name"):
+            assembly_format = assembly_format.name
+        normalized = str(assembly_format).lower()
+        if normalized in ("gas", "gnu", "gnuas"):
+            return "gas"
+        elif normalized in ("armcc",):
+            return "armcc"
+        else:
+            raise ValueError(
+                "Unknown ARM assembly format: %r. Valid options are 'gas' "
+                "(aliases: 'gnu', 'gnuas') and 'armcc'." % (assembly_format,)
+            )
+
+    def add_function(self, function):
+        import nervapy.arm.function
+
+        assert isinstance(function, nervapy.arm.function.Function), \
+            "Function must be an ARM Function"
+        function_format = self._normalize_format(function.assembly_format)
+        if function_format != self.assembly_format:
+            raise ValueError(
+                "Function '%s' was built with assembly_format=%s but this "
+                "writer emits %s; generate_assembly() dispatches on the "
+                "function's own format, so packing it here would mix "
+                "%s syntax into a %s file." % (
+                    function.name, function.assembly_format,
+                    self.assembly_format, function.assembly_format,
+                    self.assembly_format,
+                )
+            )
+        if self._functions and self.file_preamble is None:
+            self._check_feature_consistency(self._functions[0], function)
+        self._functions.append(function)
+        if self.assembly_format == "armcc" and self.file_preamble is None:
+            self.epilogue = "        END"
+        assembly = function.generate_assembly(
+            emit_file_preamble=False, emit_entry_label=False
+        )
+        self.content.append(assembly)
+        self.prologue = self.file_preamble or self._default_preamble()
+
+    @staticmethod
+    def _check_feature_consistency(first, other):
+        mismatches = []
+        if other.is_thumb != first.is_thumb:
+            mismatches.append("is_thumb (%r vs %r)" % (first.is_thumb, other.is_thumb))
+        if other.preserve8 != first.preserve8:
+            mismatches.append("preserve8 (%r vs %r)" % (first.preserve8, other.preserve8))
+        if other.gnu_arch_spec != first.gnu_arch_spec:
+            mismatches.append("gnu_arch_spec (%r vs %r)" % (first.gnu_arch_spec, other.gnu_arch_spec))
+        if other.armcc_fpu_spec != first.armcc_fpu_spec:
+            mismatches.append("armcc_fpu_spec (%r vs %r)" % (first.armcc_fpu_spec, other.armcc_fpu_spec))
+        if mismatches:
+            raise ValueError(
+                "Function '%s' disagrees with function '%s' on %s. Functions "
+                "packed into one ArmAssemblyWriter share a single file-level "
+                "preamble and must agree on these; pass an explicit "
+                "file_preamble= to override this check." % (
+                    other.name, first.name, ", ".join(mismatches)
+                )
+            )
+
+    def _default_preamble(self):
+        import os
+
+        function = self._functions[0]
+        alignment = max(f.alignment for f in self._functions)
+
+        if self.assembly_format == "armcc":
+            lines = []
+            if function.is_thumb:
+                lines.append("        THUMB")
+            lines.append("        AREA    ||.text||, CODE, READONLY" +
+                         (", ALIGN={0}".format(alignment)
+                          if alignment > 0 else ""))
+            if function.preserve8:
+                lines.append("        PRESERVE8")
+            if function.armcc_fpu_spec:
+                lines.append("        " + function.armcc_fpu_spec)
+            return os.linesep.join(lines)
+
+        lines = ["\t.syntax unified"]
+        if function.is_thumb:
+            lines.append("\t.thumb")
+        lines.append("\t" + function.gnu_arch_spec)
+        lines.extend(("", "\t.text"))
+        return os.linesep.join(lines)
+
+
 class ImageWriter(object):
     def __init__(self, output_path):
         super(ImageWriter, self).__init__()
