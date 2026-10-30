@@ -118,6 +118,9 @@ class Function(object):
         self.instructions = list()
         self.constants = list()
         self.external_functions = set()  # Track external function imports
+        # Raw assembly instructions emitted before the function at the top of a kernel's
+        # code section. It is meant to be used for constant data placed in the .text section.
+        self.code_prelude = None
         self.stack_frame = StackFrame(self.abi)
         self.local_variables_count = 0
         self.virtual_registers_count = 0x40
@@ -167,7 +170,7 @@ class Function(object):
                     self.ticks = time.time()
                 self.determine_available_registers()
                 self.determine_live_registers(exclude_parameter_loads=True)
-                
+
                 # Report live registers at marked points
                 if self._live_register_markers:
                     self._report_live_registers_at_markers()
@@ -455,6 +458,8 @@ class Function(object):
             assembly += os.linesep
 
         assembly += "\n\t.text\n" + os.linesep
+        if self.code_prelude:
+            assembly += self.code_prelude + os.linesep
         assembly += ".global {Function}".format(Function=function_label) + os.linesep
         assembly += (
             ".type {Function}, %function".format(Function=function_label) + os.linesep
@@ -541,6 +546,9 @@ class Function(object):
         if self.armcc_fpu_spec:
             assembly += "        " + self.armcc_fpu_spec + os.linesep
         assembly += os.linesep
+
+        if self.code_prelude:
+            assembly += self.code_prelude + os.linesep
 
         # Add IMPORT statements for external functions
         if hasattr(self, "external_functions") and len(self.external_functions) > 0:
@@ -962,10 +970,10 @@ class Function(object):
             if isinstance(self.instructions[i], Instruction):
                 instr_obj = self.instructions[i]
                 break
-        
+
         # Store the marker for later analysis (store instruction object, not index)
         self._live_register_markers.append((instr_obj, label))
-    
+
     def _report_live_registers_at_markers(self):
         """Report live registers at all marked points.
         
@@ -974,15 +982,15 @@ class Function(object):
         from nervapy.arm.instructions import Instruction
         from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
                                            QRegister, SRegister)
-        
+
         for instr_obj, label in self._live_register_markers:
             if instr_obj is None:
                 print(f"Live registers {label}: No instructions yet")
                 continue
-            
+
             # Get live registers from the instruction (computed by determine_live_registers)
             live_regs = instr_obj.live_registers if hasattr(instr_obj, 'live_registers') else set()
-            
+
             if not live_regs:
                 print(f"Live registers {label}: None")
             else:
@@ -990,7 +998,7 @@ class Function(object):
                 s_regs = [r for r in live_regs if isinstance(r, SRegister)]
                 d_regs = [r for r in live_regs if isinstance(r, DRegister)]
                 q_regs = [r for r in live_regs if isinstance(r, QRegister)]
-                
+
                 def format_reg(r, reg_type):
                     """Format a register with its name if available."""
                     if r.is_virtual:
@@ -1003,7 +1011,7 @@ class Function(object):
                             return f"{prefix}-vreg<{vreg_id}>"
                     else:
                         return str(r)
-                
+
                 print(f"Live registers {label}:")
                 if gp_regs:
                     print(f"  GP ({len(gp_regs)}): {', '.join(format_reg(r, 'gp') for r in sorted(gp_regs, key=lambda x: (x.id, x.mask)))}")
@@ -1064,7 +1072,7 @@ class Function(object):
                 for output_reg in instruction.get_output_registers_list():
                     if output_reg.is_virtual and output_reg not in virtual_live_registers:
                         virtual_live_registers.append(output_reg)
-                
+
                 for registerX in virtual_live_registers:
                     if registerX.type == Register.VFPType:
                         if isinstance(registerX, SRegister) and registerX.parent:
@@ -1369,7 +1377,7 @@ class Function(object):
     def _get_register_type_name(self, register_type):
         """Get human-readable name for register type."""
         from nervapy.arm.registers import Register
-        
+
         if register_type == Register.GPType:
             return "general-purpose"
         elif register_type == Register.VFPType:
@@ -1382,7 +1390,7 @@ class Function(object):
     def _get_available_registers_info(self, register_type):
         """Get information about available registers for a type."""
         from nervapy.arm.registers import Register
-        
+
         if register_type == Register.GPType:
             # General purpose registers: r0-r12 (13 registers)
             # Note: r13 (sp), r14 (lr), r15 (pc) are special and typically not used for general allocation
@@ -1416,7 +1424,7 @@ class Function(object):
     def _get_max_physical_registers(self, register_type):
         """Get the maximum number of physical registers available for a type."""
         from nervapy.arm.registers import Register
-        
+
         if register_type == Register.GPType:
             # Typically r0-r12 can be allocated (13 registers)
             # But this can vary based on ABI and function constraints
@@ -1440,7 +1448,7 @@ class Function(object):
         self._vr_counts_by_type = {}
         for reg_type in [Register.GPType, Register.VFPType, Register.WMMXType]:
             self._vr_counts_by_type[reg_type] = self._count_virtual_registers_by_type(reg_type)
-        
+
         # Map from virtual register id to physical register
         register_allocation = dict()
         for virtual_register_id, virtual_register_type in self.unallocated_registers:
@@ -1534,7 +1542,7 @@ class Function(object):
                     raise RuntimeError(
                         "Register allocation failed: No available physical registers for virtual register list %s (type: %s).\n"
                         "Your code uses %d virtual %s registers, but only ~%d physical registers are available.\n"
-                        "To fix: reduce the number of registers used in your Python code." 
+                        "To fix: reduce the number of registers used in your Python code."
                         % (virtual_register_id_list, self._get_register_type_name(virtual_register_type),
                            vr_count, self._get_register_type_name(virtual_register_type), max_phys)
                     )
@@ -1560,8 +1568,8 @@ class Function(object):
                         # Use saved count from before allocation started
                         vr_count = self._vr_counts_by_type.get(virtual_register_type, 0)
                         max_phys = self._get_max_physical_registers(virtual_register_type)
-                        
-                        # Debug: find max simultaneous live registers  
+
+                        # Debug: find max simultaneous live registers
                         max_live = 0
                         max_live_instr = None
                         max_live_line = None
@@ -1569,7 +1577,7 @@ class Function(object):
                         max_live_regs = []
                         for idx, instruction in enumerate(self.instructions):
                             if hasattr(instruction, 'live_registers'):
-                                live_regs = [r for r in instruction.live_registers 
+                                live_regs = [r for r in instruction.live_registers
                                             if hasattr(r, 'type') and r.type == virtual_register_type and r.is_virtual]
                                 live_count = len(live_regs)
                                 if live_count > max_live:
@@ -1585,7 +1593,7 @@ class Function(object):
                                         if var_name:
                                             reg_str = f"{reg_str}, {var_name}"
                                         max_live_regs.append(reg_str)
-                        
+
                         debug_msg = ""
                         if max_live <= max_phys:
                             debug_msg = (f"\n\nPhysical registers available: {max_phys}\n"
@@ -1603,13 +1611,13 @@ class Function(object):
                                 elif max_live_idx is not None:
                                     debug_msg += f"Max register pressure at instruction #{max_live_idx} (index in generated code)\n"
                                     debug_msg += f"Hint: Enable collect_origin=True in Function() to see Python source line numbers.\n"
-                                
+
                                 debug_msg += f"Instruction with max pressure: {max_live_instr}\n"
-                                
+
                                 # Show the source code if available
                                 if hasattr(max_live_instr, 'source_code') and max_live_instr.source_code:
                                     debug_msg += f"Source code: {max_live_instr.source_code}\n"
-                                
+
                                 if max_live_regs:
                                     debug_msg += f"Live virtual registers: {', '.join(sorted(max_live_regs))}\n"
                             debug_msg += f"\nThis suggests the greedy allocator made suboptimal early choices.\n"
@@ -1629,20 +1637,20 @@ class Function(object):
                                 elif max_live_idx is not None:
                                     debug_msg += f"Max register pressure at instruction #{max_live_idx} (index in generated code)\n"
                                     debug_msg += f"Hint: Enable collect_origin=True in Function() to see Python source line numbers.\n"
-                                
+
                                 debug_msg += f"Instruction: {max_live_instr}\n"
-                                
+
                                 # Show the source code if available
                                 if hasattr(max_live_instr, 'source_code') and max_live_instr.source_code:
                                     debug_msg += f"Source code: {max_live_instr.source_code}\n"
-                        
+
                         raise RuntimeError(
                             "Register allocation failed: No available physical registers for virtual register #%d (type: %s).\n"
                             "Your code uses %d virtual %s registers, but only ~%d physical registers are available.\n"
                             "Available %s registers: %s\n"
-                            "To fix: reduce the number of registers used in your Python code.%s" 
+                            "To fix: reduce the number of registers used in your Python code.%s"
                             % (
-                                virtual_register_id, 
+                                virtual_register_id,
                                 self._get_register_type_name(virtual_register_type),
                                 vr_count,
                                 self._get_register_type_name(virtual_register_type),
@@ -1672,14 +1680,14 @@ class Function(object):
                     if output_register.is_virtual:
                         if output_register.id not in register_allocation:
                             untracked_registers.add(output_register.id)
-        
+
         if untracked_registers:
             raise RuntimeError(
                 f"Internal error: Virtual registers {sorted(untracked_registers)} used in instructions "
                 f"but were not tracked for allocation. This indicates a bug where registers were created "
                 f"after liveness analysis or were not properly added to live_registers."
             )
-        
+
         for instruction in self.instructions:
             if isinstance(instruction, Instruction):
                 for input_register in instruction.get_input_registers_list():
@@ -2039,7 +2047,7 @@ class Function(object):
     def allocate_q_register(self):
         self.virtual_registers_count += 1
         register_number = (self.virtual_registers_count << 12) | 0x0F0
-        
+
         # Try to capture variable name from caller's frame
         try:
             import inspect
@@ -2053,7 +2061,7 @@ class Function(object):
                         self._register_names[register_number] = var_name
         except:
             pass
-        
+
         return register_number
 
     def allocate_d_register(self):
@@ -2071,7 +2079,7 @@ class Function(object):
     def allocate_general_purpose_register(self):
         self.virtual_registers_count += 1
         register_number = (self.virtual_registers_count << 12) | 0x001
-        
+
         # Try to capture variable name from caller's frame
         try:
             import inspect
@@ -2087,7 +2095,7 @@ class Function(object):
                         self._register_names[register_number] = var_name
         except:
             pass  # If name capture fails, just continue without name
-        
+
         return register_number
 
     def allocate_p_register(self):
@@ -2461,5 +2469,5 @@ def print_live_registers(label=""):
     if active_function is None:
         print(f"Live registers {label}: No active function")
         return
-    
+
     active_function.print_live_registers(label)

@@ -545,5 +545,77 @@ class TestRustOutput(unittest.TestCase):
         self.assertIn('.extern memset', asm)
 
 
+class TestCodePrelude(unittest.TestCase):
+    """Tests for Function.code_prelude: raw, format-specific text with no section/AREA
+    directives of its own (e.g. an ADR-addressed constant table), which Function places
+    as the first thing inside its own code region for both GAS and ARMCC output."""
+
+    GAS_TABLE = "\t.align 3\nmy_table:\nLmy_table:\n\t.long 0xDEADBEEF"
+    ARMCC_TABLE = "        ALIGN    8\nmy_table\nLmy_table\n        DCD     0xDEADBEEF"
+
+    def _make_function_with_prelude(self, code_prelude, assembly_format=AssemblyFormat.GAS):
+        from nervapy.arm.registers import lr, r1
+        with Function('uses_table', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      assembly_format=assembly_format,
+                      is_thumb=True, report_generation=False) as f:
+            f.code_prelude = code_prelude
+            PUSH((lr,))
+            ADR(r1, 'my_table')
+            POP((lr,))
+            BX(lr)
+        return f
+
+    def test_default_code_prelude_is_empty(self):
+        """A function with no code_prelude assigned emits no extra text."""
+        with Function('no_prelude', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      report_generation=False) as f:
+            BX(r0)
+        self.assertIsNone(f.code_prelude)
+
+    # --- GAS ---
+
+    def test_gas_code_prelude_appears_after_text_directive(self):
+        """code_prelude is emitted right after the real `.text` directive (not before
+        `.syntax`/`.thumb`, and not inside a separate .data section)."""
+        f = self._make_function_with_prelude(self.GAS_TABLE, AssemblyFormat.GAS)
+        asm = f.assembly
+        self.assertIn(self.GAS_TABLE, asm)
+        self.assertGreater(asm.index('Lmy_table:'), asm.index('\t.text'))
+        self.assertLess(asm.index('Lmy_table:'), asm.index('.global uses_table'))
+        self.assertNotIn('.data', asm)
+
+    def test_gas_code_prelude_flows_into_global_asm_and_rust_module(self):
+        """code_prelude reaches the Rust global_asm!/rust_module output too, since both
+        are derived from the same GAS generator used for the plain .s output."""
+        f = self._make_function_with_prelude(self.GAS_TABLE, AssemblyFormat.GAS)
+        global_asm = f.global_asm
+        rust_module = f.rust_module
+        self.assertIn('Lmy_table:', global_asm)
+        self.assertIn('Lmy_table:', rust_module)
+        self.assertLess(global_asm.index('\t.text'), global_asm.index('Lmy_table:'))
+
+    # --- ARMCC ---
+
+    def test_armcc_code_prelude_appears_after_area_directive(self):
+        """code_prelude is emitted right after the function's own
+        `AREA ||.text||, CODE, READONLY` (not in a separate ||.data|| area)."""
+        f = self._make_function_with_prelude(self.ARMCC_TABLE, AssemblyFormat.ARMCC)
+        asm = f.assembly
+        self.assertIn(self.ARMCC_TABLE, asm)
+        self.assertGreater(asm.index('Lmy_table'), asm.index('AREA    ||.text||'))
+        self.assertLess(asm.index('Lmy_table'), asm.index('uses_table    PROC'))
+        self.assertNotIn('||.data||', asm)
+
+    def test_armcc_adr_resolves_against_prelude_label(self):
+        """ADR renders the same 'ADR rd, L<label>' text for ARMCC, so the prelude's
+        local alias must be present for the reference to resolve."""
+        f = self._make_function_with_prelude(self.ARMCC_TABLE, AssemblyFormat.ARMCC)
+        asm = f.assembly
+        self.assertIn('ADR r1, Lmy_table', asm)
+        self.assertIn('Lmy_table', asm)
+
+
 if __name__ == '__main__':
     unittest.main()
