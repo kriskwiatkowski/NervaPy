@@ -2,7 +2,7 @@
 
 [![Test NervaPy](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/test.yml/badge.svg)](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/test.yml)
 [![Code Quality](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/code-quality.yml/badge.svg)](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/code-quality.yml)
-[![Build and Release](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/release.yml/badge.svg)](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/release.yml)
+[![Publish to PyPI](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/publish.yml/badge.svg)](https://github.com/kriskwiatkowski/NervaPy/actions/workflows/publish.yml)
 
 **Framework for exploring advanced program synthesis and transformation techniques**
 
