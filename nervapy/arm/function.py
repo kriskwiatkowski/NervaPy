@@ -296,6 +296,18 @@ class Function(object):
             raise ValueError("Trying to detach a function while no function is active")
         active_function = None
         nervapy.stream.active_stream = None
+
+        # ConstantData.get_function_constants() is keyed by id(self), which
+        # CPython can reuse for an unrelated later Function once this one is
+        # garbage collected. Snapshot onto this instance and clear the global
+        # registry now, while the id is still unambiguously ours, so a later
+        # function can never inherit stale constants through id reuse.
+        try:
+            from nervapy.constant_data import ConstantData
+            self._constant_data_list = ConstantData.get_function_constants(self)
+            ConstantData.clear_function_constants(self)
+        except ImportError:
+            pass
         return self
 
     @property
@@ -328,7 +340,9 @@ class Function(object):
         """Generate .data section for ConstantData objects"""
         try:
             from nervapy.constant_data import ConstantData
-            constants = ConstantData.get_function_constants(self)
+            constants = getattr(self, '_constant_data_list', None)
+            if constants is None:
+                constants = ConstantData.get_function_constants(self)
             if not constants:
                 return ""
 
