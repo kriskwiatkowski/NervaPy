@@ -13,31 +13,42 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install bandit safety
+          # Pinned: bandit's [tool.bandit]/pyproject.toml support (used below)
+          # is version-dependent; verified working on 1.7.8 through 1.9.4 with
+          # Python 3.11, so pinning removes any ambiguity about what an
+          # unpinned future install would resolve to.
+          pip install bandit==1.9.4 pip-audit==2.10.1
           pip install -r requirements.txt
-      
-      - name: Run security checks with bandit
-        run: bandit -r nervapy/ -f json -o bandit-report.json || true
-        continue-on-error: true
+          pip install -r tests/requirements.txt
 
-      - name: Run safety checks
-        run: safety check --json --output safety-report.json || true
-        continue-on-error: true
+      - name: Run security checks with bandit
+        # -c pyproject.toml picks up [tool.bandit] (B101 suppression); bandit
+        # does not read pyproject.toml automatically unless told to.
+        run: bandit -r nervapy/ -c pyproject.toml -f json -o bandit-report.json
+
+      - name: Run dependency vulnerability checks with pip-audit
+        # pip-audit (PyPA's own tool, backed by OSV.dev) replaces safety here:
+        # no account/API key needed, unlike safety's "scan" command, and no
+        # deprecation warnings like safety's "check" command. tests/requirements.txt
+        # is installed above so this audits what CI actually resolved, not just
+        # what the unpinned ranges in the requirements files could resolve to.
+        run: pip-audit -r requirements.txt -r tests/requirements.txt -f json -o pip-audit-report.json
 
       - name: Upload security reports
+        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
             bandit-report.json
-            safety-report.json
+            pip-audit-report.json
 
   type-checking:
     runs-on: ubuntu-latest
