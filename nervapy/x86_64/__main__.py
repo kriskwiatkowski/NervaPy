@@ -313,7 +313,9 @@ def execute_script(writers, source_filename):
     else:
         with open(source_filename) as input_file:
             code = compile(input_file.read(), source_filename, "exec")
-            exec(code, globals())
+            # Running the user-supplied DSL script is this CLI's entire purpose
+            # (same trust model as `python source_filename`), not arbitrary input.
+            exec(code, globals())  # nosec B102
 
 
 def main():

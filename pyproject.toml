@@ -55,3 +55,12 @@ packages = ["nervapy"]
 [[tool.mypy.overrides]]
 module = "dynacl"
 ignore_missing_imports = true
+
+[tool.bandit]
+# B101 (assert_used): this codebase uses `assert` throughout as internal
+# precondition/invariant checks on its own API (e.g. argument type checks in
+# an assembler DSL), not as a security gate on untrusted external input, so
+# the "asserts are stripped under python -O" concern bandit flags doesn't
+# apply here. Suppressed project-wide rather than rewritten at ~290 call
+# sites across the codebase.
+skips = ["B101"]

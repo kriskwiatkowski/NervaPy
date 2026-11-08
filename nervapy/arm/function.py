@@ -2105,7 +2105,9 @@ class Function(object):
                     var_name = line.split('=')[0].strip()
                     if var_name and not var_name.startswith('#'):
                         self._register_names[register_number] = var_name
-        except:
+        # Best-effort debug name capture only; allocation must succeed even
+        # if introspection fails.
+        except Exception:  # nosec B110
             pass
 
         return register_number
@@ -2139,8 +2141,10 @@ class Function(object):
                     var_name = line.split('=')[0].strip()
                     if var_name and not var_name.startswith('#'):
                         self._register_names[register_number] = var_name
-        except:
-            pass  # If name capture fails, just continue without name
+        # Best-effort debug name capture only; allocation must succeed even
+        # if introspection fails.
+        except Exception:  # nosec B110
+            pass
 
         return register_number
 
