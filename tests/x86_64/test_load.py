@@ -33,4 +33,3 @@ class LoadAsm(unittest.TestCase):
         py_multiply = asm_multiply.finalize(abi.detect()).encode().load()
         assert py_multiply(2, 2.0) == 4.0
         assert py_multiply(2, 3.0) == 6.0
-

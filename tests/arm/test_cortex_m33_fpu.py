@@ -23,20 +23,20 @@ class TestCortexM33FPU(unittest.TestCase):
             assembly_format=AssemblyFormat.GAS,
             report_generation=False,
         ) as test_func:
-            (source, destination) = LOAD.ARGUMENTS()
+            source, destination = LOAD.ARGUMENTS()
             x = GeneralPurposeRegister()
             LDR(x, [source])
             STR(x, [destination])
             RETURN()
 
         assembly = test_func.assembly
-        
+
         # Verify correct architecture
         self.assertIn(".arch armv8-m.main", assembly)
-        
+
         # Should NOT have FPU directive when FPU is not used
         self.assertNotIn(".fpu", assembly)
-        
+
         # Verify NEON is NOT present (Cortex-M33 doesn't support NEON)
         self.assertNotIn("neon", assembly.lower())
 
@@ -53,7 +53,7 @@ class TestCortexM33FPU(unittest.TestCase):
             assembly_format=AssemblyFormat.GAS,
             report_generation=False,
         ) as test_func:
-            (source, destination) = LOAD.ARGUMENTS()
+            source, destination = LOAD.ARGUMENTS()
             x = GeneralPurposeRegister()
             LDR(x, [source])
             ADD(x, x, 1)
@@ -61,13 +61,13 @@ class TestCortexM33FPU(unittest.TestCase):
             RETURN()
 
         assembly = test_func.assembly
-        
+
         # Should have ARMv8-M architecture
         self.assertIn(".arch armv8-m.main", assembly)
-        
+
         # Should NOT emit FPU directive for integer-only code
         self.assertNotIn(".fpu", assembly)
-        
+
         # Must not have NEON
         self.assertNotIn("neon", assembly.lower())
 
@@ -84,14 +84,14 @@ class TestCortexM33FPU(unittest.TestCase):
             assembly_format=AssemblyFormat.GAS,
             report_generation=False,
         ) as test_func:
-            (source, destination) = LOAD.ARGUMENTS()
+            source, destination = LOAD.ARGUMENTS()
             x = GeneralPurposeRegister()
             LDR(x, [source])
             STR(x, [destination])
             RETURN()
 
         assembly = test_func.assembly
-        
+
         # Cortex-A15 should have NEON
         self.assertIn(".fpu neon-vfpv4", assembly)
 

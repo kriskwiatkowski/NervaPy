@@ -1,7 +1,7 @@
 from nervapy import *
 from nervapy.arm import *
-from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.abi import arm_gnueabi
+from nervapy.arm.microarchitecture import Microarchitecture
 
 with Function("test_overflow", (), target=Microarchitecture.CortexM33, abi=arm_gnueabi):
     # Create and USE 13 registers (which should exceed the limit)

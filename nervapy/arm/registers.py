@@ -1362,6 +1362,7 @@ q15 = QRegister("q15")
 
 class PRegister(Register):
     """MVE/Helium Predicate Register (P0-P7)"""
+
     MVEPredicateType = 4
 
     _name_to_number_map = {
@@ -1443,6 +1444,7 @@ p7 = PRegister("p7")
 
 class VPRRegister(Register):
     """MVE/Helium Vector Predicate Register (VPR)"""
+
     MVEVectorPredicateType = 5
 
     def __init__(self):

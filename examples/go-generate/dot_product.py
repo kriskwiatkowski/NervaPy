@@ -8,7 +8,9 @@ x = Argument(ptr(const_float_))
 y = Argument(ptr(const_float_))
 length = Argument(size_t)
 
-with Function("DotProduct", (x, y, length), float_, target=uarch.default + isa.fma3) as function:
+with Function(
+    "DotProduct", (x, y, length), float_, target=uarch.default + isa.fma3
+) as function:
     reg_x = GeneralPurposeRegister64()
     reg_y = GeneralPurposeRegister64()
     reg_length = GeneralPurposeRegister64()
@@ -27,21 +29,21 @@ with Function("DotProduct", (x, y, length), float_, target=uarch.default + isa.f
         xmm_acc = ymm_acc.as_xmm
         VXORPS(xmm_acc, xmm_acc, xmm_acc)
 
-    SUB(reg_length, 8*unroll_factor)
+    SUB(reg_length, 8 * unroll_factor)
     JB(vector_loop.end)
     with vector_loop:
         ymm_xs = [YMMRegister() for _ in range(unroll_factor)]
 
-        for (i, ymm_x) in enumerate(ymm_xs):
-            VMOVUPS(ymm_x, [reg_x + 32*i])
+        for i, ymm_x in enumerate(ymm_xs):
+            VMOVUPS(ymm_x, [reg_x + 32 * i])
 
-        for (i, (ymm_acc, ymm_x)) in enumerate(zip(ymm_accs, ymm_xs)):
-            VFMADD132PS(ymm_acc, ymm_x, [reg_y + 32*i])
+        for i, (ymm_acc, ymm_x) in enumerate(zip(ymm_accs, ymm_xs)):
+            VFMADD132PS(ymm_acc, ymm_x, [reg_y + 32 * i])
 
-        ADD(reg_x, 32*unroll_factor)
-        ADD(reg_y, 32*unroll_factor)
+        ADD(reg_x, 32 * unroll_factor)
+        ADD(reg_y, 32 * unroll_factor)
 
-        SUB(reg_length, 8*unroll_factor)
+        SUB(reg_length, 8 * unroll_factor)
         JAE(vector_loop.begin)
 
     # Reduction of multiple YMM registers into into YMM register
@@ -58,7 +60,7 @@ with Function("DotProduct", (x, y, length), float_, target=uarch.default + isa.f
     xmm_scalar_acc = XMMRegister()
     VXORPS(xmm_scalar_acc, xmm_scalar_acc, xmm_scalar_acc)
 
-    ADD(reg_length, 8*unroll_factor)
+    ADD(reg_length, 8 * unroll_factor)
     JZ(scalar_loop.end)
 
     with scalar_loop:
@@ -82,4 +84,3 @@ with Function("DotProduct", (x, y, length), float_, target=uarch.default + isa.f
     VHADDPS(xmm_acc, xmm_acc, xmm_acc)
 
     RETURN(xmm_acc)
-

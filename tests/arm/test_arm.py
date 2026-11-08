@@ -16,10 +16,15 @@ class TestARM(unittest.TestCase):
         # This optimized kernel will target Intel Nehalem processors. Any instructions which are not
         # supported on Intel Nehalem (e.g. AVX instructions) will generate an error. If you don't have
         # a particular target in mind, use "Unknown"
-        with Function("add_1", (source_arg, destination_arg, length_arg), abi=arm_gnueabihf, report_generation=False) as add_function:
+        with Function(
+            "add_1",
+            (source_arg, destination_arg, length_arg),
+            abi=arm_gnueabihf,
+            report_generation=False,
+        ) as add_function:
             # Load arguments into registers
 
-            (source, destination, length) = LOAD.ARGUMENTS()
+            source, destination, length = LOAD.ARGUMENTS()
 
             # Main processing loop. Length must be a multiple of 4.
             with Loop() as loop:

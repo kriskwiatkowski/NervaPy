@@ -32,12 +32,15 @@ def demonstrate_high_register_strategies():
     print(f"\n{'='*20} PUSH.W Strategy {'='*20}")
     print("Target: Cortex-M4, Format: GAS, Strategy: PUSH.W")
 
-    with Function("demo_push_w", tuple(args),
-                 target=Microarchitecture.CortexM4,
-                 abi=arm_gnueabihf,
-                 assembly_format=AssemblyFormat.GAS,
-                 high_register_strategy=HighRegisterStrategy.PUSH_W,
-                 report_generation=False) as func1:
+    with Function(
+        "demo_push_w",
+        tuple(args),
+        target=Microarchitecture.CortexM4,
+        abi=arm_gnueabihf,
+        assembly_format=AssemblyFormat.GAS,
+        high_register_strategy=HighRegisterStrategy.PUSH_W,
+        report_generation=False,
+    ) as func1:
 
         # Load all arguments
         loaded_args = LOAD.ARGUMENTS()
@@ -64,12 +67,15 @@ def demonstrate_high_register_strategies():
     print(f"\n{'='*20} STMDB Strategy {'='*20}")
     print("Target: Cortex-M3, Format: ARMCC, Strategy: STMDB")
 
-    with Function("demo_stmdb", tuple(args),
-                 target=Microarchitecture.CortexM3,
-                 abi=arm_gnueabihf,
-                 assembly_format=AssemblyFormat.ARMCC,
-                 high_register_strategy=HighRegisterStrategy.STMDB,
-                 report_generation=False) as func2:
+    with Function(
+        "demo_stmdb",
+        tuple(args),
+        target=Microarchitecture.CortexM3,
+        abi=arm_gnueabihf,
+        assembly_format=AssemblyFormat.ARMCC,
+        high_register_strategy=HighRegisterStrategy.STMDB,
+        report_generation=False,
+    ) as func2:
 
         # Same computation pattern
         loaded_args = LOAD.ARGUMENTS()
@@ -93,12 +99,15 @@ def demonstrate_high_register_strategies():
     print(f"\n{'='*20} AUTO Strategy {'='*20}")
     print("Target: Cortex-M7, Format: GAS, Strategy: AUTO → Should choose PUSH.W")
 
-    with Function("demo_auto", tuple(args),
-                 target=Microarchitecture.CortexM7,
-                 abi=arm_gnueabihf,
-                 assembly_format=AssemblyFormat.GAS,
-                 high_register_strategy=HighRegisterStrategy.AUTO,
-                 report_generation=False) as func3:
+    with Function(
+        "demo_auto",
+        tuple(args),
+        target=Microarchitecture.CortexM7,
+        abi=arm_gnueabihf,
+        assembly_format=AssemblyFormat.GAS,
+        high_register_strategy=HighRegisterStrategy.AUTO,
+        report_generation=False,
+    ) as func3:
 
         loaded_args = LOAD.ARGUMENTS()
 
@@ -127,11 +136,11 @@ def analyze_results(assembly1, assembly2, assembly3):
 
     def find_register_operations(assembly, title):
         print(f"\n{title}:")
-        lines = assembly.split('\n')
+        lines = assembly.split("\n")
 
-        push_ops = [line.strip() for line in lines if 'PUSH' in line]
-        pop_ops = [line.strip() for line in lines if 'POP' in line]
-        stm_ops = [line.strip() for line in lines if 'STM' in line or 'LDM' in line]
+        push_ops = [line.strip() for line in lines if "PUSH" in line]
+        pop_ops = [line.strip() for line in lines if "POP" in line]
+        stm_ops = [line.strip() for line in lines if "STM" in line or "LDM" in line]
 
         if push_ops:
             print(f"   PUSH operations: {push_ops}")
@@ -144,7 +153,11 @@ def analyze_results(assembly1, assembly2, assembly3):
             print("   ℹ  No register preservation needed (optimal!)")
 
         # Check for architecture directives
-        arch_lines = [line.strip() for line in lines if '.arch' in line or '.cpu' in line or '.fpu' in line]
+        arch_lines = [
+            line.strip()
+            for line in lines
+            if ".arch" in line or ".cpu" in line or ".fpu" in line
+        ]
         if arch_lines:
             print(f"   Architecture: {arch_lines}")
 
@@ -207,4 +220,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n**IMPLEMENTATION ERROR:** {e}")
         import traceback
+
         traceback.print_exc()

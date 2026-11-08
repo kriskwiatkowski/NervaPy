@@ -6,6 +6,7 @@ from tests import equal_codes
 
 class TestInvalidLabelName(unittest.TestCase):
     """Test that Label constructor rejects invalid names"""
+
     def runTest(self):
         with self.assertRaises(TypeError):
             Label(1)
@@ -21,6 +22,7 @@ class TestInvalidLabelName(unittest.TestCase):
 
 class TestAutonamedLabel(unittest.TestCase):
     """Test that Label name is parsed from Python code whenever possible"""
+
     def runTest(self):
         with Function("autonamed_label", tuple()) as function:
             skip_nop = Label()
@@ -42,6 +44,7 @@ skip_nop:
 
 class TestDuplicateNamedLabels(unittest.TestCase):
     """Test that defining an already defined label immediately produces an error"""
+
     def runTest(self):
         with Function("duplicate_labels", tuple()):
             label1 = Label("lbl")
@@ -54,6 +57,7 @@ class TestDuplicateNamedLabels(unittest.TestCase):
 
 class TestDuplicateAutonamedLabels(unittest.TestCase):
     """Test that conflicts in parsed label names resolve automatically"""
+
     def runTest(self):
         with Function("duplicate_autonamed_labels", tuple()) as function:
             # One "skip" label
@@ -91,12 +95,14 @@ skip1:
 skip0:
     RETURN
 """
-        assert equal_codes(code, ref_code0) or equal_codes(code, ref_code1), \
+        assert equal_codes(code, ref_code0) or equal_codes(code, ref_code1), (
             "Unexpected PeachPy code:\n" + code
+        )
 
 
 class TestUndefinedLabels(unittest.TestCase):
     """Test that referencing undefined labels produces an error"""
+
     def runTest(self):
         with self.assertRaises(ValueError):
             with Function("undefined_label", tuple()):
@@ -107,6 +113,7 @@ class TestUndefinedLabels(unittest.TestCase):
 
 class TestDefaultLabels(unittest.TestCase):
     """Test that entry label can be referenced even if it is not defined"""
+
     def runTest(self):
         with Function("jump_to_entry", tuple()) as function:
             JMP(function.entry)
@@ -115,6 +122,7 @@ class TestDefaultLabels(unittest.TestCase):
 
 class TestUnreferencedLabels(unittest.TestCase):
     """Test that unreferenced labels are removed from the function"""
+
     def runTest(self):
         with Function("unreferenced_labels", tuple()) as function:
             used_label = Label("used")

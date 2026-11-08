@@ -15,13 +15,16 @@ class TestARMv7M(unittest.TestCase):
         destination_arg = Argument(ptr(uint32_t))
         length_arg = Argument(size_t)
 
-        with Function("add_1", (source_arg, destination_arg, length_arg), 
-                     target=Microarchitecture.CortexM3,
-                     abi=arm_gnueabihf, 
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as add_function:
+        with Function(
+            "add_1",
+            (source_arg, destination_arg, length_arg),
+            target=Microarchitecture.CortexM3,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as add_function:
             # Load arguments into registers
-            (source, destination, length) = LOAD.ARGUMENTS()
+            source, destination, length = LOAD.ARGUMENTS()
 
             # Main processing loop. Length must be a multiple of 4.
             with Loop() as loop:
@@ -41,7 +44,7 @@ class TestARMv7M(unittest.TestCase):
         assembly = add_function.assembly
         print("Cortex-M3 GAS Assembly:")
         print(assembly)
-        
+
         # Verify ARMv7-M architecture specification
         self.assertIn(".arch armv7-m", assembly)
         # Verify function structure
@@ -59,26 +62,29 @@ class TestARMv7M(unittest.TestCase):
         result_arg = Argument(ptr(uint32_t))
         length_arg = Argument(size_t)
 
-        with Function("simple_add", (a_arg, b_arg, result_arg, length_arg), 
-                     target=Microarchitecture.CortexM4,
-                     abi=arm_gnueabihf, 
-                     assembly_format=AssemblyFormat.ARMCC,
-                     report_generation=False) as add_function:
+        with Function(
+            "simple_add",
+            (a_arg, b_arg, result_arg, length_arg),
+            target=Microarchitecture.CortexM4,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.ARMCC,
+            report_generation=False,
+        ) as add_function:
             # Load arguments into registers
-            (a, b, result, length) = LOAD.ARGUMENTS()
+            a, b, result, length = LOAD.ARGUMENTS()
 
             # Main processing loop
             with Loop() as loop:
                 val_a = GeneralPurposeRegister()
                 val_b = GeneralPurposeRegister()
                 val_result = GeneralPurposeRegister()
-                
+
                 LDR(val_a, [a], 4)
                 LDR(val_b, [b], 4)
-                
+
                 # Add values
                 ADD(val_result, val_a, val_b)
-                
+
                 STR(val_result, [result], 4)
 
                 SUBS(length, 4)
@@ -89,7 +95,7 @@ class TestARMv7M(unittest.TestCase):
         assembly = add_function.assembly
         print("\nCortex-M4 ARMCC Assembly:")
         print(assembly)
-        
+
         # Verify ARMCC format characteristics
         self.assertIn("AREA", assembly)
         self.assertIn(".text", assembly)
@@ -99,8 +105,12 @@ class TestARMv7M(unittest.TestCase):
         # Verify loop labels use underscores (no dots for ARMCC)
         self.assertIn("loop_begin", assembly)
         self.assertIn("loop_end", assembly)
-        self.assertNotIn(".begin", assembly, "Loop labels should not contain dots in ARMCC format")
-        self.assertNotIn(".end", assembly, "Loop labels should not contain dots in ARMCC format")
+        self.assertNotIn(
+            ".begin", assembly, "Loop labels should not contain dots in ARMCC format"
+        )
+        self.assertNotIn(
+            ".end", assembly, "Loop labels should not contain dots in ARMCC format"
+        )
 
     def test_cortex_m7_gas_assembly_with_dsp(self):
         """Test ARMv7-M assembly generation for Cortex-M7 with DSP extensions."""
@@ -109,22 +119,25 @@ class TestARMv7M(unittest.TestCase):
         output_arg = Argument(ptr(int32_t))
         length_arg = Argument(size_t)
 
-        with Function("dsp_process", (input_arg, output_arg, length_arg), 
-                     target=Microarchitecture.CortexM7,
-                     abi=arm_gnueabihf, 
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as dsp_function:
+        with Function(
+            "dsp_process",
+            (input_arg, output_arg, length_arg),
+            target=Microarchitecture.CortexM7,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as dsp_function:
             # Load arguments into registers
-            (input_ptr, output_ptr, length) = LOAD.ARGUMENTS()
+            input_ptr, output_ptr, length = LOAD.ARGUMENTS()
 
             # Simple processing loop
             with Loop() as loop:
                 value = GeneralPurposeRegister()
                 LDR(value, [input_ptr], 4)
-                
+
                 # Simple bit manipulation (shift left by 1)
                 LSL(value, value, 1)
-                
+
                 STR(value, [output_ptr], 4)
 
                 SUBS(length, 4)
@@ -135,12 +148,12 @@ class TestARMv7M(unittest.TestCase):
         assembly = dsp_function.assembly
         print("\nCortex-M7 GAS Assembly:")
         print(assembly)
-        
+
         # Verify ARMv7-M architecture
         self.assertIn(".arch armv7-m", assembly)
         # Verify VFPv4 support for M7
         self.assertIn(".fpu", assembly)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

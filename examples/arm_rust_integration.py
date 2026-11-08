@@ -32,17 +32,22 @@ from nervapy.arm.microarchitecture import Microarchitecture
 
 TARGET = Microarchitecture.CortexM33
 
+
 def generate_copy_words():
     """Copy n words from src to dst - equivalent to memcpy for aligned u32 arrays."""
     src_arg = Argument(ptr(const_uint32_t))
     dst_arg = Argument(ptr(uint32_t))
     n_arg = Argument(size_t)
 
-    with Function("copy_words", (src_arg, dst_arg, n_arg),
-                  target=TARGET, abi=arm_gnueabihf,
-                  report_generation=False) as f:
+    with Function(
+        "copy_words",
+        (src_arg, dst_arg, n_arg),
+        target=TARGET,
+        abi=arm_gnueabihf,
+        report_generation=False,
+    ) as f:
 
-        (src, dst, n) = LOAD.ARGUMENTS()
+        src, dst, n = LOAD.ARGUMENTS()
 
         with Loop() as loop:
             word = GeneralPurposeRegister()
@@ -61,11 +66,16 @@ def generate_accumulate():
     data_arg = Argument(ptr(const_uint32_t))
     n_arg = Argument(size_t)
 
-    with Function("accumulate", (data_arg, n_arg), uint32_t,
-                  target=TARGET, abi=arm_gnueabihf,
-                  report_generation=False) as f:
+    with Function(
+        "accumulate",
+        (data_arg, n_arg),
+        uint32_t,
+        target=TARGET,
+        abi=arm_gnueabihf,
+        report_generation=False,
+    ) as f:
 
-        (data, n) = LOAD.ARGUMENTS()
+        data, n = LOAD.ARGUMENTS()
         acc = GeneralPurposeRegister()
         MOV(acc, 0)
 
@@ -78,10 +88,12 @@ def generate_accumulate():
 
         # Move result into r0 (return register) then return
         from nervapy.arm.registers import r0
+
         MOV(r0, acc)
         RETURN()
 
     return f
+
 
 def write_global_asm_file(functions, path):
     """Write all functions as a Rust file with global_asm!() and typed externs (Option B)."""
@@ -98,4 +110,6 @@ if __name__ == "__main__":
     accum_fn = generate_accumulate()
     functions = [copy_fn, accum_fn]
 
-    write_global_asm_file(functions, os.path.join(os.path.dirname(__file__), "kernels.rs"))
+    write_global_asm_file(
+        functions, os.path.join(os.path.dirname(__file__), "kernels.rs")
+    )

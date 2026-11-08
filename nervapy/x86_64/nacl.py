@@ -6,8 +6,7 @@ import inspect
 
 import nervapy.stream
 from nervapy.x86_64.instructions import Instruction
-from nervapy.x86_64.operand import (check_operand, format_operand_type,
-                                    is_imm32, is_r32)
+from nervapy.x86_64.operand import check_operand, format_operand_type, is_imm32, is_r32
 
 # Permitted pseudo-instructions:
 #

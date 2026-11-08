@@ -100,14 +100,23 @@ def format_operand_type(operand):
     """Returns string representation of the operand type in assembly language"""
     from nervapy.util import is_int8, is_int16, is_int32, is_int64
     from nervapy.x86_64.pseudo import Label
-    from nervapy.x86_64.registers import (GeneralPurposeRegister8,
-                                          GeneralPurposeRegister16,
-                                          GeneralPurposeRegister32,
-                                          GeneralPurposeRegister64,
-                                          MaskedRegister, MMXRegister,
-                                          XMMRegister, YMMRegister,
-                                          ZMMRegister, al, ax, cl, eax, rax,
-                                          xmm0)
+    from nervapy.x86_64.registers import (
+        GeneralPurposeRegister8,
+        GeneralPurposeRegister16,
+        GeneralPurposeRegister32,
+        GeneralPurposeRegister64,
+        MaskedRegister,
+        MMXRegister,
+        XMMRegister,
+        YMMRegister,
+        ZMMRegister,
+        al,
+        ax,
+        cl,
+        eax,
+        rax,
+        xmm0,
+    )
 
     if is_int8(operand):
         return "imm8"
@@ -175,9 +184,13 @@ class MemoryAddress:
 
     def __init__(self, base=None, index=None, scale=None, displacement=0):
         from nervapy.util import is_int, is_sint32
-        from nervapy.x86_64.registers import (GeneralPurposeRegister64,
-                                              MaskedRegister, XMMRegister,
-                                              YMMRegister, ZMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister64,
+            MaskedRegister,
+            XMMRegister,
+            YMMRegister,
+            ZMMRegister,
+        )
 
         # Check individual arguments
         if base is not None and not isinstance(base, GeneralPurposeRegister64):
@@ -300,9 +313,13 @@ class MemoryOperand:
     def __init__(self, address, size=None, mask=None, broadcast=None):
         from nervapy.literal import Constant
         from nervapy.x86_64.function import LocalVariable
-        from nervapy.x86_64.registers import (GeneralPurposeRegister64,
-                                              MaskedRegister, XMMRegister,
-                                              YMMRegister, ZMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister64,
+            MaskedRegister,
+            XMMRegister,
+            YMMRegister,
+            ZMMRegister,
+        )
 
         assert (
             isinstance(

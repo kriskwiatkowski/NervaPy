@@ -338,8 +338,14 @@ def main():
     if options.name_mangling:
         nervapy.x86_64.options.name_mangling = options.name_mangling
 
-    from nervapy.writer import (AssemblyWriter, CHeaderWriter, ELFWriter,
-                                JSONMetadataWriter, MachOWriter, MSCOFFWriter)
+    from nervapy.writer import (
+        AssemblyWriter,
+        CHeaderWriter,
+        ELFWriter,
+        JSONMetadataWriter,
+        MachOWriter,
+        MSCOFFWriter,
+    )
 
     writers = []
     if nervapy.x86_64.options.generate_assembly:

@@ -632,14 +632,20 @@ class MovInstruction(Instruction):
             and source.is_general_purpose_register()
         ):
             pass
-        elif name in ("MOVW", "MOVT") and destination.is_general_purpose_register() and source.is_immediate():
+        elif (
+            name in ("MOVW", "MOVT")
+            and destination.is_general_purpose_register()
+            and source.is_immediate()
+        ):
             # MOVW and MOVT accept 16-bit immediate values
             imm_value = source.immediate
             if 0 <= imm_value <= 0xFFFF:
                 pass
             else:
                 raise ValueError(
-                    "MOVW/MOVT immediate must be 16-bit (0-65535), got {0}".format(imm_value)
+                    "MOVW/MOVT immediate must be 16-bit (0-65535), got {0}".format(
+                        imm_value
+                    )
                 )
         else:
             raise ValueError(
@@ -1260,6 +1266,7 @@ class TestTargetInstruction(Instruction):
 
     def __str__(self):
         return "{0} {1}, {2}".format(self.name, self.operands[0], self.operands[1])
+
 
 def BX(destination):
     instruction = BranchExchangeInstruction(Operand(destination))
@@ -7453,6 +7460,7 @@ def ROR(destination, source_x, source_y=None):
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
+
 def CMP(source_x, source_y):
     origin = (
         inspect.stack() if nervapy.arm.function.active_function.collect_origin else None
@@ -8824,33 +8832,33 @@ def LDMDB(base_register, register_list, writeback=False):
 def LDR(register, address=None, increment=None, literal=None, label=None):
     """
     Load Register instruction.
-    
+
     Two modes:
     1. Normal LDR: Load from memory address
        LDR(rd, [address], increment)
-       
+
     2. Literal pool LDR: Load constant using literal pool (pseudo-instruction)
        LDR(rd, literal=value)
        LDR(rd, literal=Literal(value, label="NAME"))
-       
+
     Args:
         register: Destination register
         address: Memory address (for normal LDR)
         increment: Optional offset/increment (for normal LDR)
         literal: Literal value to load (int, Literal, or ConstantData)
         label: Optional label for literal (deprecated, use Literal(value, label) instead)
-        
+
     Examples:
         # Normal LDR from memory
         LDR(r0, [r1])
         LDR(r0, [r1], 4)
-        
+
         # Load literal constant
         LDR(r0, literal=0x11111111)
-        
+
         # Load literal with custom label
         LDR(r0, literal=Literal(0x11111111, label="MASK"))
-        
+
         # Load from ConstantData
         magic = ConstantData.uint32(0x12345678, name="MAGIC")
         LDR(r0, literal=magic)
@@ -8862,7 +8870,10 @@ def LDR(register, address=None, increment=None, literal=None, label=None):
     # Handle LDR with literal pseudo-instruction: LDR rd, =value
     if literal is not None:
         from nervapy.arm.literal_pool import LiteralLoadInstruction
-        instruction = LiteralLoadInstruction(register, literal, label=label, origin=origin)
+
+        instruction = LiteralLoadInstruction(
+            register, literal, label=label, origin=origin
+        )
         if nervapy.stream.active_stream is not None:
             nervapy.stream.active_stream.add_instruction(instruction)
         return instruction
@@ -9080,8 +9091,10 @@ def _create_writeback_address(address, writeback):
     if not writeback:
         return address
 
-    from nervapy.arm.registers import (GeneralPurposeRegister,
-                                       GeneralPurposeRegisterWriteback)
+    from nervapy.arm.registers import (
+        GeneralPurposeRegister,
+        GeneralPurposeRegisterWriteback,
+    )
 
     # Address should be a list with base register and optional offset
     if not isinstance(address, list) or len(address) == 0:
@@ -9474,6 +9487,7 @@ def TTAT(destination, source):
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
+
 class BitFieldInstruction(Instruction):
     """BFI / BFC - bit-field insert / clear.
 
@@ -9491,7 +9505,10 @@ class BitFieldInstruction(Instruction):
                     name, ", ".join(sorted(allowed))
                 )
             )
-        if active_function and Extension.Thumb2 not in active_function.target.extensions:
+        if (
+            active_function
+            and Extension.Thumb2 not in active_function.target.extensions
+        ):
             raise ValueError(
                 "{0} requires Thumb-2 (ARMv7-M or ARMv8-M.main); "
                 "not available on the current target".format(name)
@@ -9571,12 +9588,17 @@ def BFI(destination, source, lsb, width):
         raise ValueError("BFI: source must be a general-purpose register")
     if not lsb_op.is_immediate() or not (0 <= lsb_op.immediate <= 31):
         raise ValueError("BFI: lsb must be an immediate in [0, 31]")
-    if not width_op.is_immediate() or not (1 <= width_op.immediate <= 32 - lsb_op.immediate):
+    if not width_op.is_immediate() or not (
+        1 <= width_op.immediate <= 32 - lsb_op.immediate
+    ):
         raise ValueError("BFI: width must be an immediate in [1, 32-lsb]")
-    instruction = BitFieldInstruction("BFI", [dst, src, lsb_op, width_op], origin=origin)
+    instruction = BitFieldInstruction(
+        "BFI", [dst, src, lsb_op, width_op], origin=origin
+    )
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
+
 
 def BFC(destination, lsb, width):
     """BFC - Bit Field Clear  (Thumb-2 / ARMv7-M, ARMv8-M.main).
@@ -9596,12 +9618,15 @@ def BFC(destination, lsb, width):
         raise ValueError("BFC: destination must be a general-purpose register")
     if not lsb_op.is_immediate() or not (0 <= lsb_op.immediate <= 31):
         raise ValueError("BFC: lsb must be an immediate in [0, 31]")
-    if not width_op.is_immediate() or not (1 <= width_op.immediate <= 32 - lsb_op.immediate):
+    if not width_op.is_immediate() or not (
+        1 <= width_op.immediate <= 32 - lsb_op.immediate
+    ):
         raise ValueError("BFC: width must be an immediate in [1, 32-lsb]")
     instruction = BitFieldInstruction("BFC", [dst, lsb_op, width_op], origin=origin)
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
+
 
 class CompareAndBranchInstruction(Instruction):
     """CBZ / CBNZ - compare and branch if (non-)zero without modifying flags.
@@ -9623,7 +9648,9 @@ class CompareAndBranchInstruction(Instruction):
             )
         if active_function and Extension.Thumb not in active_function.target.extensions:
             raise ValueError(
-                "{0} requires Thumb support; not available on the current target".format(name)
+                "{0} requires Thumb support; not available on the current target".format(
+                    name
+                )
             )
         super(CompareAndBranchInstruction, self).__init__(
             name, [register, destination], origin=origin
@@ -9681,6 +9708,7 @@ def CBNZ(source, destination):
     if nervapy.stream.active_stream is not None:
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
+
 
 class AdrInstruction(Instruction):
     """ADR - form PC-relative address.
@@ -9795,18 +9823,19 @@ class MultiplyLongInstruction(Instruction):
             self.operands[3],
         )
 
+
 def UMULL(register_low, register_high, source_x, source_y):
     """Unsigned Multiply Long - multiplies two 32-bit values to produce a 64-bit result.
-    
+
     Args:
         register_low: Destination register for the lower 32 bits of the result
         register_high: Destination register for the upper 32 bits of the result
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
-    
+
     Usage example:
         UMULL(r0, r1, r2, r3)  # r1:r0 = r2 * r3 (unsigned)
-    
+
     The result is 64-bit: {register_high, register_low} = source_x * source_y
     """
     origin = (
@@ -9827,16 +9856,16 @@ def UMULL(register_low, register_high, source_x, source_y):
 
 def UMLAL(register_low, register_high, source_x, source_y):
     """Unsigned Multiply Accumulate Long - multiplies two 32-bit values and adds to a 64-bit accumulator.
-    
+
     Args:
         register_low: Lower 32 bits of accumulator and destination
         register_high: Upper 32 bits of accumulator and destination
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
-    
+
     Usage example:
         UMLAL(r0, r1, r2, r3)  # r1:r0 += r2 * r3 (unsigned)
-    
+
     The result is 64-bit: {register_high, register_low} += source_x * source_y
     """
     origin = (
@@ -9857,16 +9886,16 @@ def UMLAL(register_low, register_high, source_x, source_y):
 
 def SMULL(register_low, register_high, source_x, source_y):
     """Signed Multiply Long - multiplies two 32-bit signed values to produce a 64-bit result.
-    
+
     Args:
         register_low: Destination register for the lower 32 bits of the result
         register_high: Destination register for the upper 32 bits of the result
         source_x: First 32-bit signed source operand
         source_y: Second 32-bit signed source operand
-    
+
     Usage example:
         SMULL(r0, r1, r2, r3)  # r1:r0 = r2 * r3 (signed)
-    
+
     The result is 64-bit: {register_high, register_low} = source_x * source_y
     """
     origin = (
@@ -9887,16 +9916,16 @@ def SMULL(register_low, register_high, source_x, source_y):
 
 def SMLAL(register_low, register_high, source_x, source_y):
     """Signed Multiply Accumulate Long - multiplies two 32-bit signed values and adds to a 64-bit accumulator.
-    
+
     Args:
         register_low: Lower 32 bits of accumulator and destination
         register_high: Upper 32 bits of accumulator and destination
         source_x: First 32-bit signed source operand
         source_y: Second 32-bit signed source operand
-    
+
     Usage example:
         SMLAL(r0, r1, r2, r3)  # r1:r0 += r2 * r3 (signed)
-    
+
     The result is 64-bit: {register_high, register_low} += source_x * source_y
     """
     origin = (
@@ -9917,16 +9946,16 @@ def SMLAL(register_low, register_high, source_x, source_y):
 
 def UMAAL(register_low, register_high, source_x, source_y):
     """Unsigned Multiply Accumulate Accumulate Long - multiplies two 32-bit values and adds two 32-bit accumulators.
-    
+
     Args:
         register_low: First 32-bit accumulator and lower 32 bits of destination
         register_high: Second 32-bit accumulator and upper 32 bits of destination
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
-    
+
     Usage example:
         UMAAL(r0, r1, r2, r3)  # r1:r0 = (r2 * r3) + r0 + r1 (unsigned)
-    
+
     The result is 64-bit: {register_high, register_low} = (source_x * source_y) + register_low + register_high
     Note: Available in ARMv6 and later
     """
@@ -9948,16 +9977,16 @@ def UMAAL(register_low, register_high, source_x, source_y):
 
 def UMAALGE(register_low, register_high, source_x, source_y):
     """Unsigned Multiply Accumulate Accumulate Long (Greater or Equal) - conditional UMAAL.
-    
+
     Args:
         register_low: First 32-bit accumulator and lower 32 bits of destination
         register_high: Second 32-bit accumulator and upper 32 bits of destination
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
-    
+
     Usage example:
         UMAALGE(r0, r1, r2, r3)  # if GE: r1:r0 = (r2 * r3) + r0 + r1 (unsigned)
-    
+
     Executes UMAAL only if the GE (Greater or Equal) condition is true.
     The result is 64-bit: {register_high, register_low} = (source_x * source_y) + register_low + register_high
     Note: Available in ARMv6 and later
@@ -9977,12 +10006,15 @@ def UMAALGE(register_low, register_high, source_x, source_y):
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
+
 class MultiplyInstruction(Instruction):
     """Basic multiply instructions (MUL, MLA, MLS)"""
 
     allowed_instructions = ["MUL", "MLA", "MLS"]
 
-    def __init__(self, name, destination, source_x, source_y, accumulator=None, origin=None):
+    def __init__(
+        self, name, destination, source_x, source_y, accumulator=None, origin=None
+    ):
         if name not in self.allowed_instructions:
             raise ValueError(
                 "Instruction {0} is not one of the allowed instructions ({1})".format(
@@ -10043,17 +10075,18 @@ class MultiplyInstruction(Instruction):
                 self.name, self.operands[0], self.operands[1], self.operands[2]
             )
 
+
 def MUL(destination, source_x, source_y):
     """Multiply - 32-bit multiplication.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
-    
+
     Usage example:
         MUL(r0, r1, r2)  # r0 = r1 * r2
-    
+
     The result is 32-bit (lower 32 bits of the product).
     """
     origin = (
@@ -10069,16 +10102,16 @@ def MUL(destination, source_x, source_y):
 
 def MLA(destination, source_x, source_y, accumulator):
     """Multiply Accumulate - multiplies two 32-bit values and adds an accumulator.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         MLA(r0, r1, r2, r3)  # r0 = (r1 * r2) + r3
-    
+
     The result is 32-bit: destination = (source_x * source_y) + accumulator
     """
     origin = (
@@ -10099,16 +10132,16 @@ def MLA(destination, source_x, source_y, accumulator):
 
 def MLS(destination, source_x, source_y, accumulator):
     """Multiply Subtract - multiplies two 32-bit values and subtracts from an accumulator.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
         accumulator: 32-bit accumulator value to subtract from
-    
+
     Usage example:
         MLS(r0, r1, r2, r3)  # r0 = r3 - (r1 * r2)
-    
+
     The result is 32-bit: destination = accumulator - (source_x * source_y)
     Note: Available in ARMv7 and later
     """
@@ -10127,24 +10160,43 @@ def MLS(destination, source_x, source_y, accumulator):
         nervapy.stream.active_stream.add_instruction(instruction)
     return instruction
 
+
 class DSPMultiplyInstruction(Instruction):
     """DSP multiply instructions (SMUL*, SMLA*, SMM*, SMLAD, SMLSD, etc.)"""
 
     # Instructions with 2 source operands + destination (3 total operands)
     two_operand_instructions = [
-        "SMMUL", "SMULTB", "SMULTBEQ", "SMULBB",
-        "SMULWB", "SMULWT", "SMUAD", "SMUSD", "SMUSDXNE"
+        "SMMUL",
+        "SMULTB",
+        "SMULTBEQ",
+        "SMULBB",
+        "SMULWB",
+        "SMULWT",
+        "SMUAD",
+        "SMUSD",
+        "SMUSDXNE",
     ]
 
     # Instructions with 2 source operands + accumulator + destination (4 total operands)
     three_operand_instructions = [
-        "SMMLA", "SMMLS", "SMLAD", "SMLSD", "SMLABBNE", "SMLABT",
-        "SMLAWT", "SMLAWB"
+        "SMMLA",
+        "SMMLS",
+        "SMLAD",
+        "SMLSD",
+        "SMLABBNE",
+        "SMLABT",
+        "SMLAWT",
+        "SMLAWB",
     ]
 
     # Instructions with 2 source operands + 64-bit accumulator (RdLo, RdHi) - 4 total operands
     long_accumulate_instructions = [
-        "SMLALD", "SMLSLD", "SMLALBB", "SMLALBT", "SMLALTT", "SMLALTB"
+        "SMLALD",
+        "SMLSLD",
+        "SMLALBB",
+        "SMLALBT",
+        "SMLALTT",
+        "SMLALTB",
     ]
 
     # WMMX instructions with 3 source operands (3 total operands)
@@ -10266,17 +10318,18 @@ class DSPMultiplyInstruction(Instruction):
         operands_str = ", ".join(str(op) for op in self.operands)
         return "{0} {1}".format(self.name, operands_str)
 
+
 def SMULTBEQ(destination, source_x, source_y):
     """Signed Multiply Top Bottom (conditional EQ) - multiplies signed halfwords.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (top halfword used)
         source_y: Second source operand (bottom halfword used)
-    
+
     Usage example:
         SMULTBEQ(r0, r1, r2)  # if EQ: r0 = r1[31:16] * r2[15:0] (signed)
-    
+
     Only executes if the EQ (Equal) condition is true.
     Note: Available in ARMv5TE and later (DSP extensions)
     """
@@ -10293,16 +10346,16 @@ def SMULTBEQ(destination, source_x, source_y):
 
 def SMLABBNE(destination, source_x, source_y, accumulator):
     """Signed Multiply Accumulate Bottom Bottom (conditional NE) - multiplies signed halfwords with accumulate.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (bottom halfword used)
         source_y: Second source operand (bottom halfword used)
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         SMLABBNE(r0, r1, r2, r3)  # if NE: r0 = (r1[15:0] * r2[15:0]) + r3 (signed)
-    
+
     Only executes if the NE (Not Equal) condition is true.
     Note: Available in ARMv5TE and later (DSP extensions)
     """
@@ -10319,16 +10372,16 @@ def SMLABBNE(destination, source_x, source_y, accumulator):
 
 def SMLABT(destination, source_x, source_y, accumulator):
     """Signed Multiply Accumulate Bottom Top - multiplies signed halfwords with accumulate.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (bottom halfword used)
         source_y: Second source operand (top halfword used)
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         SMLABT(r0, r1, r2, r3)  # r0 = (r1[15:0] * r2[31:16]) + r3 (signed)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10344,15 +10397,15 @@ def SMLABT(destination, source_x, source_y, accumulator):
 
 def SMMUL(destination, source_x, source_y):
     """Signed Most Significant Word Multiply - returns top 32 bits of signed 64-bit product.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit signed source operand
         source_y: Second 32-bit signed source operand
-    
+
     Usage example:
         SMMUL(r0, r1, r2)  # r0 = (r1 * r2)[63:32] (signed, top 32 bits)
-    
+
     Useful for fixed-point arithmetic.
     Note: Available in ARMv6 and later
     """
@@ -10369,16 +10422,16 @@ def SMMUL(destination, source_x, source_y):
 
 def SMMLA(destination, source_x, source_y, accumulator):
     """Signed Most Significant Word Multiply Accumulate.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit signed source operand
         source_y: Second 32-bit signed source operand
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         SMMLA(r0, r1, r2, r3)  # r0 = ((r1 * r2)[63:32]) + r3 (signed)
-    
+
     Note: Available in ARMv6 and later
     """
     origin = (
@@ -10394,16 +10447,16 @@ def SMMLA(destination, source_x, source_y, accumulator):
 
 def SMMLS(destination, source_x, source_y, accumulator):
     """Signed Most Significant Word Multiply Subtract.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit signed source operand
         source_y: Second 32-bit signed source operand
         accumulator: 32-bit accumulator value to subtract from
-    
+
     Usage example:
         SMMLS(r0, r1, r2, r3)  # r0 = r3 - ((r1 * r2)[63:32]) (signed)
-    
+
     Note: Available in ARMv6 and later
     """
     origin = (
@@ -10419,16 +10472,16 @@ def SMMLS(destination, source_x, source_y, accumulator):
 
 def SMLAD(destination, source_x, source_y, accumulator):
     """Signed Multiply Accumulate Dual - performs two 16-bit multiplies and accumulates.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values)
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         SMLAD(r0, r1, r2, r3)  # r0 = (r1[15:0] * r2[15:0]) + (r1[31:16] * r2[31:16]) + r3
-    
+
     Note: Available in ARMv6 and later (SIMD extensions)
     """
     origin = (
@@ -10444,16 +10497,16 @@ def SMLAD(destination, source_x, source_y, accumulator):
 
 def SMLSD(destination, source_x, source_y, accumulator):
     """Signed Multiply Subtract Dual - performs two 16-bit multiplies and subtracts.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values)
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         SMLSD(r0, r1, r2, r3)  # r0 = (r1[15:0] * r2[15:0]) - (r1[31:16] * r2[31:16]) + r3
-    
+
     Note: Available in ARMv6 and later (SIMD extensions)
     """
     origin = (
@@ -10469,16 +10522,16 @@ def SMLSD(destination, source_x, source_y, accumulator):
 
 def SMLALD(dest_low, dest_high, source_x, source_y):
     """Signed Multiply Accumulate Long Dual - 64-bit accumulate of two 16-bit products.
-    
+
     Args:
         dest_low: Lower 32 bits of accumulator and destination
         dest_high: Upper 32 bits of accumulator and destination
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values)
-    
+
     Usage example:
         SMLALD(r0, r1, r2, r3)  # r1:r0 += (r2[15:0] * r3[15:0]) + (r2[31:16] * r3[31:16])
-    
+
     Note: Available in ARMv6 and later (SIMD extensions)
     """
     origin = (
@@ -10494,16 +10547,16 @@ def SMLALD(dest_low, dest_high, source_x, source_y):
 
 def SMLSLD(dest_low, dest_high, source_x, source_y):
     """Signed Multiply Subtract Long Dual - 64-bit accumulate with subtraction.
-    
+
     Args:
         dest_low: Lower 32 bits of accumulator and destination
         dest_high: Upper 32 bits of accumulator and destination
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values)
-    
+
     Usage example:
         SMLSLD(r0, r1, r2, r3)  # r1:r0 += (r2[15:0] * r3[15:0]) - (r2[31:16] * r3[31:16])
-    
+
     Note: Available in ARMv6 and later (SIMD extensions)
     """
     origin = (
@@ -10519,15 +10572,15 @@ def SMLSLD(dest_low, dest_high, source_x, source_y):
 
 def MIA(accumulator, source_x, source_y):
     """Multiply with Internal Accumulate (WMMX) - 32-bit multiply with 64-bit accumulate.
-    
+
     Args:
         accumulator: WMMX accumulator register (wcgr0-wcgr3)
         source_x: First 32-bit source operand
         source_y: Second 32-bit source operand
-    
+
     Usage example:
         MIA(wcgr0, r1, r2)  # wcgr0 += r1 * r2 (64-bit accumulate)
-    
+
     Note: Wireless MMX (WMMX) instruction, Intel XScale processors
     """
     origin = (
@@ -10543,15 +10596,15 @@ def MIA(accumulator, source_x, source_y):
 
 def MIAPH(accumulator, source_x, source_y):
     """Multiply with Internal Accumulate Packed Halfwords (WMMX).
-    
+
     Args:
         accumulator: WMMX accumulator register (wcgr0-wcgr3)
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values)
-    
+
     Usage example:
         MIAPH(wcgr0, r1, r2)  # wcgr0 += (r1[15:0] * r2[15:0]) + (r1[31:16] * r2[31:16])
-    
+
     Note: Wireless MMX (WMMX) instruction, Intel XScale processors
     """
     origin = (
@@ -10565,18 +10618,17 @@ def MIAPH(accumulator, source_x, source_y):
     return instruction
 
 
-
 def SMULWB(destination, source_x, source_y):
     """Signed Multiply Word by Halfword Bottom.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit signed source operand
         source_y: Second source operand (bottom halfword used)
-    
+
     Usage example:
         SMULWB(r0, r1, r2)  # r0 = (r1 * r2[15:0])[47:16] (signed, top 32 bits of 48-bit product)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10592,15 +10644,15 @@ def SMULWB(destination, source_x, source_y):
 
 def SMULWT(destination, source_x, source_y):
     """Signed Multiply Word by Halfword Top.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit signed source operand
         source_y: Second source operand (top halfword used)
-    
+
     Usage example:
         SMULWT(r0, r1, r2)  # r0 = (r1 * r2[31:16])[47:16] (signed, top 32 bits of 48-bit product)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10616,16 +10668,16 @@ def SMULWT(destination, source_x, source_y):
 
 def SMLAWT(destination, source_x, source_y, accumulator):
     """Signed Multiply Accumulate Word by Halfword Top.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit signed source operand
         source_y: Second source operand (top halfword used)
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         SMLAWT(r0, r1, r2, r3)  # r0 = ((r1 * r2[31:16])[47:16]) + r3 (signed)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10641,16 +10693,16 @@ def SMLAWT(destination, source_x, source_y, accumulator):
 
 def SMLAWB(destination, source_x, source_y, accumulator):
     """Signed Multiply Accumulate Word by Halfword Bottom.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First 32-bit signed source operand
         source_y: Second source operand (bottom halfword used)
         accumulator: 32-bit accumulator value to add
-    
+
     Usage example:
         SMLAWB(r0, r1, r2, r3)  # r0 = ((r1 * r2[15:0])[47:16]) + r3 (signed)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10666,16 +10718,16 @@ def SMLAWB(destination, source_x, source_y, accumulator):
 
 def SMLALBB(dest_low, dest_high, source_x, source_y):
     """Signed Multiply Accumulate Long Bottom Bottom - 64-bit accumulate.
-    
+
     Args:
         dest_low: Lower 32 bits of accumulator and destination
         dest_high: Upper 32 bits of accumulator and destination
         source_x: First source operand (bottom halfword used)
         source_y: Second source operand (bottom halfword used)
-    
+
     Usage example:
         SMLALBB(r0, r1, r2, r3)  # r1:r0 += r2[15:0] * r3[15:0] (signed)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10691,16 +10743,16 @@ def SMLALBB(dest_low, dest_high, source_x, source_y):
 
 def SMLALBT(dest_low, dest_high, source_x, source_y):
     """Signed Multiply Accumulate Long Bottom Top - 64-bit accumulate.
-    
+
     Args:
         dest_low: Lower 32 bits of accumulator and destination
         dest_high: Upper 32 bits of accumulator and destination
         source_x: First source operand (bottom halfword used)
         source_y: Second source operand (top halfword used)
-    
+
     Usage example:
         SMLALBT(r0, r1, r2, r3)  # r1:r0 += r2[15:0] * r3[31:16] (signed)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10716,16 +10768,16 @@ def SMLALBT(dest_low, dest_high, source_x, source_y):
 
 def SMLALTT(dest_low, dest_high, source_x, source_y):
     """Signed Multiply Accumulate Long Top Top - 64-bit accumulate.
-    
+
     Args:
         dest_low: Lower 32 bits of accumulator and destination
         dest_high: Upper 32 bits of accumulator and destination
         source_x: First source operand (top halfword used)
         source_y: Second source operand (top halfword used)
-    
+
     Usage example:
         SMLALTT(r0, r1, r2, r3)  # r1:r0 += r2[31:16] * r3[31:16] (signed)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10741,16 +10793,16 @@ def SMLALTT(dest_low, dest_high, source_x, source_y):
 
 def SMLALTB(dest_low, dest_high, source_x, source_y):
     """Signed Multiply Accumulate Long Top Bottom - 64-bit accumulate.
-    
+
     Args:
         dest_low: Lower 32 bits of accumulator and destination
         dest_high: Upper 32 bits of accumulator and destination
         source_x: First source operand (top halfword used)
         source_y: Second source operand (bottom halfword used)
-    
+
     Usage example:
         SMLALTB(r0, r1, r2, r3)  # r1:r0 += r2[31:16] * r3[15:0] (signed)
-    
+
     Note: Available in ARMv5TE and later (DSP extensions)
     """
     origin = (
@@ -10766,15 +10818,15 @@ def SMLALTB(dest_low, dest_high, source_x, source_y):
 
 def SMUAD(destination, source_x, source_y):
     """Signed Dual Multiply Add - performs two 16-bit multiplies and adds results.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values)
-    
+
     Usage example:
         SMUAD(r0, r1, r2)  # r0 = (r1[15:0] * r2[15:0]) + (r1[31:16] * r2[31:16])
-    
+
     Note: Available in ARMv6 and later (SIMD extensions)
     """
     origin = (
@@ -10790,15 +10842,15 @@ def SMUAD(destination, source_x, source_y):
 
 def SMUSD(destination, source_x, source_y):
     """Signed Dual Multiply Subtract - performs two 16-bit multiplies and subtracts.
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values)
-    
+
     Usage example:
         SMUSD(r0, r1, r2)  # r0 = (r1[15:0] * r2[15:0]) - (r1[31:16] * r2[31:16])
-    
+
     Note: Available in ARMv6 and later (SIMD extensions)
     """
     origin = (
@@ -10814,15 +10866,15 @@ def SMUSD(destination, source_x, source_y):
 
 def SMUSDXNE(destination, source_x, source_y):
     """Signed Dual Multiply Subtract Exchanged (conditional NE).
-    
+
     Args:
         destination: Destination register for the result
         source_x: First source operand (two packed 16-bit values)
         source_y: Second source operand (two packed 16-bit values, exchanged)
-    
+
     Usage example:
         SMUSDXNE(r0, r1, r2)  # if NE: r0 = (r1[15:0] * r2[31:16]) - (r1[31:16] * r2[15:0])
-    
+
     Only executes if the NE (Not Equal) condition is true.
     Note: Available in ARMv6 and later (SIMD extensions)
     """

@@ -16,12 +16,15 @@ class TestARMv8MBase(unittest.TestCase):
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
 
-        with Function("copy_words", (src_arg, dst_arg, len_arg),
-                      target=Microarchitecture.CortexM23,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "copy_words",
+            (src_arg, dst_arg, len_arg),
+            target=Microarchitecture.CortexM23,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
 
             with Loop() as loop:
                 val = GeneralPurposeRegister()
@@ -43,12 +46,15 @@ class TestARMv8MBase(unittest.TestCase):
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
 
-        with Function("copy_words_armcc", (src_arg, dst_arg, len_arg),
-                      target=Microarchitecture.CortexM23,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.ARMCC,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "copy_words_armcc",
+            (src_arg, dst_arg, len_arg),
+            target=Microarchitecture.CortexM23,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.ARMCC,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
 
             with Loop() as loop:
                 val = GeneralPurposeRegister()
@@ -74,12 +80,15 @@ class TestARMv8MMain(unittest.TestCase):
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
 
-        with Function("add_one", (src_arg, dst_arg, len_arg),
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "add_one",
+            (src_arg, dst_arg, len_arg),
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
 
             with Loop() as loop:
                 val = GeneralPurposeRegister()
@@ -101,12 +110,15 @@ class TestARMv8MMain(unittest.TestCase):
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
 
-        with Function("add_one_armcc", (src_arg, dst_arg, len_arg),
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.ARMCC,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "add_one_armcc",
+            (src_arg, dst_arg, len_arg),
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.ARMCC,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
 
             with Loop() as loop:
                 val = GeneralPurposeRegister()
@@ -130,12 +142,15 @@ class TestARMv8MMain(unittest.TestCase):
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
 
-        with Function("process", (src_arg, dst_arg, len_arg),
-                      target=Microarchitecture.CortexM35P,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "process",
+            (src_arg, dst_arg, len_arg),
+            target=Microarchitecture.CortexM35P,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
 
             with Loop() as loop:
                 val = GeneralPurposeRegister()
@@ -155,11 +170,15 @@ class TestARMv8MMain(unittest.TestCase):
         from nervapy.arm.registers import lr, r4, r5
 
         with self.assertRaises(ValueError) as ctx:
-            with Function("misaligned_m33", (), None,
-                          target=Microarchitecture.CortexM33,
-                          abi=arm_gnueabihf,
-                          assembly_format=AssemblyFormat.GAS,
-                          report_generation=False) as f:
+            with Function(
+                "misaligned_m33",
+                (),
+                None,
+                target=Microarchitecture.CortexM33,
+                abi=arm_gnueabihf,
+                assembly_format=AssemblyFormat.GAS,
+                report_generation=False,
+            ) as f:
                 ext_fn = IMPORT.FUNCTION("some_func")
                 # Prologue adds PUSH {r3, r4} = 8 bytes (aligned)
                 # This adds 4 more bytes making +12 total (misaligned)
@@ -175,11 +194,15 @@ class TestARMv8MMain(unittest.TestCase):
         from nervapy.arm.pseudo import IMPORT
         from nervapy.arm.registers import lr, r4, r5
 
-        with Function("aligned_m33", (), None,
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
+        with Function(
+            "aligned_m33",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
             ext_fn = IMPORT.FUNCTION("helper_func")
             # Prologue adds PUSH {r3, r4} = 8 bytes; adding 8 more = aligned
             PUSH((r4, r5))
@@ -200,12 +223,15 @@ class TestARMv8_1MMain(unittest.TestCase):
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
 
-        with Function("m55_process", (src_arg, dst_arg, len_arg),
-                      target=Microarchitecture.CortexM55,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "m55_process",
+            (src_arg, dst_arg, len_arg),
+            target=Microarchitecture.CortexM55,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
 
             with Loop() as loop:
                 val = GeneralPurposeRegister()
@@ -226,12 +252,15 @@ class TestARMv8_1MMain(unittest.TestCase):
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
 
-        with Function("m85_process", (src_arg, dst_arg, len_arg),
-                      target=Microarchitecture.CortexM85,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "m85_process",
+            (src_arg, dst_arg, len_arg),
+            target=Microarchitecture.CortexM85,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
 
             with Loop() as loop:
                 val = GeneralPurposeRegister()
@@ -256,11 +285,14 @@ class TestARMv8MSecurityInstructions(unittest.TestCase):
         # and emitted in the assembly
         result_arg = Argument(ptr(uint32_t))
 
-        with Function("secure_entry", (result_arg,),
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
+        with Function(
+            "secure_entry",
+            (result_arg,),
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
             (result,) = LOAD.ARGUMENTS()
             SG()
             val = GeneralPurposeRegister()
@@ -276,11 +308,14 @@ class TestARMv8MSecurityInstructions(unittest.TestCase):
         """SG instruction is accepted on Cortex-M23 (ARMv8-M.base with TrustZone)."""
         result_arg = Argument(ptr(uint32_t))
 
-        with Function("secure_entry_m23", (result_arg,),
-                      target=Microarchitecture.CortexM23,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
+        with Function(
+            "secure_entry_m23",
+            (result_arg,),
+            target=Microarchitecture.CortexM23,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
             (result,) = LOAD.ARGUMENTS()
             SG()
             val = GeneralPurposeRegister()
@@ -297,11 +332,14 @@ class TestARMv8MSecurityInstructions(unittest.TestCase):
         result_arg = Argument(ptr(uint32_t))
 
         with self.assertRaises(ValueError):
-            with Function("no_trustzone", (result_arg,),
-                          target=Microarchitecture.CortexM7,
-                          abi=arm_gnueabihf,
-                          assembly_format=AssemblyFormat.GAS,
-                          report_generation=False) as f:
+            with Function(
+                "no_trustzone",
+                (result_arg,),
+                target=Microarchitecture.CortexM7,
+                abi=arm_gnueabihf,
+                assembly_format=AssemblyFormat.GAS,
+                report_generation=False,
+            ) as f:
                 (result,) = LOAD.ARGUMENTS()
                 SG()
                 RETURN()
@@ -310,11 +348,15 @@ class TestARMv8MSecurityInstructions(unittest.TestCase):
         """BXNS instruction is emitted in Cortex-M33 function."""
         from nervapy.arm.registers import lr
 
-        with Function("secure_return", (), None,
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
+        with Function(
+            "secure_return",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
             SG()
             # Return to non-secure caller via BXNS lr
             BXNS(lr)
@@ -327,12 +369,15 @@ class TestARMv8MSecurityInstructions(unittest.TestCase):
         addr_arg = Argument(ptr(uint32_t))
         result_arg = Argument(ptr(uint32_t))
 
-        with Function("query_addr", (addr_arg, result_arg),
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
-            (addr, result) = LOAD.ARGUMENTS()
+        with Function(
+            "query_addr",
+            (addr_arg, result_arg),
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
+            addr, result = LOAD.ARGUMENTS()
             attr = GeneralPurposeRegister()
             TT(attr, addr)
             STR(attr, [result])
@@ -345,11 +390,14 @@ class TestARMv8MSecurityInstructions(unittest.TestCase):
         """BLXNS instruction is accepted on Cortex-M33."""
         fn_ptr_arg = Argument(ptr(uint32_t))
 
-        with Function("call_nonsecure", (fn_ptr_arg,),
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
+        with Function(
+            "call_nonsecure",
+            (fn_ptr_arg,),
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
             (fn_ptr,) = LOAD.ARGUMENTS()
             BLXNS(fn_ptr)
             RETURN()
@@ -362,12 +410,15 @@ class TestARMv8MSecurityInstructions(unittest.TestCase):
         addr_arg = Argument(ptr(uint32_t))
         result_arg = Argument(ptr(uint32_t))
 
-        with Function("query_all_tt", (addr_arg, result_arg),
-                      target=Microarchitecture.CortexM33,
-                      abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      report_generation=False) as f:
-            (addr, result) = LOAD.ARGUMENTS()
+        with Function(
+            "query_all_tt",
+            (addr_arg, result_arg),
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as f:
+            addr, result = LOAD.ARGUMENTS()
             attr = GeneralPurposeRegister()
             TTA(attr, addr)
             TTT(attr, addr)
@@ -387,6 +438,7 @@ class TestARMv8MExtensions(unittest.TestCase):
     def test_v8mbase_in_m23_extensions(self):
         """Cortex-M23 target has V8MBase in its extensions."""
         from nervapy.arm.isa import Extension
+
         target = Microarchitecture.CortexM23
         self.assertIn(Extension.V8MBase, target.extensions)
         self.assertIn(Extension.TrustZone, target.extensions)
@@ -394,6 +446,7 @@ class TestARMv8MExtensions(unittest.TestCase):
     def test_v8mmain_in_m33_extensions(self):
         """Cortex-M33 target has V8MMain (and V7M via prerequisites) in extensions."""
         from nervapy.arm.isa import Extension
+
         target = Microarchitecture.CortexM33
         self.assertIn(Extension.V8MMain, target.extensions)
         self.assertIn(Extension.V7M, target.extensions)
@@ -405,6 +458,7 @@ class TestARMv8MExtensions(unittest.TestCase):
     def test_v8_1mmain_in_m55_extensions(self):
         """Cortex-M55 target has V8_1MMain and MVE extensions."""
         from nervapy.arm.isa import Extension
+
         target = Microarchitecture.CortexM55
         self.assertIn(Extension.V8_1MMain, target.extensions)
         self.assertIn(Extension.V8MMain, target.extensions)
@@ -414,6 +468,7 @@ class TestARMv8MExtensions(unittest.TestCase):
     def test_v8mmain_not_in_m7_extensions(self):
         """Cortex-M7 target does not have V8MMain."""
         from nervapy.arm.isa import Extension
+
         target = Microarchitecture.CortexM7
         self.assertNotIn(Extension.V8MMain, target.extensions)
         self.assertNotIn(Extension.V8MBase, target.extensions)
@@ -422,6 +477,7 @@ class TestARMv8MExtensions(unittest.TestCase):
     def test_m23_not_full_thumb2(self):
         """Cortex-M23 (ARMv8-M.base) does not have V7M."""
         from nervapy.arm.isa import Extension
+
         target = Microarchitecture.CortexM23
         self.assertNotIn(Extension.V7M, target.extensions)
 
@@ -433,10 +489,14 @@ class TestRustOutput(unittest.TestCase):
         src_arg = Argument(ptr(const_uint32_t))
         dst_arg = Argument(ptr(uint32_t))
         len_arg = Argument(size_t)
-        with Function('copy_words', (src_arg, dst_arg, len_arg),
-                      target=target, abi=arm_gnueabihf,
-                      report_generation=False) as f:
-            (src, dst, length) = LOAD.ARGUMENTS()
+        with Function(
+            "copy_words",
+            (src_arg, dst_arg, len_arg),
+            target=target,
+            abi=arm_gnueabihf,
+            report_generation=False,
+        ) as f:
+            src, dst, length = LOAD.ARGUMENTS()
             with Loop() as loop:
                 val = GeneralPurposeRegister()
                 LDR(val, [src], 4)
@@ -449,10 +509,15 @@ class TestRustOutput(unittest.TestCase):
     def _make_accumulate(self, target):
         data_arg = Argument(ptr(const_uint32_t))
         n_arg = Argument(size_t)
-        with Function('accumulate', (data_arg, n_arg), uint32_t,
-                      target=target, abi=arm_gnueabihf,
-                      report_generation=False) as f:
-            (data, n) = LOAD.ARGUMENTS()
+        with Function(
+            "accumulate",
+            (data_arg, n_arg),
+            uint32_t,
+            target=target,
+            abi=arm_gnueabihf,
+            report_generation=False,
+        ) as f:
+            data, n = LOAD.ARGUMENTS()
             acc = GeneralPurposeRegister()
             MOV(acc, 0)
             with Loop() as loop:
@@ -472,35 +537,41 @@ class TestRustOutput(unittest.TestCase):
         self.assertTrue(out.startswith('core::arch::global_asm!(r#"'))
         self.assertTrue(out.rstrip().endswith('"#);'))
         # Assembly content is present inside the macro
-        self.assertIn('copy_words:', out)
-        self.assertIn('.arch armv8-m.main', out)
+        self.assertIn("copy_words:", out)
+        self.assertIn(".arch armv8-m.main", out)
 
     def test_global_asm_matches_escaped_gas_assembly(self):
         """global_asm content is Rust-escaped GAS assembly."""
         f = self._make_copy_words(Microarchitecture.CortexM33)
         gas = f.assembly
         global_asm = f.global_asm
-        self.assertIn(gas.replace('{', '{{').replace('}', '}}'), global_asm)
+        self.assertIn(gas.replace("{", "{{").replace("}", "}}"), global_asm)
 
     def test_global_asm_escapes_register_lists(self):
         """global_asm escapes braces so register lists are valid Rust asm templates."""
         from nervapy.arm.registers import lr, r4, r5
-        with Function('push_pop', (), None,
-                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
-                      report_generation=False) as f:
+
+        with Function(
+            "push_pop",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            report_generation=False,
+        ) as f:
             PUSH((r4, r5))
             POP((r4, r5))
             BX(lr)
 
         out = f.global_asm
-        self.assertIn('{{r4, r5}}', out)
+        self.assertIn("{{r4, r5}}", out)
 
     def test_rust_extern_declaration_for_arguments(self):
         """rust_extern_declaration maps pointer and size arguments to Rust FFI types."""
         f = self._make_copy_words(Microarchitecture.CortexM33)
         self.assertEqual(
             f.rust_extern_declaration,
-            'pub fn copy_words(src: *const u32, dst: *mut u32, len: usize);'
+            "pub fn copy_words(src: *const u32, dst: *mut u32, len: usize);",
         )
 
     def test_rust_extern_declaration_for_return_value(self):
@@ -508,7 +579,7 @@ class TestRustOutput(unittest.TestCase):
         f = self._make_accumulate(Microarchitecture.CortexM33)
         self.assertEqual(
             f.rust_extern_declaration,
-            'pub fn accumulate(data: *const u32, n: usize) -> u32;'
+            "pub fn accumulate(data: *const u32, n: usize) -> u32;",
         )
 
     def test_rust_module_combines_asm_and_extern(self):
@@ -517,32 +588,39 @@ class TestRustOutput(unittest.TestCase):
         out = f.rust_module
         self.assertIn('core::arch::global_asm!(r#"', out)
         self.assertIn('unsafe extern "C" {', out)
-        self.assertIn('pub fn accumulate(data: *const u32, n: usize) -> u32;', out)
+        self.assertIn("pub fn accumulate(data: *const u32, n: usize) -> u32;", out)
 
     def test_gas_output_usable_as_s_file(self):
         """GAS output has directives required for a Rust .s file."""
         f = self._make_copy_words(Microarchitecture.CortexM33)
         asm = f.assembly
-        self.assertIn('.syntax unified', asm)
-        self.assertIn('.arch armv8-m.main', asm)
-        self.assertIn('.global copy_words', asm)
-        self.assertIn('.type copy_words, %function', asm)
+        self.assertIn(".syntax unified", asm)
+        self.assertIn(".arch armv8-m.main", asm)
+        self.assertIn(".global copy_words", asm)
+        self.assertIn(".type copy_words, %function", asm)
 
     def test_gas_extern_for_external_function(self):
         """GAS output emits .extern for external function calls."""
         from nervapy.arm.pseudo import IMPORT
         from nervapy.arm.registers import lr, r4, r5
-        with Function('call_external', (), None,
-                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
-                      report_generation=False) as f:
-            ext = IMPORT.FUNCTION('memset')
+
+        with Function(
+            "call_external",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            report_generation=False,
+        ) as f:
+            ext = IMPORT.FUNCTION("memset")
             PUSH((r4, r5))
             BL(ext)
             POP((r4, r5))
             BX(lr)
 
         asm = f.assembly
-        self.assertIn('.extern memset', asm)
+        self.assertIn(".extern memset", asm)
+
 
 class TestCodePrelude(unittest.TestCase):
     """Tests for Function.code_prelude: raw, format-specific text with no section/AREA
@@ -552,24 +630,38 @@ class TestCodePrelude(unittest.TestCase):
     GAS_TABLE = "\t.align 3\nmy_table:\nLmy_table:\n\t.long 0xDEADBEEF"
     ARMCC_TABLE = "        ALIGN    8\nmy_table\nLmy_table\n        DCD     0xDEADBEEF"
 
-    def _make_function_with_prelude(self, code_prelude, assembly_format=AssemblyFormat.GAS):
+    def _make_function_with_prelude(
+        self, code_prelude, assembly_format=AssemblyFormat.GAS
+    ):
         from nervapy.arm.registers import lr, r1
-        with Function('uses_table', (), None,
-                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
-                      assembly_format=assembly_format,
-                      is_thumb=True, report_generation=False) as f:
+
+        with Function(
+            "uses_table",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=assembly_format,
+            is_thumb=True,
+            report_generation=False,
+        ) as f:
             f.code_prelude = code_prelude
             PUSH((lr,))
-            ADR(r1, 'my_table')
+            ADR(r1, "my_table")
             POP((lr,))
             BX(lr)
         return f
 
     def test_default_code_prelude_is_empty(self):
         """A function with no code_prelude assigned emits no extra text."""
-        with Function('no_prelude', (), None,
-                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
-                      report_generation=False) as f:
+        with Function(
+            "no_prelude",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            report_generation=False,
+        ) as f:
             BX(r0)
         self.assertIsNone(f.code_prelude)
 
@@ -581,9 +673,9 @@ class TestCodePrelude(unittest.TestCase):
         f = self._make_function_with_prelude(self.GAS_TABLE, AssemblyFormat.GAS)
         asm = f.assembly
         self.assertIn(self.GAS_TABLE, asm)
-        self.assertGreater(asm.index('Lmy_table:'), asm.index('\t.text'))
-        self.assertLess(asm.index('Lmy_table:'), asm.index('.global uses_table'))
-        self.assertNotIn('.data', asm)
+        self.assertGreater(asm.index("Lmy_table:"), asm.index("\t.text"))
+        self.assertLess(asm.index("Lmy_table:"), asm.index(".global uses_table"))
+        self.assertNotIn(".data", asm)
 
     def test_gas_code_prelude_flows_into_global_asm_and_rust_module(self):
         """code_prelude reaches the Rust global_asm!/rust_module output too, since both
@@ -591,9 +683,9 @@ class TestCodePrelude(unittest.TestCase):
         f = self._make_function_with_prelude(self.GAS_TABLE, AssemblyFormat.GAS)
         global_asm = f.global_asm
         rust_module = f.rust_module
-        self.assertIn('Lmy_table:', global_asm)
-        self.assertIn('Lmy_table:', rust_module)
-        self.assertLess(global_asm.index('\t.text'), global_asm.index('Lmy_table:'))
+        self.assertIn("Lmy_table:", global_asm)
+        self.assertIn("Lmy_table:", rust_module)
+        self.assertLess(global_asm.index("\t.text"), global_asm.index("Lmy_table:"))
 
     # --- ARMCC ---
 
@@ -603,17 +695,19 @@ class TestCodePrelude(unittest.TestCase):
         f = self._make_function_with_prelude(self.ARMCC_TABLE, AssemblyFormat.ARMCC)
         asm = f.assembly
         self.assertIn(self.ARMCC_TABLE, asm)
-        self.assertGreater(asm.index('Lmy_table'), asm.index('AREA    ||.text||'))
-        self.assertLess(asm.index('Lmy_table'), asm.index('uses_table    PROC'))
-        self.assertNotIn('||.data||', asm)
+        self.assertGreater(asm.index("Lmy_table"), asm.index("AREA    ||.text||"))
+        self.assertLess(asm.index("Lmy_table"), asm.index("uses_table    PROC"))
+        self.assertNotIn("||.data||", asm)
 
     def test_armcc_adr_resolves_against_prelude_label(self):
         """ADR renders the same 'ADR rd, L<label>' text for ARMCC, so the prelude's
         local alias must be present for the reference to resolve."""
         f = self._make_function_with_prelude(self.ARMCC_TABLE, AssemblyFormat.ARMCC)
         asm = f.assembly
-        self.assertIn('ADR r1, Lmy_table', asm)
-        self.assertIn('Lmy_table', asm)
+        self.assertIn("ADR r1, Lmy_table", asm)
+        self.assertIn("Lmy_table", asm)
+
+
 class TestEntryLabelEmission(unittest.TestCase):
     """Tests for generate_assembly(emit_entry_label=...), which lets a caller (e.g.
     ArmAssemblyWriter, packing several functions into one file) suppress just the
@@ -621,10 +715,17 @@ class TestEntryLabelEmission(unittest.TestCase):
 
     def _make_function_with_loop(self, assembly_format):
         from nervapy.arm.registers import lr, r4, r5
-        with Function('loopy', (), None,
-                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
-                      assembly_format=assembly_format,
-                      is_thumb=True, report_generation=False) as f:
+
+        with Function(
+            "loopy",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=assembly_format,
+            is_thumb=True,
+            report_generation=False,
+        ) as f:
             PUSH((r4, r5))
             with Loop() as loop:
                 SUBS(r4, 1)
@@ -636,35 +737,42 @@ class TestEntryLabelEmission(unittest.TestCase):
     def test_gas_entry_label_emitted_by_default(self):
         f = self._make_function_with_loop(AssemblyFormat.GAS)
         asm = f.generate_assembly()
-        self.assertIn('Lloopy.ENTRY:', asm)
+        self.assertIn("Lloopy.ENTRY:", asm)
 
     def test_gas_entry_label_suppressed(self):
         """Only the ENTRY label is dropped; other labels (e.g. the loop) stay."""
         f = self._make_function_with_loop(AssemblyFormat.GAS)
         asm = f.generate_assembly(emit_entry_label=False)
-        self.assertNotIn('Lloopy.ENTRY:', asm)
-        self.assertIn('Lloopy.', asm)  # the loop's own label is still present
+        self.assertNotIn("Lloopy.ENTRY:", asm)
+        self.assertIn("Lloopy.", asm)  # the loop's own label is still present
 
     def test_armcc_entry_label_emitted_by_default(self):
         f = self._make_function_with_loop(AssemblyFormat.ARMCC)
         asm = f.generate_assembly()
-        self.assertIn('loopy_ENTRY', asm)
+        self.assertIn("loopy_ENTRY", asm)
 
     def test_armcc_entry_label_suppressed(self):
         """Only the ENTRY label is dropped; other labels (e.g. the loop) stay."""
         f = self._make_function_with_loop(AssemblyFormat.ARMCC)
         asm = f.generate_assembly(emit_entry_label=False)
-        self.assertNotIn('loopy_ENTRY', asm)
-        self.assertIn('loopy_', asm)  # the loop's own label is still present
+        self.assertNotIn("loopy_ENTRY", asm)
+        self.assertIn("loopy_", asm)  # the loop's own label is still present
 
     def _make_function_with_conditional_label(self, assembly_format):
         from nervapy.arm.pseudo import Label
         from nervapy.arm.registers import lr, r4
-        with Function('condy', (), None,
-                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
-                      assembly_format=assembly_format,
-                      is_thumb=True, report_generation=False) as f:
-            skip = Label('skip')
+
+        with Function(
+            "condy",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=assembly_format,
+            is_thumb=True,
+            report_generation=False,
+        ) as f:
+            skip = Label("skip")
             CMP(r4, 0)
             BEQ(skip)
             SUBS(r4, 1)
@@ -677,46 +785,55 @@ class TestEntryLabelEmission(unittest.TestCase):
         ENTRY suppression too."""
         f = self._make_function_with_conditional_label(AssemblyFormat.GAS)
         asm = f.generate_assembly(emit_entry_label=False)
-        self.assertNotIn('Lcondy.ENTRY:', asm)
-        self.assertIn('Lcondy.skip:', asm)
-        self.assertIn('BEQ Lcondy.skip', asm)
+        self.assertNotIn("Lcondy.ENTRY:", asm)
+        self.assertIn("Lcondy.skip:", asm)
+        self.assertIn("BEQ Lcondy.skip", asm)
 
     def test_armcc_entry_label_suppressed_with_conditional_label(self):
         f = self._make_function_with_conditional_label(AssemblyFormat.ARMCC)
         asm = f.generate_assembly(emit_entry_label=False)
-        self.assertNotIn('condy_ENTRY', asm)
-        self.assertIn('condy_skip', asm)
-        self.assertIn('BEQ condy_skip', asm)
+        self.assertNotIn("condy_ENTRY", asm)
+        self.assertIn("condy_skip", asm)
+        self.assertIn("BEQ condy_skip", asm)
 
     def test_gas_entry_label_suppressed_with_constants_section(self):
         """ENTRY suppression must not disturb the literal pool / constants
         section emitted after the function body."""
         from nervapy.arm.literal_pool import Literal
         from nervapy.arm.registers import lr, r4
-        with Function('consty', (), None,
-                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
-                      assembly_format=AssemblyFormat.GAS,
-                      is_thumb=True, report_generation=False) as f:
-            LDR(r4, literal=Literal(0x11111111, label='MY_CONSTANT'))
+
+        with Function(
+            "consty",
+            (),
+            None,
+            target=Microarchitecture.CortexM33,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            is_thumb=True,
+            report_generation=False,
+        ) as f:
+            LDR(r4, literal=Literal(0x11111111, label="MY_CONSTANT"))
             BX(lr)
         asm = f.generate_assembly(emit_entry_label=False)
-        self.assertNotIn('Lconsty.ENTRY:', asm)
-        self.assertIn('MY_CONSTANT:', asm)
-        self.assertIn('.word 0x11111111', asm)
+        self.assertNotIn("Lconsty.ENTRY:", asm)
+        self.assertIn("MY_CONSTANT:", asm)
+        self.assertIn(".word 0x11111111", asm)
 
     def test_writer_packed_functions_each_keep_non_entry_labels(self):
         """End-to-end through ArmAssemblyWriter: ENTRY is suppressed for both
         packed functions, but each function's own loop/branch label survives."""
         from nervapy.writer import ArmAssemblyWriter
+
         w = ArmAssemblyWriter(None, assembly_format=AssemblyFormat.GAS)
         w.add_function(self._make_function_with_loop(AssemblyFormat.GAS))
         w.add_function(self._make_function_with_conditional_label(AssemblyFormat.GAS))
         out = w.serialize()
 
-        self.assertNotIn('Lloopy.ENTRY:', out)
-        self.assertNotIn('Lcondy.ENTRY:', out)
-        self.assertIn('Lloopy.', out)
-        self.assertIn('Lcondy.skip:', out)
+        self.assertNotIn("Lloopy.ENTRY:", out)
+        self.assertNotIn("Lcondy.ENTRY:", out)
+        self.assertIn("Lloopy.", out)
+        self.assertIn("Lcondy.skip:", out)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

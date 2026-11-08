@@ -129,17 +129,21 @@ class ArmAssemblyWriter(TextWriter):
     def add_function(self, function):
         import nervapy.arm.function
 
-        assert isinstance(function, nervapy.arm.function.Function), \
-            "Function must be an ARM Function"
+        assert isinstance(
+            function, nervapy.arm.function.Function
+        ), "Function must be an ARM Function"
         function_format = self._normalize_format(function.assembly_format)
         if function_format != self.assembly_format:
             raise ValueError(
                 "Function '%s' was built with assembly_format=%s but this "
                 "writer emits %s; generate_assembly() dispatches on the "
                 "function's own format, so packing it here would mix "
-                "%s syntax into a %s file." % (
-                    function.name, function.assembly_format,
-                    self.assembly_format, function.assembly_format,
+                "%s syntax into a %s file."
+                % (
+                    function.name,
+                    function.assembly_format,
+                    self.assembly_format,
+                    function.assembly_format,
                     self.assembly_format,
                 )
             )
@@ -160,19 +164,25 @@ class ArmAssemblyWriter(TextWriter):
         if other.is_thumb != first.is_thumb:
             mismatches.append("is_thumb (%r vs %r)" % (first.is_thumb, other.is_thumb))
         if other.preserve8 != first.preserve8:
-            mismatches.append("preserve8 (%r vs %r)" % (first.preserve8, other.preserve8))
+            mismatches.append(
+                "preserve8 (%r vs %r)" % (first.preserve8, other.preserve8)
+            )
         if other.gnu_arch_spec != first.gnu_arch_spec:
-            mismatches.append("gnu_arch_spec (%r vs %r)" % (first.gnu_arch_spec, other.gnu_arch_spec))
+            mismatches.append(
+                "gnu_arch_spec (%r vs %r)" % (first.gnu_arch_spec, other.gnu_arch_spec)
+            )
         if other.armcc_fpu_spec != first.armcc_fpu_spec:
-            mismatches.append("armcc_fpu_spec (%r vs %r)" % (first.armcc_fpu_spec, other.armcc_fpu_spec))
+            mismatches.append(
+                "armcc_fpu_spec (%r vs %r)"
+                % (first.armcc_fpu_spec, other.armcc_fpu_spec)
+            )
         if mismatches:
             raise ValueError(
                 "Function '%s' disagrees with function '%s' on %s. Functions "
                 "packed into one ArmAssemblyWriter share a single file-level "
                 "preamble and must agree on these; pass an explicit "
-                "file_preamble= to override this check." % (
-                    other.name, first.name, ", ".join(mismatches)
-                )
+                "file_preamble= to override this check."
+                % (other.name, first.name, ", ".join(mismatches))
             )
 
     def _default_preamble(self):
@@ -185,9 +195,10 @@ class ArmAssemblyWriter(TextWriter):
             lines = []
             if function.is_thumb:
                 lines.append("        THUMB")
-            lines.append("        AREA    ||.text||, CODE, READONLY" +
-                         (", ALIGN={0}".format(alignment)
-                          if alignment > 0 else ""))
+            lines.append(
+                "        AREA    ||.text||, CODE, READONLY"
+                + (", ALIGN={0}".format(alignment) if alignment > 0 else "")
+            )
             if function.preserve8:
                 lines.append("        PRESERVE8")
             if function.armcc_fpu_spec:
@@ -297,8 +308,7 @@ class ELFWriter(ImageWriter):
             )
 
         # Map from symbol name to symbol index
-        from nervapy.formats.elf.symbol import (Symbol, SymbolBinding,
-                                                SymbolType)
+        from nervapy.formats.elf.symbol import Symbol, SymbolBinding, SymbolType
 
         symbol_map = dict()
         for symbol in encoded_function.const_section.symbols:
@@ -314,16 +324,14 @@ class ELFWriter(ImageWriter):
 
         if encoded_function.code_section.relocations:
             if self.text_rela_section is None:
-                from nervapy.formats.elf.section import \
-                    RelocationsWithAddendSection
+                from nervapy.formats.elf.section import RelocationsWithAddendSection
 
                 self.text_rela_section = RelocationsWithAddendSection(
                     self.text_section, self.image.symtab
                 )
                 self.image.add_section(self.text_rela_section)
 
-            from nervapy.formats.elf.symbol import (RelocationType,
-                                                    RelocationWithAddend)
+            from nervapy.formats.elf.symbol import RelocationType, RelocationWithAddend
 
             for relocation in encoded_function.code_section.relocations:
                 elf_relocation = RelocationWithAddend(
@@ -363,9 +371,14 @@ class MachOWriter(ImageWriter):
             function, nervapy.x86_64.function.ABIFunction
         ), "Function must be finalized with an ABI before its assembly can be used"
 
-        from nervapy.formats.macho.symbol import (Relocation, RelocationType,
-                                                  Symbol, SymbolDescription,
-                                                  SymbolType, SymbolVisibility)
+        from nervapy.formats.macho.symbol import (
+            Relocation,
+            RelocationType,
+            Symbol,
+            SymbolDescription,
+            SymbolType,
+            SymbolVisibility,
+        )
         from nervapy.util import roundup
 
         encoded_function = function.encode()
@@ -453,8 +466,7 @@ class MSCOFFWriter(ImageWriter):
     def __init__(self, output_path, abi, input_path=None):
         super(MSCOFFWriter, self).__init__(output_path)
 
-        from nervapy.formats.mscoff import (Image, ReadOnlyDataSection,
-                                            TextSection)
+        from nervapy.formats.mscoff import Image, ReadOnlyDataSection, TextSection
 
         self.output_path = output_path
         self.abi = abi
@@ -473,8 +485,13 @@ class MSCOFFWriter(ImageWriter):
         assert isinstance(
             function, nervapy.x86_64.function.ABIFunction
         ), "Function must be finalized with an ABI before its assembly can be used"
-        from nervapy.formats.mscoff import (Relocation, RelocationType,
-                                            StorageClass, Symbol, SymbolType)
+        from nervapy.formats.mscoff import (
+            Relocation,
+            RelocationType,
+            StorageClass,
+            Symbol,
+            SymbolType,
+        )
         from nervapy.util import roundup
 
         encoded_function = function.encode()

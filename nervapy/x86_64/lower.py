@@ -5,8 +5,12 @@ from nervapy.x86_64.avx import VMOVAPD, VMOVAPS, VMOVDQA, VMOVSD, VMOVSS
 from nervapy.x86_64.generic import MOV, MOVSX, MOVSXD, MOVZX
 from nervapy.x86_64.mmxsse import MOVAPD, MOVAPS, MOVDQA, MOVQ, MOVSD, MOVSS
 from nervapy.x86_64.operand import byte, dword, word
-from nervapy.x86_64.registers import (GeneralPurposeRegister, MMXRegister,
-                                      XMMRegister, YMMRegister)
+from nervapy.x86_64.registers import (
+    GeneralPurposeRegister,
+    MMXRegister,
+    XMMRegister,
+    YMMRegister,
+)
 
 
 def load_register(dst_reg, src_reg, data_type, prototype):

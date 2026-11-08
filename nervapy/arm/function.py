@@ -304,6 +304,7 @@ class Function(object):
         # function can never inherit stale constants through id reuse.
         try:
             from nervapy.constant_data import ConstantData
+
             self._constant_data_list = ConstantData.get_function_constants(self)
             ConstantData.clear_function_constants(self)
         except ImportError:
@@ -340,13 +341,15 @@ class Function(object):
         """Generate .data section for ConstantData objects"""
         try:
             from nervapy.constant_data import ConstantData
-            constants = getattr(self, '_constant_data_list', None)
+
+            constants = getattr(self, "_constant_data_list", None)
             if constants is None:
                 constants = ConstantData.get_function_constants(self)
             if not constants:
                 return ""
 
             import os
+
             lines = []
             lines.append("")
             lines.append("\t.data")
@@ -356,7 +359,6 @@ class Function(object):
             return os.linesep.join(lines)
         except ImportError:
             return ""
-
 
     @property
     def global_asm(self):
@@ -424,7 +426,7 @@ class Function(object):
 
     @property
     def rust_extern(self):
-        return "unsafe extern \"C\" {{\n    {0}\n}}\n".format(
+        return 'unsafe extern "C" {{\n    {0}\n}}\n'.format(
             self.rust_extern_declaration
         )
 
@@ -523,14 +525,16 @@ class Function(object):
                 assembly += "\t" + str(instruction) + os.linesep
             elif isinstance(instruction, LabelQuasiInstruction):
                 if emit_entry_label or instruction.name != "ENTRY":
-                    assembly += "L{0}.{1}:".format(self.name, instruction.name) + os.linesep
+                    assembly += (
+                        "L{0}.{1}:".format(self.name, instruction.name) + os.linesep
+                    )
             else:
                 assembly += "\t" + str(instruction) + os.linesep
 
         # Generate literal pool if present
-        if hasattr(self, 'literal_pool') and self.literal_pool.entries:
+        if hasattr(self, "literal_pool") and self.literal_pool.entries:
             assembly += os.linesep
-            assembly += self.literal_pool.generate_assembly(format='gas') + os.linesep
+            assembly += self.literal_pool.generate_assembly(format="gas") + os.linesep
 
         assembly += os.linesep
         return assembly
@@ -619,14 +623,16 @@ class Function(object):
                 assembly += "        " + str(instruction) + os.linesep
             elif isinstance(instruction, LabelQuasiInstruction):
                 if emit_entry_label or instruction.name != "ENTRY":
-                    assembly += "{0}_{1}".format(self.name, instruction.name) + os.linesep
+                    assembly += (
+                        "{0}_{1}".format(self.name, instruction.name) + os.linesep
+                    )
             else:
                 assembly += "        " + str(instruction) + os.linesep
 
         # Generate literal pool if present
-        if hasattr(self, 'literal_pool') and self.literal_pool.entries:
+        if hasattr(self, "literal_pool") and self.literal_pool.entries:
             assembly += os.linesep
-            assembly += self.literal_pool.generate_assembly(format='armcc') + os.linesep
+            assembly += self.literal_pool.generate_assembly(format="armcc") + os.linesep
 
         assembly += "        ENDP" + os.linesep
         if emit_file_preamble:
@@ -683,7 +689,9 @@ class Function(object):
                 return ".fpu fpv5-sp-d16"
             else:
                 return None
-        elif Extension.NEON2 in isa_extensions or (Extension.VFP4 in isa_extensions and Extension.NEON in isa_extensions):
+        elif Extension.NEON2 in isa_extensions or (
+            Extension.VFP4 in isa_extensions and Extension.NEON in isa_extensions
+        ):
             return ".fpu neon-vfpv4"
         elif (
             Extension.NEONHP in isa_extensions
@@ -922,8 +930,10 @@ class Function(object):
     def determine_live_registers(self, exclude_parameter_loads=False):
         from nervapy.arm.generic import BranchInstruction
         from nervapy.arm.instructions import Instruction
-        from nervapy.arm.pseudo import (LabelQuasiInstruction,
-                                        LoadArgumentPseudoInstruction)
+        from nervapy.arm.pseudo import (
+            LabelQuasiInstruction,
+            LoadArgumentPseudoInstruction,
+        )
         from nervapy.arm.registers import Register
 
         self.determine_branches()
@@ -1001,10 +1011,10 @@ class Function(object):
 
     def print_live_registers(self, label=""):
         """Mark this point for live register analysis.
-        
+
         This marks the current instruction position for live register analysis
         which will be performed after all instructions are generated.
-        
+
         Args:
             label: Optional label to identify the location in code
         """
@@ -1022,12 +1032,16 @@ class Function(object):
 
     def _report_live_registers_at_markers(self):
         """Report live registers at all marked points.
-        
+
         This is called after liveness analysis has been performed on all instructions.
         """
         from nervapy.arm.instructions import Instruction
-        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
-                                           QRegister, SRegister)
+        from nervapy.arm.registers import (
+            DRegister,
+            GeneralPurposeRegister,
+            QRegister,
+            SRegister,
+        )
 
         for instr_obj, label in self._live_register_markers:
             if instr_obj is None:
@@ -1035,12 +1049,18 @@ class Function(object):
                 continue
 
             # Get live registers from the instruction (computed by determine_live_registers)
-            live_regs = instr_obj.live_registers if hasattr(instr_obj, 'live_registers') else set()
+            live_regs = (
+                instr_obj.live_registers
+                if hasattr(instr_obj, "live_registers")
+                else set()
+            )
 
             if not live_regs:
                 print(f"Live registers {label}: None")
             else:
-                gp_regs = [r for r in live_regs if isinstance(r, GeneralPurposeRegister)]
+                gp_regs = [
+                    r for r in live_regs if isinstance(r, GeneralPurposeRegister)
+                ]
                 s_regs = [r for r in live_regs if isinstance(r, SRegister)]
                 d_regs = [r for r in live_regs if isinstance(r, DRegister)]
                 q_regs = [r for r in live_regs if isinstance(r, QRegister)]
@@ -1060,13 +1080,21 @@ class Function(object):
 
                 print(f"Live registers {label}:")
                 if gp_regs:
-                    print(f"  GP ({len(gp_regs)}): {', '.join(format_reg(r, 'gp') for r in sorted(gp_regs, key=lambda x: (x.id, x.mask)))}")
+                    print(
+                        f"  GP ({len(gp_regs)}): {', '.join(format_reg(r, 'gp') for r in sorted(gp_regs, key=lambda x: (x.id, x.mask)))}"
+                    )
                 if s_regs:
-                    print(f"  S ({len(s_regs)}): {', '.join(format_reg(r, 's') for r in sorted(s_regs, key=lambda x: (x.id, x.mask)))}")
+                    print(
+                        f"  S ({len(s_regs)}): {', '.join(format_reg(r, 's') for r in sorted(s_regs, key=lambda x: (x.id, x.mask)))}"
+                    )
                 if d_regs:
-                    print(f"  D ({len(d_regs)}): {', '.join(format_reg(r, 'd') for r in sorted(d_regs, key=lambda x: (x.id, x.mask)))}")
+                    print(
+                        f"  D ({len(d_regs)}): {', '.join(format_reg(r, 'd') for r in sorted(d_regs, key=lambda x: (x.id, x.mask)))}"
+                    )
                 if q_regs:
-                    print(f"  Q ({len(q_regs)}): {', '.join(format_reg(r, 'q') for r in sorted(q_regs, key=lambda x: (x.id, x.mask)))}")
+                    print(
+                        f"  Q ({len(q_regs)}): {', '.join(format_reg(r, 'q') for r in sorted(q_regs, key=lambda x: (x.id, x.mask)))}"
+                    )
 
     # 		all_registers = self.abi.volatile_registers + list(reversed(self.abi.argument_registers)) + self.abi.callee_save_registers
     # 		available_registers = { Register.GPType: list(), Register.WMMXType: list(), Register.VFPType: list() }
@@ -1085,10 +1113,11 @@ class Function(object):
     def determine_register_relations(self):
         from nervapy import RegisterAllocationError
         from nervapy.arm.instructions import Instruction
-        from nervapy.arm.registers import (DRegister, QRegister, Register,
-                                           SRegister)
-        from nervapy.arm.vfpneon import (NeonLoadStoreInstruction,
-                                         VFPLoadStoreMultipleInstruction)
+        from nervapy.arm.registers import DRegister, QRegister, Register, SRegister
+        from nervapy.arm.vfpneon import (
+            NeonLoadStoreInstruction,
+            VFPLoadStoreMultipleInstruction,
+        )
 
         all_registers = (
             self.abi.volatile_registers
@@ -1116,7 +1145,10 @@ class Function(object):
                 # Also include output registers that may not be in live_registers
                 # (e.g., dead code outputs that are written but never read)
                 for output_reg in instruction.get_output_registers_list():
-                    if output_reg.is_virtual and output_reg not in virtual_live_registers:
+                    if (
+                        output_reg.is_virtual
+                        and output_reg not in virtual_live_registers
+                    ):
                         virtual_live_registers.append(output_reg)
 
                 for registerX in virtual_live_registers:
@@ -1493,7 +1525,9 @@ class Function(object):
         # This gives us accurate counts for error messages
         self._vr_counts_by_type = {}
         for reg_type in [Register.GPType, Register.VFPType, Register.WMMXType]:
-            self._vr_counts_by_type[reg_type] = self._count_virtual_registers_by_type(reg_type)
+            self._vr_counts_by_type[reg_type] = self._count_virtual_registers_by_type(
+                reg_type
+            )
 
         # Map from virtual register id to physical register
         register_allocation = dict()
@@ -1589,8 +1623,13 @@ class Function(object):
                         "Register allocation failed: No available physical registers for virtual register list %s (type: %s).\n"
                         "Your code uses %d virtual %s registers, but only ~%d physical registers are available.\n"
                         "To fix: reduce the number of registers used in your Python code."
-                        % (virtual_register_id_list, self._get_register_type_name(virtual_register_type),
-                           vr_count, self._get_register_type_name(virtual_register_type), max_phys)
+                        % (
+                            virtual_register_id_list,
+                            self._get_register_type_name(virtual_register_type),
+                            vr_count,
+                            self._get_register_type_name(virtual_register_type),
+                            max_phys,
+                        )
                     )
                 physical_register_bitboard_list = self.allocation_options[
                     virtual_register_id_list
@@ -1613,7 +1652,9 @@ class Function(object):
                     if not self.allocation_options[virtual_register_id]:
                         # Use saved count from before allocation started
                         vr_count = self._vr_counts_by_type.get(virtual_register_type, 0)
-                        max_phys = self._get_max_physical_registers(virtual_register_type)
+                        max_phys = self._get_max_physical_registers(
+                            virtual_register_type
+                        )
 
                         # Debug: find max simultaneous live registers
                         max_live = 0
@@ -1622,62 +1663,102 @@ class Function(object):
                         max_live_idx = None
                         max_live_regs = []
                         for idx, instruction in enumerate(self.instructions):
-                            if hasattr(instruction, 'live_registers'):
-                                live_regs = [r for r in instruction.live_registers
-                                            if hasattr(r, 'type') and r.type == virtual_register_type and r.is_virtual]
+                            if hasattr(instruction, "live_registers"):
+                                live_regs = [
+                                    r
+                                    for r in instruction.live_registers
+                                    if hasattr(r, "type")
+                                    and r.type == virtual_register_type
+                                    and r.is_virtual
+                                ]
                                 live_count = len(live_regs)
                                 if live_count > max_live:
                                     max_live = live_count
                                     max_live_instr = instruction
                                     max_live_idx = idx
-                                    max_live_line = getattr(instruction, 'line_number', None)
+                                    max_live_line = getattr(
+                                        instruction, "line_number", None
+                                    )
                                     # Include variable names in the register representation
                                     max_live_regs = []
                                     for r in live_regs:
                                         reg_str = str(r)
-                                        var_name = self._register_names.get(r.number, None)
+                                        var_name = self._register_names.get(
+                                            r.number, None
+                                        )
                                         if var_name:
                                             reg_str = f"{reg_str}, {var_name}"
                                         max_live_regs.append(reg_str)
 
                         debug_msg = ""
                         if max_live <= max_phys:
-                            debug_msg = (f"\n\nPhysical registers available: {max_phys}\n"
-                                       f"The register pressure ({max_live}/{max_phys}) should be manageable, but the allocator\n"
-                                       f"couldn't find a valid allocation due to conflicting constraints.\n")
+                            debug_msg = (
+                                f"\n\nPhysical registers available: {max_phys}\n"
+                                f"The register pressure ({max_live}/{max_phys}) should be manageable, but the allocator\n"
+                                f"couldn't find a valid allocation due to conflicting constraints.\n"
+                            )
                             if max_live_instr is not None:
                                 # Show instruction location info
                                 location_info = []
-                                if hasattr(max_live_instr, 'source_file') and max_live_instr.source_file:
-                                    location_info.append(f"File: {max_live_instr.source_file}")
-                                if hasattr(max_live_instr, 'line_number') and max_live_instr.line_number:
-                                    location_info.append(f"Line: {max_live_instr.line_number}")
+                                if (
+                                    hasattr(max_live_instr, "source_file")
+                                    and max_live_instr.source_file
+                                ):
+                                    location_info.append(
+                                        f"File: {max_live_instr.source_file}"
+                                    )
+                                if (
+                                    hasattr(max_live_instr, "line_number")
+                                    and max_live_instr.line_number
+                                ):
+                                    location_info.append(
+                                        f"Line: {max_live_instr.line_number}"
+                                    )
                                 if location_info:
                                     debug_msg += f"Max register pressure at {', '.join(location_info)}\n"
                                 elif max_live_idx is not None:
                                     debug_msg += f"Max register pressure at instruction #{max_live_idx} (index in generated code)\n"
                                     debug_msg += f"Hint: Enable collect_origin=True in Function() to see Python source line numbers.\n"
 
-                                debug_msg += f"Instruction with max pressure: {max_live_instr}\n"
+                                debug_msg += (
+                                    f"Instruction with max pressure: {max_live_instr}\n"
+                                )
 
                                 # Show the source code if available
-                                if hasattr(max_live_instr, 'source_code') and max_live_instr.source_code:
-                                    debug_msg += f"Source code: {max_live_instr.source_code}\n"
+                                if (
+                                    hasattr(max_live_instr, "source_code")
+                                    and max_live_instr.source_code
+                                ):
+                                    debug_msg += (
+                                        f"Source code: {max_live_instr.source_code}\n"
+                                    )
 
                                 if max_live_regs:
                                     debug_msg += f"Live virtual registers: {', '.join(sorted(max_live_regs))}\n"
                             debug_msg += f"\nThis suggests the greedy allocator made suboptimal early choices.\n"
                             debug_msg += f"Try reordering your code or reducing temporary register usage.\n"
                         else:
-                            debug_msg = (f"\n\nThis exceeds the {max_phys} physical registers available.\n"
-                                       f"You need to reduce the number of live registers at once.\n")
+                            debug_msg = (
+                                f"\n\nThis exceeds the {max_phys} physical registers available.\n"
+                                f"You need to reduce the number of live registers at once.\n"
+                            )
                             if max_live_instr is not None:
                                 # Show instruction location info
                                 location_info = []
-                                if hasattr(max_live_instr, 'source_file') and max_live_instr.source_file:
-                                    location_info.append(f"File: {max_live_instr.source_file}")
-                                if hasattr(max_live_instr, 'line_number') and max_live_instr.line_number:
-                                    location_info.append(f"Line: {max_live_instr.line_number}")
+                                if (
+                                    hasattr(max_live_instr, "source_file")
+                                    and max_live_instr.source_file
+                                ):
+                                    location_info.append(
+                                        f"File: {max_live_instr.source_file}"
+                                    )
+                                if (
+                                    hasattr(max_live_instr, "line_number")
+                                    and max_live_instr.line_number
+                                ):
+                                    location_info.append(
+                                        f"Line: {max_live_instr.line_number}"
+                                    )
                                 if location_info:
                                     debug_msg += f"Max register pressure at {', '.join(location_info)}\n"
                                 elif max_live_idx is not None:
@@ -1687,8 +1768,13 @@ class Function(object):
                                 debug_msg += f"Instruction: {max_live_instr}\n"
 
                                 # Show the source code if available
-                                if hasattr(max_live_instr, 'source_code') and max_live_instr.source_code:
-                                    debug_msg += f"Source code: {max_live_instr.source_code}\n"
+                                if (
+                                    hasattr(max_live_instr, "source_code")
+                                    and max_live_instr.source_code
+                                ):
+                                    debug_msg += (
+                                        f"Source code: {max_live_instr.source_code}\n"
+                                    )
 
                         raise RuntimeError(
                             "Register allocation failed: No available physical registers for virtual register #%d (type: %s).\n"
@@ -1702,8 +1788,10 @@ class Function(object):
                                 self._get_register_type_name(virtual_register_type),
                                 max_phys,
                                 self._get_register_type_name(virtual_register_type),
-                                self._get_available_registers_info(virtual_register_type),
-                                debug_msg
+                                self._get_available_registers_info(
+                                    virtual_register_type
+                                ),
+                                debug_msg,
                             )
                         )
                     physical_register_bitboard = self.allocation_options[
@@ -1741,9 +1829,7 @@ class Function(object):
                         input_register.bind(register_allocation[input_register.id])
                 for output_register in instruction.get_output_registers_list():
                     if output_register.is_virtual:
-                        output_register.bind(
-                            register_allocation[output_register.id]
-                        )
+                        output_register.bind(register_allocation[output_register.id])
 
     # Updates information about registers to be saved/restored in the function prologue/epilogue
     def update_stack_frame(self):
@@ -1864,11 +1950,13 @@ class Function(object):
         This method tracks stack pointer changes and validates alignment before
         BL and BLX instructions.
         """
-        from nervapy.arm.generic import (ArithmeticInstruction,
-                                         BranchLinkExchangeInstruction,
-                                         BranchWithLinkInstruction,
-                                         PushPopInstruction,
-                                         StoreMultipleInstruction)
+        from nervapy.arm.generic import (
+            ArithmeticInstruction,
+            BranchLinkExchangeInstruction,
+            BranchWithLinkInstruction,
+            PushPopInstruction,
+            StoreMultipleInstruction,
+        )
         from nervapy.arm.instructions import Instruction
         from nervapy.arm.isa import Extension
         from nervapy.arm.registers import sp
@@ -2097,13 +2185,17 @@ class Function(object):
         # Try to capture variable name from caller's frame
         try:
             import inspect
+
             frame = inspect.currentframe().f_back.f_back
             if frame:
                 import linecache
-                line = linecache.getline(frame.f_code.co_filename, frame.f_lineno).strip()
-                if '=' in line and 'QRegister' in line:
-                    var_name = line.split('=')[0].strip()
-                    if var_name and not var_name.startswith('#'):
+
+                line = linecache.getline(
+                    frame.f_code.co_filename, frame.f_lineno
+                ).strip()
+                if "=" in line and "QRegister" in line:
+                    var_name = line.split("=")[0].strip()
+                    if var_name and not var_name.startswith("#"):
                         self._register_names[register_number] = var_name
         # Best-effort debug name capture only; allocation must succeed even
         # if introspection fails.
@@ -2131,15 +2223,21 @@ class Function(object):
         # Try to capture variable name from caller's frame
         try:
             import inspect
-            frame = inspect.currentframe().f_back.f_back  # Go up 2 frames: this -> __init__ -> caller
+
+            frame = (
+                inspect.currentframe().f_back.f_back
+            )  # Go up 2 frames: this -> __init__ -> caller
             if frame:
                 # Get the line of code being executed
                 import linecache
-                line = linecache.getline(frame.f_code.co_filename, frame.f_lineno).strip()
+
+                line = linecache.getline(
+                    frame.f_code.co_filename, frame.f_lineno
+                ).strip()
                 # Simple pattern matching for "varname = GeneralPurposeRegister()"
-                if '=' in line and 'GeneralPurposeRegister' in line:
-                    var_name = line.split('=')[0].strip()
-                    if var_name and not var_name.startswith('#'):
+                if "=" in line and "GeneralPurposeRegister" in line:
+                    var_name = line.split("=")[0].strip()
+                    if var_name and not var_name.startswith("#"):
                         self._register_names[register_number] = var_name
         # Best-effort debug name capture only; allocation must succeed even
         # if introspection fails.
@@ -2155,8 +2253,13 @@ class Function(object):
 
 class LocalVariable(object):
     def __init__(self, register_type):
-        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
-                                           QRegister, SRegister, WMMXRegister)
+        from nervapy.arm.registers import (
+            DRegister,
+            GeneralPurposeRegister,
+            QRegister,
+            SRegister,
+            WMMXRegister,
+        )
 
         super(LocalVariable, self).__init__()
         if isinstance(register_type, int):
@@ -2247,8 +2350,12 @@ class StackFrame(object):
             self.preserve_register(register)
 
     def preserve_register(self, register):
-        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
-                                           QRegister, SRegister)
+        from nervapy.arm.registers import (
+            DRegister,
+            GeneralPurposeRegister,
+            QRegister,
+            SRegister,
+        )
 
         if isinstance(register, GeneralPurposeRegister):
             if not register in self.general_purpose_registers:
@@ -2278,8 +2385,12 @@ class StackFrame(object):
 
     def force_preserve_register(self, register):
         """Add *register* to the preservation list unconditionally (no ABI check)."""
-        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
-                                           QRegister, SRegister)
+        from nervapy.arm.registers import (
+            DRegister,
+            GeneralPurposeRegister,
+            QRegister,
+            SRegister,
+        )
 
         if isinstance(register, GeneralPurposeRegister):
             if register not in self.general_purpose_registers:
@@ -2499,16 +2610,16 @@ class StackFrame(object):
 
 def print_live_registers(label=""):
     """Print live registers at the current point in code generation.
-    
+
     This function can be called from within a Function context to inspect
     which registers are currently live (i.e., their values will be used later).
-    
+
     Note: Live register information is computed during function compilation,
     so this will show an approximation based on instructions emitted so far.
-    
+
     Args:
         label: Optional label to identify the location in code
-        
+
     Example:
         with Function("my_func", args, ...):
             t0 = GeneralPurposeRegister()

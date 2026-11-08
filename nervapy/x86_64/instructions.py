@@ -211,9 +211,12 @@ class Instruction(object):
     @property
     def output_registers_masks(self):
         from nervapy.x86_64.operand import get_operand_registers
-        from nervapy.x86_64.registers import (GeneralPurposeRegister32,
-                                              GeneralPurposeRegister64,
-                                              XMMRegister, YMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister32,
+            GeneralPurposeRegister64,
+            XMMRegister,
+            YMMRegister,
+        )
 
         registers_masks = self._implicit_out_regs.copy()
         for is_output_register, operand in zip(self.out_regs, self.operands):

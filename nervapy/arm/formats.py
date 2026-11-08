@@ -34,9 +34,15 @@ class HighRegisterStrategy:
         return self.name == other.name
 
     # High register handling strategies
-    PUSH_W: Optional["HighRegisterStrategy"] = None  # Use PUSH.W/POP.W for high registers (modern, efficient)
-    STMDB: Optional["HighRegisterStrategy"] = None  # Use STMDB sp!/LDMIA sp! for high registers (compatible)
-    AUTO: Optional["HighRegisterStrategy"] = None  # Automatically choose based on target and assembler
+    PUSH_W: Optional["HighRegisterStrategy"] = (
+        None  # Use PUSH.W/POP.W for high registers (modern, efficient)
+    )
+    STMDB: Optional["HighRegisterStrategy"] = (
+        None  # Use STMDB sp!/LDMIA sp! for high registers (compatible)
+    )
+    AUTO: Optional["HighRegisterStrategy"] = (
+        None  # Automatically choose based on target and assembler
+    )
 
 
 # Initialize format constants

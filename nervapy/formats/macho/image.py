@@ -4,9 +4,13 @@
 
 class Image:
     def __init__(self, abi):
-        from nervapy.formats.macho.section import (ConstSection, Segment,
-                                                   StringTable, SymbolTable,
-                                                   TextSection)
+        from nervapy.formats.macho.section import (
+            ConstSection,
+            Segment,
+            StringTable,
+            SymbolTable,
+            TextSection,
+        )
 
         self.abi = abi
         self.segments = list()

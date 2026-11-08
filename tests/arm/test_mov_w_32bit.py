@@ -7,12 +7,13 @@ the "repeat byte pattern" encoding.
 """
 
 import sys
-sys.path.insert(0, '/home/kris/repos/NervaPy')
+
+sys.path.insert(0, "/home/kris/repos/NervaPy")
 
 from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf
+from nervapy.arm.generic import MOVT, MOVW
 from nervapy.arm.microarchitecture import Microarchitecture
-from nervapy.arm.generic import MOVW, MOVT
 
 print("=" * 70)
 print("MOV.W with 32-bit Modified Immediates")
@@ -63,7 +64,9 @@ print()
 # Test 4: Compare with MOVW+MOVT for values that don't fit
 print("Test 4: For values that don't fit modified immediate, use MOVW+MOVT")
 print("-" * 70)
-f4 = Function("test_movw_movt", (), abi=arm_gnueabihf, target=Microarchitecture.CortexM4)
+f4 = Function(
+    "test_movw_movt", (), abi=arm_gnueabihf, target=Microarchitecture.CortexM4
+)
 with f4:
     # This value (0x12345678) does NOT fit modified immediate encoding
     MOVW(r0, 0x5678)  # Load lower 16 bits

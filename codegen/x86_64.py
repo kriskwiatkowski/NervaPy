@@ -18,17 +18,28 @@ instruction_set = read_instruction_set()
 for instruction in instruction_set:
     extra_instruction_forms = []
     for instruction_form in instruction.forms:
-        if any(operand.type in ["{sae}", "{er}"] for operand in instruction_form.operands):
+        if any(
+            operand.type in ["{sae}", "{er}"] for operand in instruction_form.operands
+        ):
             new_instruction_form = copy.deepcopy(instruction_form)
-            new_instruction_form.operands = \
-                [operand for operand in new_instruction_form.operands if operand.type not in ["{sae}", "{er}"]]
-            new_evex = next(component for component in new_instruction_form.encodings[0].components
-                            if isinstance(component, EVEX))
+            new_instruction_form.operands = [
+                operand
+                for operand in new_instruction_form.operands
+                if operand.type not in ["{sae}", "{er}"]
+            ]
+            new_evex = next(
+                component
+                for component in new_instruction_form.encodings[0].components
+                if isinstance(component, EVEX)
+            )
             new_evex.LL = 0b10
             new_evex.b = 0
             extra_instruction_forms.append(new_instruction_form)
-            old_evex = next(component for component in instruction_form.encodings[0].components
-                            if isinstance(component, EVEX))
+            old_evex = next(
+                component
+                for component in instruction_form.encodings[0].components
+                if isinstance(component, EVEX)
+            )
             if not isinstance(old_evex.LL, Operand):
                 # EVEX.LL didn't encode rounding control.
 
@@ -39,7 +50,9 @@ for instruction in instruction_set:
             old_evex.b = 1
     instruction.forms.extend(extra_instruction_forms)
 
-instruction_groups = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "x86_64.json")))
+instruction_groups = json.load(
+    open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "x86_64.json"))
+)
 
 
 def filter_instruction_forms(instruction_forms):
@@ -47,14 +60,21 @@ def filter_instruction_forms(instruction_forms):
 
     new_instruction_forms = list()
     for instruction_form in instruction_forms:
-        if all([operand.type not in {"r8l", "r16l", "r32l", "moffs32", "moffs64"} for operand in instruction_form.operands]):
+        if all(
+            [
+                operand.type not in {"r8l", "r16l", "r32l", "moffs32", "moffs64"}
+                for operand in instruction_form.operands
+            ]
+        ):
             new_instruction_forms.append(instruction_form)
     return new_instruction_forms
 
 
 def is_avx512_instruction_form(instruction_form):
     """Indicates whether the instruction form belongs to AVX512 extensions"""
-    return instruction_form.isa_extensions and instruction_form.isa_extensions[0].name.startswith("AVX512")
+    return instruction_form.isa_extensions and instruction_form.isa_extensions[
+        0
+    ].name.startswith("AVX512")
 
 
 def aggregate_instruction_forms(instruction_forms):
@@ -74,7 +94,7 @@ def aggregate_instruction_forms(instruction_forms):
         ("al", "r8"),
         ("ax", "r16"),
         ("eax", "r32"),
-        ("rax", "r64")
+        ("rax", "r64"),
     }
 
     def find_single_operand_difference(form, other_form):
@@ -83,20 +103,28 @@ def aggregate_instruction_forms(instruction_forms):
             return None
         if len(form.operands) != len(other_form.operands):
             return None
-        different_operand_numbers = \
-            list(filter(lambda n: form.operands[n].type != other_form.operands[n].type,
-                        range(len(form.operands))))
+        different_operand_numbers = list(
+            filter(
+                lambda n: form.operands[n].type != other_form.operands[n].type,
+                range(len(form.operands)),
+            )
+        )
         if len(different_operand_numbers) == 1:
             return different_operand_numbers[0]
         else:
             return None
 
     from collections import OrderedDict
+
     new_instruction_forms = OrderedDict()
     for form in instruction_forms:
         for other_form in instruction_forms:
             n = find_single_operand_difference(form, other_form)
-            if n is not None and (form.operands[n].type, other_form.operands[n].type) in nested_operand_types:
+            if (
+                n is not None
+                and (form.operands[n].type, other_form.operands[n].type)
+                in nested_operand_types
+            ):
                 break
         else:
             new_instruction_forms[form] = []
@@ -104,7 +132,11 @@ def aggregate_instruction_forms(instruction_forms):
     for form in instruction_forms:
         for other_form in instruction_forms:
             n = find_single_operand_difference(form, other_form)
-            if n is not None and (form.operands[n].type, other_form.operands[n].type) in nested_operand_types:
+            if (
+                n is not None
+                and (form.operands[n].type, other_form.operands[n].type)
+                in nested_operand_types
+            ):
                 assert other_form.isa_extensions == form.isa_extensions
                 assert other_form.mmx_mode == form.mmx_mode
                 assert other_form.xmm_mode == form.xmm_mode
@@ -114,8 +146,14 @@ def aggregate_instruction_forms(instruction_forms):
     return new_instruction_forms
 
 
-def generate_operand_check(operand_index, operand,
-                           ignore_imm_size=True, ext_imm_size=None, lambda_form=False, evex_form=False):
+def generate_operand_check(
+    operand_index,
+    operand,
+    ignore_imm_size=True,
+    ext_imm_size=None,
+    lambda_form=False,
+    evex_form=False,
+):
     check_map = {
         "r8": "is_r8(%s)",
         "r16": "is_r16(%s)",
@@ -185,7 +223,7 @@ def generate_operand_check(operand_index, operand,
         "1": "%s == 1",
         "3": "%s == 3",
         "{er}": "is_er(%s)",
-        "{sae}": "is_sae(%s)"
+        "{sae}": "is_sae(%s)",
     }
     evex_check_map = {
         "xmm": "is_evex_xmm(%s)",
@@ -206,7 +244,7 @@ def generate_operand_check(operand_index, operand,
         "imm8": "imm",
         "imm16": "imm",
         "imm32": "imm",
-        "imm64": "imm"
+        "imm64": "imm",
     }
     optype = operand.type
     assert optype in check_map, "Unknown operand type: " + optype
@@ -214,7 +252,10 @@ def generate_operand_check(operand_index, operand,
     if ignore_imm_size:
         optype = imm_map.get(optype, optype)
     if ext_imm_size is not None and optype in imm_check_map:
-        return imm_check_map[optype] % (operands + "[" + str(operand_index) + "]", ext_imm_size)
+        return imm_check_map[optype] % (
+            operands + "[" + str(operand_index) + "]",
+            ext_imm_size,
+        )
     elif evex_form and optype in evex_check_map:
         return evex_check_map[optype] % (operands + "[" + str(operand_index) + "]")
     else:
@@ -223,9 +264,7 @@ def generate_operand_check(operand_index, operand,
 
 def generate_isa_extensions(extensions):
     assert len(extensions) == 1
-    extension_map = {
-        "MMX+": "MMXPlus"
-    }
+    extension_map = {"MMX+": "MMXPlus"}
     extension = extensions[0]
     return "Extension.%s" % extension_map.get(extension, extension)
 
@@ -260,9 +299,10 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
             component.set_ignored()
             if component.is_mandatory:
                 if isinstance(component.X, Operand):
-                    assert component.X == component.B and component.X.is_memory, \
-                        "REX.X must refers to the same memory operand as REX.B. " \
+                    assert component.X == component.B and component.X.is_memory, (
+                        "REX.X must refers to the same memory operand as REX.B. "
                         "Register operands must have constant REX.X"
+                    )
                     byte_sequence = generate_bytes(byte_sequence)
 
                     rex_args = [str(component.W)]
@@ -274,14 +314,17 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                     rex = "rex(%s)" % ", ".join(rex_args)
                     parts.append(rex)
                 else:
-                    assert not isinstance(component.B, Operand) or component.B.is_register, \
-                        "Memory operands must have non-constant REX.B"
+                    assert (
+                        not isinstance(component.B, Operand) or component.B.is_register
+                    ), "Memory operands must have non-constant REX.B"
                     assert component.X in {0, 1}
 
                     rex_byte = 0x40 | (component.W << 3)
                     rex_parts = []
                     if isinstance(component.R, Operand):
-                        rex_parts.append("op[%d].hcode << 2" % operands.index(component.R))
+                        rex_parts.append(
+                            "op[%d].hcode << 2" % operands.index(component.R)
+                        )
                     else:
                         rex_byte |= component.R << 2
                     if isinstance(component.B, Operand):
@@ -292,7 +335,9 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                     rex = " | ".join(["0x%02X" % rex_byte] + rex_parts)
                     byte_sequence.append(rex)
             else:
-                assert component.W == 0, "Instructions with REX.W == 1 must mandate REX prefix"
+                assert (
+                    component.W == 0
+                ), "Instructions with REX.W == 1 must mandate REX prefix"
                 byte_sequence = generate_bytes(byte_sequence)
 
                 rex_args = []
@@ -301,14 +346,16 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                 else:
                     rex_args.append(str(component.R))
                 if isinstance(component.X, Operand):
-                    assert component.X == component.B and component.X.is_memory, \
-                        "REX.X must refers to the same memory operand as REX.B. " \
+                    assert component.X == component.B and component.X.is_memory, (
+                        "REX.X must refers to the same memory operand as REX.B. "
                         "Register operands must have constant REX.X"
+                    )
 
                     rex_args.append("op[%d].address" % operands.index(component.X))
                 else:
-                    assert not isinstance(component.B, Operand) or component.B.is_register, \
-                        "Memory operands must have non-constant REX.B"
+                    assert (
+                        not isinstance(component.B, Operand) or component.B.is_register
+                    ), "Memory operands must have non-constant REX.B"
 
                     rex_args.append("op[%d]" % operands.index(component.B))
                 r8_operands = [i for (i, op) in enumerate(operands) if op.type == "r8"]
@@ -321,11 +368,17 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                 parts.append(rex)
         elif isinstance(component, VEX):
             component.set_ignored()
-            if component.type == "VEX" and component.mmmmm == 0b00001 and component.W == 0:
+            if (
+                component.type == "VEX"
+                and component.mmmmm == 0b00001
+                and component.W == 0
+            ):
                 if component.R == 1 and component.X == 1 and component.B == 1:
                     # VZEROUPPER and VZEROALL instructions are VEX-encoded and have no arguments
                     byte_sequence.append("0xC5")
-                    byte_sequence.append("0x%02X" % (0xF8 | component.L << 2 | component.pp))
+                    byte_sequence.append(
+                        "0x%02X" % (0xF8 | component.L << 2 | component.pp)
+                    )
                 else:
                     byte_sequence = generate_bytes(byte_sequence)
 
@@ -338,14 +391,17 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                         vex_args.append("0")
 
                     if isinstance(component.X, Operand):
-                        assert component.X == component.B and component.X.is_memory, \
-                            "VEX.X must refers to the same memory operand as VEX.B. " \
+                        assert component.X == component.B and component.X.is_memory, (
+                            "VEX.X must refers to the same memory operand as VEX.B. "
                             "Register operands must have constant VEX.X"
+                        )
 
                         vex_args.append("op[%d].address" % operands.index(component.X))
                     else:
-                        assert not isinstance(component.B, Operand) or component.B.is_register, \
-                            "Memory operands must have non-constant VEX.B"
+                        assert (
+                            not isinstance(component.B, Operand)
+                            or component.B.is_register
+                        ), "Memory operands must have non-constant VEX.B"
 
                         if isinstance(component.B, Operand):
                             vex_args.append("op[%d]" % operands.index(component.B))
@@ -354,7 +410,9 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                             vex_args.append("None")
 
                     if isinstance(component.vvvv, Operand):
-                        vex_args.append("op[%d].hlcode" % operands.index(component.vvvv))
+                        vex_args.append(
+                            "op[%d].hlcode" % operands.index(component.vvvv)
+                        )
                     else:
                         assert component.vvvv == 0b0000
                         vex_args.append("0")
@@ -366,15 +424,18 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                     parts.append(vex)
             else:
                 if isinstance(component.X, Operand):
-                    assert component.X == component.B and component.X.is_memory, \
-                        "VEX.X must refers to the same memory operand as VEX.B. " \
+                    assert component.X == component.B and component.X.is_memory, (
+                        "VEX.X must refers to the same memory operand as VEX.B. "
                         "Register operands must have constant VEX.X"
+                    )
 
                     byte_sequence = generate_bytes(byte_sequence)
 
-                    vex_args = [{"VEX": "0xC4", "XOP": "0x8F"}[component.type],
-                                bin(component.mmmmm),
-                                "0x%02X" % (component.W << 7 | component.L << 2 | component.pp)]
+                    vex_args = [
+                        {"VEX": "0xC4", "XOP": "0x8F"}[component.type],
+                        bin(component.mmmmm),
+                        "0x%02X" % (component.W << 7 | component.L << 2 | component.pp),
+                    ]
 
                     if isinstance(component.R, Operand):
                         vex_args.append("op[%d].hcode" % operands.index(component.R))
@@ -385,45 +446,72 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                     vex_args.append("op[%d].address" % operands.index(component.X))
 
                     if isinstance(component.vvvv, Operand):
-                        vex_args.append("op[%d].hlcode" % operands.index(component.vvvv))
+                        vex_args.append(
+                            "op[%d].hlcode" % operands.index(component.vvvv)
+                        )
                     else:
                         assert component.vvvv == 0b0000
 
                     vex = "vex3(%s)" % ", ".join(vex_args)
                     parts.append(vex)
                 else:
-                    assert isinstance(component.B, Operand) and component.B.is_register or component.B == 0, \
-                        "Memory operands must have non-constant VEX.B"
+                    assert (
+                        isinstance(component.B, Operand)
+                        and component.B.is_register
+                        or component.B == 0
+                    ), "Memory operands must have non-constant VEX.B"
 
                     byte_sequence.append({"VEX": "0xC4", "XOP": "0x8F"}[component.type])
 
                     vex_byte1 = "0x%02X" % (0xE0 | component.mmmmm)
                     if isinstance(component.R, Operand):
-                        vex_byte1 += " ^ (op[%d].hcode << 7)" % operands.index(component.R)
+                        vex_byte1 += " ^ (op[%d].hcode << 7)" % operands.index(
+                            component.R
+                        )
                     else:
                         assert component.R == 0
 
                     if isinstance(component.B, Operand):
-                        vex_byte1 += " ^ (op[%d].hcode << 5)" % operands.index(component.B)
+                        vex_byte1 += " ^ (op[%d].hcode << 5)" % operands.index(
+                            component.B
+                        )
                     else:
                         assert component.B == 0
 
                     byte_sequence.append(vex_byte1)
 
                     if isinstance(component.vvvv, Operand):
-                        byte_sequence.append("0x%02X ^ (op[%d].hlcode << 3)" %
-                                             (0x78 | (component.W << 7) | (component.L << 2) | component.pp,
-                                             operands.index(component.vvvv)))
+                        byte_sequence.append(
+                            "0x%02X ^ (op[%d].hlcode << 3)"
+                            % (
+                                0x78
+                                | (component.W << 7)
+                                | (component.L << 2)
+                                | component.pp,
+                                operands.index(component.vvvv),
+                            )
+                        )
                     else:
                         assert component.vvvv == 0b0000
-                        byte_sequence.append("0x%02X" % (0x78 | (component.W << 7) | (component.L << 2) | component.pp))
+                        byte_sequence.append(
+                            "0x%02X"
+                            % (
+                                0x78
+                                | (component.W << 7)
+                                | (component.L << 2)
+                                | component.pp
+                            )
+                        )
 
         elif isinstance(component, EVEX):
             disp8xN = component.disp8xN
             component.set_ignored()
             if component.X.is_memory:
                 assert component.X is component.B
-                evex_args = ["0b" + format(component.mm, "02b"), "0x%02X" % (component.W << 7 | component.pp | 0b100)]
+                evex_args = [
+                    "0b" + format(component.mm, "02b"),
+                    "0x%02X" % (component.W << 7 | component.pp | 0b100),
+                ]
                 if isinstance(component.LL, Operand):
                     evex_args.append("op[%d].code" % operands.index(component.LL))
                 else:
@@ -438,7 +526,11 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                     # Component.V | Component.vvvv encode the operand
                     evex_args.append("op[%d].code" % operands.index(component.vvvv))
                 else:
-                    assert component.V == 0 or isinstance(component.V, Operand) and component.V.is_memory
+                    assert (
+                        component.V == 0
+                        or isinstance(component.V, Operand)
+                        and component.V.is_memory
+                    )
                 if component.aaa != 0:
                     evex_args.append("aaa=op[%d].kcode" % operands.index(component.aaa))
                 if component.z != 0:
@@ -453,35 +545,59 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
             else:
                 byte_sequence.append("0x62")
                 if isinstance(component.RR, Operand):
-                    byte_sequence.append("((op[%d].hcode << 7) | (op[%d].ehcode << 5) | (op[%d].ecode << 4)) ^ %d" %
-                                         (operands.index(component.RR), operands.index(component.B),
-                                          operands.index(component.RR), 0xF0 | component.mm))
+                    byte_sequence.append(
+                        "((op[%d].hcode << 7) | (op[%d].ehcode << 5) | (op[%d].ecode << 4)) ^ %d"
+                        % (
+                            operands.index(component.RR),
+                            operands.index(component.B),
+                            operands.index(component.RR),
+                            0xF0 | component.mm,
+                        )
+                    )
                 else:
                     r = component.RR & 1
                     r_ = (component.RR >> 1) & 1
                     byte = (component.mm | (r << 7) | (r_ << 4)) ^ 0xF0
                     if byte == 0:
-                        byte_sequence.append("op[%d].ehcode << 5" % operands.index(component.B))
+                        byte_sequence.append(
+                            "op[%d].ehcode << 5" % operands.index(component.B)
+                        )
                     else:
-                        byte_sequence.append("(op[%d].ehcode << 5) ^ 0x%02X" % (operands.index(component.B), byte))
+                        byte_sequence.append(
+                            "(op[%d].ehcode << 5) ^ 0x%02X"
+                            % (operands.index(component.B), byte)
+                        )
                 if isinstance(component.vvvv, Operand):
-                    byte_sequence.append("0x%02X ^ (op[%d].hlcode << 3)" %
-                                         (component.W << 7 | component.pp | 0b01111100, operands.index(component.vvvv)))
+                    byte_sequence.append(
+                        "0x%02X ^ (op[%d].hlcode << 3)"
+                        % (
+                            component.W << 7 | component.pp | 0b01111100,
+                            operands.index(component.vvvv),
+                        )
+                    )
                 else:
                     assert component.vvvv == 0
-                    byte_sequence.append("0x%02X" % (component.W << 7 | component.pp | 0b01111100))
+                    byte_sequence.append(
+                        "0x%02X" % (component.W << 7 | component.pp | 0b01111100)
+                    )
                 byte = component.b << 4
                 byte_parts = []
                 if isinstance(component.z, Operand):
-                    byte_parts.append("(op[%d].zcode << 7)" % operands.index(component.z))
+                    byte_parts.append(
+                        "(op[%d].zcode << 7)" % operands.index(component.z)
+                    )
                 else:
                     byte |= component.z << 7
                 if isinstance(component.LL, Operand):
-                    byte_parts.append("(op[%d].code << 5)" % operands.index(component.LL))
+                    byte_parts.append(
+                        "(op[%d].code << 5)" % operands.index(component.LL)
+                    )
                 else:
                     byte |= component.LL << 5
                 if isinstance(component.V, Operand):
-                    byte_parts.append("(op[%d].ecode << 3 ^ 0x8)" % operands.index(component.V))
+                    byte_parts.append(
+                        "(op[%d].ecode << 3 ^ 0x8)" % operands.index(component.V)
+                    )
                 else:
                     byte |= (component.V ^ 1) << 3
                 if isinstance(component.aaa, Operand):
@@ -497,9 +613,10 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
             byte_sequence.append(opcode)
         elif isinstance(component, ModRM):
             if isinstance(component.mode, Operand):
-                assert component.mode == component.rm and component.rm.is_memory, \
-                    "Mod R/M:mode must refer to the same memory operand as Mod R/M:rm. " \
+                assert component.mode == component.rm and component.rm.is_memory, (
+                    "Mod R/M:mode must refer to the same memory operand as Mod R/M:rm. "
                     "Register operands must have Mod R/M:mode == 0b11"
+                )
                 byte_sequence = generate_bytes(byte_sequence)
 
                 if isinstance(component.reg, Operand):
@@ -509,19 +626,29 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                 modrm_rm = "op[%d].address" % operands.index(component.rm)
 
                 if disp8xN is None:
-                    modrm = "modrm_sib_disp(%s, %s, sib, min_disp)" % (modrm_reg, modrm_rm)
+                    modrm = "modrm_sib_disp(%s, %s, sib, min_disp)" % (
+                        modrm_reg,
+                        modrm_rm,
+                    )
                 else:
-                    modrm = "modrm_sib_disp(%s, %s, sib, min_disp, disp8xN=%d)" % (modrm_reg, modrm_rm, disp8xN)
+                    modrm = "modrm_sib_disp(%s, %s, sib, min_disp, disp8xN=%d)" % (
+                        modrm_reg,
+                        modrm_rm,
+                        disp8xN,
+                    )
                 flags |= Flags.ModRMSIBDisp
                 parts.append(modrm)
             else:
-                assert component.mode == 0b11 and component.rm.is_register, \
-                    "Register operands must have Mod R/M:mode == 0b11. " \
+                assert component.mode == 0b11 and component.rm.is_register, (
+                    "Register operands must have Mod R/M:mode == 0b11. "
                     "For memory operands Mod R/M:mode must refer to an operand object"
+                )
                 modrm_byte = component.mode << 6
                 modrm_parts = []
                 if isinstance(component.reg, Operand):
-                    modrm_parts.append("op[%d].lcode << 3" % operands.index(component.reg))
+                    modrm_parts.append(
+                        "op[%d].lcode << 3" % operands.index(component.reg)
+                    )
                 elif component.reg:
                     modrm_byte |= component.reg << 3
                 modrm_parts.append("op[%d].lcode" % operands.index(component.rm))
@@ -537,26 +664,32 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                 byte_sequence.append(ib)
             elif component.size == 2:
                 assert isinstance(component.value, Operand)
-                iw = ["op[%d] & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 8) & 0xFF" % operands.index(component.value)]
+                iw = [
+                    "op[%d] & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 8) & 0xFF" % operands.index(component.value),
+                ]
                 byte_sequence.extend(iw)
             elif component.size == 4:
                 assert isinstance(component.value, Operand)
-                id = ["op[%d] & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 8) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 16) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 24) & 0xFF" % operands.index(component.value)]
+                id = [
+                    "op[%d] & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 8) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 16) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 24) & 0xFF" % operands.index(component.value),
+                ]
                 byte_sequence.extend(id)
             elif component.size == 8:
                 assert isinstance(component.value, Operand)
-                iq = ["op[%d] & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 8) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 16) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 24) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 32) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 40) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 48) & 0xFF" % operands.index(component.value),
-                      "(op[%d] >> 56) & 0xFF" % operands.index(component.value)]
+                iq = [
+                    "op[%d] & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 8) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 16) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 24) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 32) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 40) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 48) & 0xFF" % operands.index(component.value),
+                    "(op[%d] >> 56) & 0xFF" % operands.index(component.value),
+                ]
                 byte_sequence.extend(iq)
         elif isinstance(component, RegisterByte):
             ibr = "op[%d].hlcode << 4" % operands.index(component.register)
@@ -570,20 +703,32 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
                 if use_off_argument:
                     byte_sequence.append("off & 0xFF")
                 else:
-                    byte_sequence.append("op[%d].offset & 0xFF" % operands.index(component.value))
+                    byte_sequence.append(
+                        "op[%d].offset & 0xFF" % operands.index(component.value)
+                    )
             elif component.size == 4:
                 if use_off_argument:
-                    byte_sequence.extend([
-                        "off & 0xFF", "(off >> 8) & 0xFF", "(off >> 16) & 0xFF", "(off >> 24) & 0xFF"
-                    ])
+                    byte_sequence.extend(
+                        [
+                            "off & 0xFF",
+                            "(off >> 8) & 0xFF",
+                            "(off >> 16) & 0xFF",
+                            "(off >> 24) & 0xFF",
+                        ]
+                    )
 
                 else:
-                    byte_sequence.extend([
-                        "op[%d].offset & 0xFF" % operands.index(component.value),
-                        "(op[%d].offset >> 8) & 0xFF" % operands.index(component.value),
-                        "(op[%d].offset >> 16) & 0xFF" % operands.index(component.value),
-                        "(op[%d].offset >> 24) & 0xFF" % operands.index(component.value)
-                    ])
+                    byte_sequence.extend(
+                        [
+                            "op[%d].offset & 0xFF" % operands.index(component.value),
+                            "(op[%d].offset >> 8) & 0xFF"
+                            % operands.index(component.value),
+                            "(op[%d].offset >> 16) & 0xFF"
+                            % operands.index(component.value),
+                            "(op[%d].offset >> 24) & 0xFF"
+                            % operands.index(component.value),
+                        ]
+                    )
         else:
             print("UNKNOWN: " + component.__class__.__name__)
             return ""
@@ -604,12 +749,19 @@ def generate_encoding_lambda(encoding, operands, use_off_argument=False):
 
 def get_in_regs(instruction_form):
     """Returns a list indicating which operands might contain input registers for this instruction form"""
-    return tuple([bool(o.is_input and o.is_variable or o.is_output and o.is_memory) for o in instruction_form.operands])
+    return tuple(
+        [
+            bool(o.is_input and o.is_variable or o.is_output and o.is_memory)
+            for o in instruction_form.operands
+        ]
+    )
 
 
 def get_out_regs(instruction_form):
     """Returns a list indicating which operands might contain output registers for this instruction form"""
-    return tuple([bool(o.is_output and o.is_register) for o in instruction_form.operands])
+    return tuple(
+        [bool(o.is_output and o.is_register) for o in instruction_form.operands]
+    )
 
 
 def get_out_operands(instruction_form):
@@ -625,26 +777,26 @@ def get_isa_extensions(instruction_form):
 def go_name_init(code, instruction_form):
     """Generates initialization code for go_name property"""
     if instruction_form.go_name:
-        code.line("self.go_name = \"%s\"" % instruction_form.go_name)
+        code.line('self.go_name = "%s"' % instruction_form.go_name)
 
 
 def gas_name_init(code, instruction_form):
     """Generates initialization code for gas_name property"""
     if instruction_form.gas_name != instruction_form.name.lower():
-        code.line("self._gas_name = \"%s\"" % instruction_form.gas_name)
+        code.line('self._gas_name = "%s"' % instruction_form.gas_name)
 
 
 def implicit_regs_init(code, instruction_form):
     """Generates initialization code for _implicit_in_regs and _implicit_out_regs properties"""
     name_reg_map = {
-        "al":  (0, 0x1),
-        "ax":  (0, 0x3),
+        "al": (0, 0x1),
+        "ax": (0, 0x3),
         "eax": (0, 0x7),
         "rax": (0, 0xF),
-        "cl":  (1, 0x1),
+        "cl": (1, 0x1),
         "ecx": (1, 0x7),
         "rcx": (1, 0xF),
-        "dx":  (2, 0x3),
+        "dx": (2, 0x3),
         "edx": (2, 0x7),
         "rdx": (2, 0xF),
         "ebx": (3, 0x7),
@@ -652,21 +804,26 @@ def implicit_regs_init(code, instruction_form):
         "rsi": (6, 0xF),
         "rdi": (7, 0xF),
         "r11": (11, 0xF),
-        "xmm0": (0, 0x100)}
+        "xmm0": (0, 0x100),
+    }
     implicit_in_regs = dict()
     for in_reg_name in instruction_form.implicit_inputs:
-        (in_reg_id, in_reg_mask) = name_reg_map[in_reg_name]
-        implicit_in_regs[in_reg_id] = \
-            implicit_in_regs.get(in_reg_id, 0) | in_reg_mask
+        in_reg_id, in_reg_mask = name_reg_map[in_reg_name]
+        implicit_in_regs[in_reg_id] = implicit_in_regs.get(in_reg_id, 0) | in_reg_mask
     implicit_out_regs = dict()
     for out_reg_name in instruction_form.implicit_outputs:
-        (out_reg_id, out_reg_mask) = name_reg_map[out_reg_name]
-        implicit_out_regs[out_reg_id] = \
+        out_reg_id, out_reg_mask = name_reg_map[out_reg_name]
+        implicit_out_regs[out_reg_id] = (
             implicit_out_regs.get(out_reg_id, 0) | out_reg_mask
+        )
     if implicit_in_regs:
-        code.line("self._implicit_in_regs = " + str(dict(sorted(implicit_in_regs.items()))))
+        code.line(
+            "self._implicit_in_regs = " + str(dict(sorted(implicit_in_regs.items())))
+        )
     if implicit_out_regs:
-        code.line("self._implicit_out_regs = " + str(dict(sorted(implicit_out_regs.items()))))
+        code.line(
+            "self._implicit_out_regs = " + str(dict(sorted(implicit_out_regs.items())))
+        )
 
 
 def in_regs_init(code, instruction_form):
@@ -716,30 +873,50 @@ def isa_extensions_init(code, instruction_form):
             "3dnow!+": "three_d_now_plus",
             "3dnow! Prefetch": "three_d_now_prefetch",
             "SSE4.1": "sse4_1",
-            "SSE4.2": "sse4_2"
+            "SSE4.2": "sse4_2",
         }
-        isa_extensions = ["nervapy.x86_64.isa." + isa_extensions_map.get(extension.name, extension.name.lower())
-                          for extension in instruction_form.isa_extensions]
-        code.line("self.isa_extensions = frozenset([%s])" %
-                  ", ".join(isa_extensions))
+        isa_extensions = [
+            "nervapy.x86_64.isa."
+            + isa_extensions_map.get(extension.name, extension.name.lower())
+            for extension in instruction_form.isa_extensions
+        ]
+        code.line("self.isa_extensions = frozenset([%s])" % ", ".join(isa_extensions))
 
 
-def instruction_branch_label_form_init(code, instruction_form, instruction_subforms,
-                                       write_gas_name=True, write_in_regs=True):
+def instruction_branch_label_form_init(
+    code,
+    instruction_form,
+    instruction_subforms,
+    write_gas_name=True,
+    write_in_regs=True,
+):
     """Generates initialization code for a label operand form of a branch instruction"""
 
     if write_gas_name:
         gas_name_init(code, instruction_form)
 
-    for form in ([instruction_form] + list(map(operator.itemgetter(1), instruction_subforms))):
-        encoding_lambdas = list(map(lambda e: generate_encoding_lambda(e, form.operands, use_off_argument=True),
-                                    form.encodings))
-        assert len(encoding_lambdas) == 1, \
-            "Branch label instructions are expected to have only one encoding for each operand type"
+    for form in [instruction_form] + list(
+        map(operator.itemgetter(1), instruction_subforms)
+    ):
+        encoding_lambdas = list(
+            map(
+                lambda e: generate_encoding_lambda(
+                    e, form.operands, use_off_argument=True
+                ),
+                form.encodings,
+            )
+        )
+        assert (
+            len(encoding_lambdas) == 1
+        ), "Branch label instructions are expected to have only one encoding for each operand type"
         flags, encoding_lambda = encoding_lambdas[0]
-        assert form.operands[0].type in {"rel8", "rel32"}, \
-            "Branch label operand type expected to be rel8 or rel32"
-        flags |= {"rel8": Flags.Rel8Label, "rel32": Flags.Rel32Label}[form.operands[0].type]
+        assert form.operands[0].type in {
+            "rel8",
+            "rel32",
+        }, "Branch label operand type expected to be rel8 or rel32"
+        flags |= {"rel8": Flags.Rel8Label, "rel32": Flags.Rel32Label}[
+            form.operands[0].type
+        ]
         code.line("self.encodings.append((0x%02X, %s))" % (flags, encoding_lambda))
 
     implicit_regs_init(code, instruction_form)
@@ -748,45 +925,83 @@ def instruction_branch_label_form_init(code, instruction_form, instruction_subfo
         in_regs_init(code, instruction_form)
 
 
-def instruction_form_init(code, instruction_form, instruction_subforms,
-                          write_go_name=True, write_gas_name=True,
-                          write_in_regs=True, write_out_regs=True, write_out_operands=True,
-                          write_mmx_mode=True, write_xmm_mode=True,
-                          write_isa_extensions=True):
+def instruction_form_init(
+    code,
+    instruction_form,
+    instruction_subforms,
+    write_go_name=True,
+    write_gas_name=True,
+    write_in_regs=True,
+    write_out_regs=True,
+    write_out_operands=True,
+    write_mmx_mode=True,
+    write_xmm_mode=True,
+    write_isa_extensions=True,
+):
     """Generates initialization code for a particular instruction form"""
-    immediate_operands = [(i, op) for (i, op) in enumerate(instruction_form.operands) if op.is_immediate]
-    for (i, operand) in immediate_operands:
-        code.line("if not %s:" % generate_operand_check(i, operand,
-                                                        ignore_imm_size=False, ext_imm_size=operand.extended_size))
-        code.indent_line("raise ValueError(\"Argument #%d can not be encoded as %s\")" % (i, operand.type))
+    immediate_operands = [
+        (i, op) for (i, op) in enumerate(instruction_form.operands) if op.is_immediate
+    ]
+    for i, operand in immediate_operands:
+        code.line(
+            "if not %s:"
+            % generate_operand_check(
+                i, operand, ignore_imm_size=False, ext_imm_size=operand.extended_size
+            )
+        )
+        code.indent_line(
+            'raise ValueError("Argument #%d can not be encoded as %s")'
+            % (i, operand.type)
+        )
 
     if write_go_name:
         go_name_init(code, instruction_form)
     if write_gas_name:
         gas_name_init(code, instruction_form)
 
-    for (operand_number, instruction_subform) in instruction_subforms:
-        operand_check = generate_operand_check(operand_number, instruction_subform.operands[operand_number],
-                                               ignore_imm_size=False,
-                                               ext_imm_size=instruction_subform.operands[operand_number].extended_size)
+    for operand_number, instruction_subform in instruction_subforms:
+        operand_check = generate_operand_check(
+            operand_number,
+            instruction_subform.operands[operand_number],
+            ignore_imm_size=False,
+            ext_imm_size=instruction_subform.operands[operand_number].extended_size,
+        )
         code.line("if %s:" % operand_check)
         with CodeBlock():
             # Record lambda functions that encode the instruction subform
-            encoding_lambdas = map(lambda e: generate_encoding_lambda(e, instruction_subform.operands),
-                                   instruction_subform.encodings)
+            encoding_lambdas = map(
+                lambda e: generate_encoding_lambda(e, instruction_subform.operands),
+                instruction_subform.encodings,
+            )
             flags = 0
             if instruction_subform.operands[operand_number].is_variable:
-                assert instruction_subform.operands[operand_number].type in {"al", "ax", "eax", "rax"}, \
-                    "Expect a special accumulator form, got: " + str(instruction_subform.operands[operand_number])
-                assert operand_number in {0, 1}, \
-                    "Expect that the accumulator is either the first or the second operand"
-                flags |= {0: Flags.AccumulatorOp0, 1: Flags.AccumulatorOp1}[operand_number]
+                assert instruction_subform.operands[operand_number].type in {
+                    "al",
+                    "ax",
+                    "eax",
+                    "rax",
+                }, "Expect a special accumulator form, got: " + str(
+                    instruction_subform.operands[operand_number]
+                )
+                assert operand_number in {
+                    0,
+                    1,
+                }, "Expect that the accumulator is either the first or the second operand"
+                flags |= {0: Flags.AccumulatorOp0, 1: Flags.AccumulatorOp1}[
+                    operand_number
+                ]
             for encoding_flags, encoding_lambda in encoding_lambdas:
-                code.line("self.encodings.append((0x%02X, %s))" % (flags | encoding_flags, encoding_lambda))
+                code.line(
+                    "self.encodings.append((0x%02X, %s))"
+                    % (flags | encoding_flags, encoding_lambda)
+                )
 
     # Record lambda functions that encode the most generic instruction form
-    encodings = map(lambda e: generate_encoding_lambda(e, instruction_form.operands), instruction_form.encodings)
-    for (flags, encoding_lambda) in encodings:
+    encodings = map(
+        lambda e: generate_encoding_lambda(e, instruction_form.operands),
+        instruction_form.encodings,
+    )
+    for flags, encoding_lambda in encodings:
         code.line("self.encodings.append((0x%02X, %s))" % (flags, encoding_lambda))
 
     implicit_regs_init(code, instruction_form)
@@ -809,7 +1024,9 @@ def instruction_form_init(code, instruction_form, instruction_subforms,
         isa_extensions_init(code, instruction_form)
 
     if instruction_form.cancelling_inputs:
-        code.line("self._cancelling_inputs = " + str(instruction_form.cancelling_inputs))
+        code.line(
+            "self._cancelling_inputs = " + str(instruction_form.cancelling_inputs)
+        )
 
 
 def reduce_operand_types(operand_types_list):
@@ -825,25 +1042,31 @@ def reduce_operand_types(operand_types_list):
         ("al", "r8"),
         ("ax", "r16"),
         ("eax", "r32"),
-        ("rax", "r64")
+        ("rax", "r64"),
     }
 
     # Remove operands combination which differ only by one operand and there
     # is a more general instruction form for this operand, e.g.
     #    ADD eax, imm32 + ADD r32, imm32 -> ADD r32, imm32
     new_operand_types_list = []
-    for (i, operand_types) in enumerate(operand_types_list):
-        for (j, other_operand_types) in enumerate(operand_types_list):
+    for i, operand_types in enumerate(operand_types_list):
+        for j, other_operand_types in enumerate(operand_types_list):
             if j == i:
                 continue
             if len(operand_types) != len(other_operand_types):
                 continue
-            different_operand_numbers = \
-                list(filter(lambda n: operand_types[n] != other_operand_types[n],
-                            range(len(operand_types))))
+            different_operand_numbers = list(
+                filter(
+                    lambda n: operand_types[n] != other_operand_types[n],
+                    range(len(operand_types)),
+                )
+            )
             if len(different_operand_numbers) == 1:
                 operand_number = different_operand_numbers[0]
-                if (operand_types[operand_number], other_operand_types[operand_number]) in nested_operand_types:
+                if (
+                    operand_types[operand_number],
+                    other_operand_types[operand_number],
+                ) in nested_operand_types:
                     break
         else:
             new_operand_types_list.append(operand_types)
@@ -867,35 +1090,48 @@ def reduce_operand_types(operand_types_list):
         ("ymm", "m64"),
         ("ymm", "m128"),
         ("ymm", "m256"),
-        ("zmm", "m512")
+        ("zmm", "m512"),
     }
 
     # Indicator of whether this argument list was merged into another argument list
     is_merged = [False] * len(operand_types_list)
 
     new_operand_types_list = []
-    for (i, operand_types) in enumerate(operand_types_list):
-        for (j, other_operand_types) in enumerate(operand_types_list):
+    for i, operand_types in enumerate(operand_types_list):
+        for j, other_operand_types in enumerate(operand_types_list):
             if j == i:
                 continue
             if len(operand_types) != len(other_operand_types):
                 continue
-            different_operand_numbers = \
-                list(filter(lambda n: operand_types[n] != other_operand_types[n],
-                       range(len(operand_types))))
+            different_operand_numbers = list(
+                filter(
+                    lambda n: operand_types[n] != other_operand_types[n],
+                    range(len(operand_types)),
+                )
+            )
             if len(different_operand_numbers) == 1:
                 operand_number = different_operand_numbers[0]
-                if (other_operand_types[operand_number], operand_types[operand_number]) in mergeble_operand_types:
+                if (
+                    other_operand_types[operand_number],
+                    operand_types[operand_number],
+                ) in mergeble_operand_types:
                     is_merged[j] = True
                     new_operand_types = list(operand_types)
-                    new_operand_types[operand_number] = \
-                        other_operand_types[operand_number] + "/" + operand_types[operand_number]
+                    new_operand_types[operand_number] = (
+                        other_operand_types[operand_number]
+                        + "/"
+                        + operand_types[operand_number]
+                    )
                     new_operand_types_list.append(tuple(new_operand_types))
                     break
         else:
             new_operand_types_list.append(operand_types)
 
-    return [operand_types for (operand_types, remove) in zip(new_operand_types_list, is_merged) if not remove]
+    return [
+        operand_types
+        for (operand_types, remove) in zip(new_operand_types_list, is_merged)
+        if not remove
+    ]
 
 
 def score_isa_extensions(isa_extensions):
@@ -918,27 +1154,45 @@ def supported_forms_comment(code, instruction_forms):
         return form_descriptions
 
     def get_operand_types_list(instruction_forms):
-        operand_types_list = [list(map(operator.attrgetter("type"), instruction_form.operands))
-                              for instruction_form in instruction_forms]
+        operand_types_list = [
+            list(map(operator.attrgetter("type"), instruction_form.operands))
+            for instruction_form in instruction_forms
+        ]
         return reduce_operand_types(operand_types_list)
 
     def get_isa_extensions(instruction_forms):
         isa_extensions = map(operator.attrgetter("isa_extensions"), instruction_forms)
-        isa_extensions = map(lambda ext: sorted(ext, key=operator.attrgetter("score")), isa_extensions)
+        isa_extensions = map(
+            lambda ext: sorted(ext, key=operator.attrgetter("score")), isa_extensions
+        )
         return isa_extensions
 
-    form_descriptions = format_form_descriptions(instruction_forms[0].name, get_operand_types_list(instruction_forms))
+    form_descriptions = format_form_descriptions(
+        instruction_forms[0].name, get_operand_types_list(instruction_forms)
+    )
     padding_length = max(map(len, form_descriptions))
 
-    form_isa_extensions_options = sorted(set(map(tuple, get_isa_extensions(instruction_forms))),
-                                         key=lambda isa_tuple: score_isa_extensions(isa_tuple))
+    form_isa_extensions_options = sorted(
+        set(map(tuple, get_isa_extensions(instruction_forms))),
+        key=lambda isa_tuple: score_isa_extensions(isa_tuple),
+    )
     lines = []
     for isa_extensions_option in form_isa_extensions_options:
         isa_description = ""
         if isa_extensions_option:
             isa_description = "[" + " and ".join(map(str, isa_extensions_option)) + "]"
-        isa_forms = list(filter(lambda form: tuple(sorted(form.isa_extensions, key=operator.attrgetter("score"))) == isa_extensions_option, instruction_forms))
-        for form_description in format_form_descriptions(instruction_forms[0].name, get_operand_types_list(isa_forms)):
+        isa_forms = list(
+            filter(
+                lambda form: tuple(
+                    sorted(form.isa_extensions, key=operator.attrgetter("score"))
+                )
+                == isa_extensions_option,
+                instruction_forms,
+            )
+        )
+        for form_description in format_form_descriptions(
+            instruction_forms[0].name, get_operand_types_list(isa_forms)
+        ):
             if isa_description:
                 padding = " " * (4 + padding_length - len(form_description))
                 lines.append("* " + form_description + padding + isa_description)
@@ -949,15 +1203,22 @@ def supported_forms_comment(code, instruction_forms):
 
 
 def is_label_branch(instruction_form):
-    return len(instruction_form.operands) == 1 and instruction_form.operands[0].type in {"rel8", "rel32"}
+    return len(instruction_form.operands) == 1 and instruction_form.operands[
+        0
+    ].type in {"rel8", "rel32"}
 
 
 def main(package_root="."):
     for group, instruction_names in six.iteritems(instruction_groups):
-        with open(os.path.join(package_root, "nervapy", "x86_64", group + ".py"), "w") as out:
+        with open(
+            os.path.join(package_root, "nervapy", "x86_64", group + ".py"), "w"
+        ) as out:
             with CodeWriter() as code:
                 code.line("# This file is auto-generated by /codegen/x86_64.py")
-                code.line("# Instruction data is based on package opcodes %s" % opcodes.__version__)
+                code.line(
+                    "# Instruction data is based on package opcodes %s"
+                    % opcodes.__version__
+                )
                 code.line()
                 code.line("import inspect")
                 code.line()
@@ -965,22 +1226,46 @@ def main(package_root="."):
                 code.line("import nervapy.x86_64.options")
                 code.line("import nervapy.x86_64.isa")
                 code.line("from nervapy.util import is_sint8, is_sint32")
-                code.line("from nervapy.x86_64.encoding import rex, optional_rex, vex2, vex3, evex, modrm_sib_disp")
-                code.line("from nervapy.x86_64.instructions import Instruction, BranchInstruction")
-                code.line("from nervapy.x86_64.operand import is_al, is_ax, is_eax, is_rax, is_cl, is_xmm0, is_r8, is_r8rex, is_r16, is_r32, is_r64, \\")
-                code.indent_line("is_mm, is_xmm, is_ymm, is_m, is_m8, is_m16, is_m32, is_m64, is_m80, is_m128, is_m256, is_m512, \\")
-                code.indent_line("is_evex_xmm, is_xmmk, is_xmmkz, is_evex_ymm, is_ymmk, is_ymmkz, is_zmm, is_zmmk, is_zmmkz, is_k, is_kk, \\")
-                code.indent_line("is_m32k, is_m64k, is_m16kz, is_m32kz, is_m64kz, is_m128kz, is_m256kz, is_m512kz, \\")
-                code.indent_line("is_m64_m32bcst, is_m128_m32bcst, is_m256_m32bcst, is_m512_m32bcst, \\")
-                code.indent_line("is_m128_m64bcst, is_m256_m64bcst, is_m512_m64bcst, \\")
-                code.indent_line("is_vmx, is_vmy, is_evex_vmx, is_evex_vmy, is_vmz, is_vmxk, is_vmyk, is_vmzk, \\")
-                code.indent_line("is_imm, is_imm4, is_imm8, is_imm16, is_imm32, is_imm64, \\")
-                code.indent_line("is_rel8, is_rel32, is_label, is_er, is_sae, check_operand, format_operand_type")
+                code.line(
+                    "from nervapy.x86_64.encoding import rex, optional_rex, vex2, vex3, evex, modrm_sib_disp"
+                )
+                code.line(
+                    "from nervapy.x86_64.instructions import Instruction, BranchInstruction"
+                )
+                code.line(
+                    "from nervapy.x86_64.operand import is_al, is_ax, is_eax, is_rax, is_cl, is_xmm0, is_r8, is_r8rex, is_r16, is_r32, is_r64, \\"
+                )
+                code.indent_line(
+                    "is_mm, is_xmm, is_ymm, is_m, is_m8, is_m16, is_m32, is_m64, is_m80, is_m128, is_m256, is_m512, \\"
+                )
+                code.indent_line(
+                    "is_evex_xmm, is_xmmk, is_xmmkz, is_evex_ymm, is_ymmk, is_ymmkz, is_zmm, is_zmmk, is_zmmkz, is_k, is_kk, \\"
+                )
+                code.indent_line(
+                    "is_m32k, is_m64k, is_m16kz, is_m32kz, is_m64kz, is_m128kz, is_m256kz, is_m512kz, \\"
+                )
+                code.indent_line(
+                    "is_m64_m32bcst, is_m128_m32bcst, is_m256_m32bcst, is_m512_m32bcst, \\"
+                )
+                code.indent_line(
+                    "is_m128_m64bcst, is_m256_m64bcst, is_m512_m64bcst, \\"
+                )
+                code.indent_line(
+                    "is_vmx, is_vmy, is_evex_vmx, is_evex_vmy, is_vmz, is_vmxk, is_vmyk, is_vmzk, \\"
+                )
+                code.indent_line(
+                    "is_imm, is_imm4, is_imm8, is_imm16, is_imm32, is_imm64, \\"
+                )
+                code.indent_line(
+                    "is_rel8, is_rel32, is_label, is_er, is_sae, check_operand, format_operand_type"
+                )
                 code.line()
                 code.line()
                 for name in instruction_names:
                     # Instructions with `name` name
-                    name_instructions = list(filter(lambda i: i.name == name, instruction_set))
+                    name_instructions = list(
+                        filter(lambda i: i.name == name, instruction_set)
+                    )
                     if not name_instructions:
                         print("No forms for instruction: " + name)
                         continue
@@ -996,23 +1281,39 @@ def main(package_root="."):
 
                     base_class = "Instruction"
                     if name in {
-                        "JA", "JNA",
-                        "JAE", "JNAE",
-                        "JB", "JNB",
-                        "JBE", "JNBE",
-                        "JC", "JNC",
-                        "JE", "JNE",
-                        "JG", "JNG",
-                        "JGE", "JNGE",
-                        "JL", "JNL",
-                        "JLE", "JNLE",
-                        "JO", "JNO",
-                        "JP", "JNP",
-                        "JS", "JNS",
-                        "JZ", "JNZ",
-                        "JPE", "JPO",
-                        "JECXZ", "JRCXZ",
-                        "JMP"
+                        "JA",
+                        "JNA",
+                        "JAE",
+                        "JNAE",
+                        "JB",
+                        "JNB",
+                        "JBE",
+                        "JNBE",
+                        "JC",
+                        "JNC",
+                        "JE",
+                        "JNE",
+                        "JG",
+                        "JNG",
+                        "JGE",
+                        "JNGE",
+                        "JL",
+                        "JNL",
+                        "JLE",
+                        "JNLE",
+                        "JO",
+                        "JNO",
+                        "JP",
+                        "JNP",
+                        "JS",
+                        "JNS",
+                        "JZ",
+                        "JNZ",
+                        "JPE",
+                        "JPO",
+                        "JECXZ",
+                        "JRCXZ",
+                        "JMP",
                     }:
                         base_class = "BranchInstruction"
                     code.line("class %s(%s):" % (name, base_class))
@@ -1020,71 +1321,157 @@ def main(package_root="."):
                     # Class scope
                     with CodeBlock():
                         # Generate documentation comment for the class
-                        code.line("\"\"\"%s\"\"\"" % name_instruction.summary)
+                        code.line('"""%s"""' % name_instruction.summary)
                         code.line()
 
                         # Generate constructor
                         code.line("def __init__(self, *args, **kwargs):")
                         with CodeBlock():
-                            code.line("\"\"\"Supported forms:")
+                            code.line('"""Supported forms:')
                             with CodeBlock():
-                                supported_forms_comment(code, list(six.iterkeys(instruction_forms)))
-                            code.line("\"\"\"")
+                                supported_forms_comment(
+                                    code, list(six.iterkeys(instruction_forms))
+                                )
+                            code.line('"""')
                             code.line()
 
-                            code.line("origin = kwargs.get(\"origin\")")
-                            code.line("prototype = kwargs.get(\"prototype\")")
-                            code.line("if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:")
+                            code.line('origin = kwargs.get("origin")')
+                            code.line('prototype = kwargs.get("prototype")')
+                            code.line(
+                                "if origin is None and prototype is None and nervapy.x86_64.options.get_debug_level() > 0:"
+                            )
                             code.indent_line("origin = inspect.stack()")
-                            code.line("super(%s, self).__init__(\"%s\", origin=origin, prototype=prototype)" % (name, name))
+                            code.line(
+                                'super(%s, self).__init__("%s", origin=origin, prototype=prototype)'
+                                % (name, name)
+                            )
                             code.line("self.operands = tuple(map(check_operand, args))")
-                            operand_count_options = sorted(set([len(instruction_form.operands)
-                                                                for instruction_form in six.iterkeys(instruction_forms)]))
+                            operand_count_options = sorted(
+                                set(
+                                    [
+                                        len(instruction_form.operands)
+                                        for instruction_form in six.iterkeys(
+                                            instruction_forms
+                                        )
+                                    ]
+                                )
+                            )
                             if len(operand_count_options) == 1:
-                                code.line("if len(self.operands) != %d:" % operand_count_options[0])
-                                code.indent_line("raise SyntaxError(\"Instruction \\\"%s\\\" requires %d operands\")" % (name, operand_count_options[0]))
+                                code.line(
+                                    "if len(self.operands) != %d:"
+                                    % operand_count_options[0]
+                                )
+                                code.indent_line(
+                                    'raise SyntaxError("Instruction \\"%s\\" requires %d operands")'
+                                    % (name, operand_count_options[0])
+                                )
                             consider_operand_count = len(operand_count_options) > 1
                             for index, count in enumerate(operand_count_options):
                                 if consider_operand_count:
-                                    code.line("%s len(self.operands) == %d:" % ("if" if index == 0 else "elif", count))
+                                    code.line(
+                                        "%s len(self.operands) == %d:"
+                                        % ("if" if index == 0 else "elif", count)
+                                    )
                                 with CodeBlock(consider_operand_count):
                                     # Consider only instruction forms that have exactly `count` operands
-                                    count_operand_form_trees = list(filter(lambda form_subforms:
-                                                                           len(form_subforms[0].operands) == count,
-                                                                           six.iteritems(instruction_forms)))
+                                    count_operand_form_trees = list(
+                                        filter(
+                                            lambda form_subforms: len(
+                                                form_subforms[0].operands
+                                            )
+                                            == count,
+                                            six.iteritems(instruction_forms),
+                                        )
+                                    )
                                     # Make sure operand forms with simpler ISA are checked first.
                                     # This is needed because AVX instructions can be encoded as AVX-512 instructions.
                                     # Thus, we should first check if operands match AVX specification, and only if that
                                     # fails try to match AVX-512 specification
-                                    count_operand_form_trees = sorted(count_operand_form_trees,
-                                                                      key=lambda form_subforms: score_isa_extensions(form_subforms[0].isa_extensions))
+                                    count_operand_form_trees = sorted(
+                                        count_operand_form_trees,
+                                        key=lambda form_subforms: score_isa_extensions(
+                                            form_subforms[0].isa_extensions
+                                        ),
+                                    )
                                     # The most generic instruction forms
-                                    count_operand_forms = list(map(operator.itemgetter(0), count_operand_form_trees))
-                                    combine_attrs = len(count_operand_forms) > 1 or is_label_branch(count_operand_forms[0])
+                                    count_operand_forms = list(
+                                        map(
+                                            operator.itemgetter(0),
+                                            count_operand_form_trees,
+                                        )
+                                    )
+                                    combine_attrs = len(
+                                        count_operand_forms
+                                    ) > 1 or is_label_branch(count_operand_forms[0])
                                     # Check how many in_regs combinations exist
-                                    in_regs_options = set(map(get_in_regs, count_operand_forms))
-                                    common_in_regs = combine_attrs and len(in_regs_options) == 1
+                                    in_regs_options = set(
+                                        map(get_in_regs, count_operand_forms)
+                                    )
+                                    common_in_regs = (
+                                        combine_attrs and len(in_regs_options) == 1
+                                    )
                                     # Check how many out_regs combinations exist
-                                    out_regs_options = set(map(get_out_regs, count_operand_forms))
-                                    common_out_regs = combine_attrs and len(out_regs_options) == 1
+                                    out_regs_options = set(
+                                        map(get_out_regs, count_operand_forms)
+                                    )
+                                    common_out_regs = (
+                                        combine_attrs and len(out_regs_options) == 1
+                                    )
                                     # Check how many out_operands combinations exist
-                                    out_operands_options = set(map(get_out_operands, count_operand_forms))
-                                    common_out_operands = combine_attrs and len(out_operands_options) == 1
+                                    out_operands_options = set(
+                                        map(get_out_operands, count_operand_forms)
+                                    )
+                                    common_out_operands = (
+                                        combine_attrs and len(out_operands_options) == 1
+                                    )
                                     # Check how many gas names exist
-                                    gas_names = set(map(lambda form: form.gas_name, count_operand_forms))
-                                    common_gas_name = combine_attrs and len(gas_names) == 1
+                                    gas_names = set(
+                                        map(
+                                            lambda form: form.gas_name,
+                                            count_operand_forms,
+                                        )
+                                    )
+                                    common_gas_name = (
+                                        combine_attrs and len(gas_names) == 1
+                                    )
                                     # Check how many go names exist
-                                    go_names = set(map(lambda form: str(form.go_name), count_operand_forms))
-                                    common_go_name = combine_attrs and len(go_names) == 1
+                                    go_names = set(
+                                        map(
+                                            lambda form: str(form.go_name),
+                                            count_operand_forms,
+                                        )
+                                    )
+                                    common_go_name = (
+                                        combine_attrs and len(go_names) == 1
+                                    )
                                     # Check how many mmx modes exist
-                                    mmx_modes = set(map(operator.attrgetter("mmx_mode"), count_operand_forms))
-                                    common_mmx_mode = combine_attrs and len(mmx_modes) == 1
+                                    mmx_modes = set(
+                                        map(
+                                            operator.attrgetter("mmx_mode"),
+                                            count_operand_forms,
+                                        )
+                                    )
+                                    common_mmx_mode = (
+                                        combine_attrs and len(mmx_modes) == 1
+                                    )
                                     # Check how many xmm modes exist
-                                    xmm_modes = set(map(operator.attrgetter("xmm_mode"), count_operand_forms))
-                                    common_xmm_mode = combine_attrs and len(xmm_modes) == 1
+                                    xmm_modes = set(
+                                        map(
+                                            operator.attrgetter("xmm_mode"),
+                                            count_operand_forms,
+                                        )
+                                    )
+                                    common_xmm_mode = (
+                                        combine_attrs and len(xmm_modes) == 1
+                                    )
                                     # Check how many ISA extension options exist
-                                    isa_extensions_options = set(map(get_isa_extensions, count_operand_forms))
-                                    common_isa_extensions = combine_attrs and len(isa_extensions_options) == 1
+                                    isa_extensions_options = set(
+                                        map(get_isa_extensions, count_operand_forms)
+                                    )
+                                    common_isa_extensions = (
+                                        combine_attrs
+                                        and len(isa_extensions_options) == 1
+                                    )
                                     if common_go_name:
                                         # Initialize go_name only once for all forms with `count` operands
                                         go_name_init(code, count_operand_forms[0])
@@ -1108,46 +1495,92 @@ def main(package_root="."):
                                         xmm_mode_init(code, count_operand_forms[0])
                                     if common_isa_extensions:
                                         # Initialize isa_extensions only once for all forms with `count` operands
-                                        isa_extensions_init(code, count_operand_forms[0])
+                                        isa_extensions_init(
+                                            code, count_operand_forms[0]
+                                        )
                                     if count > 0:
                                         # Instruction form with one or more operands
-                                        for (form_index, (instruction_form, instruction_subforms)) \
-                                                in enumerate(count_operand_form_trees):
-                                            is_avx512 = is_avx512_instruction_form(instruction_form)
+                                        for form_index, (
+                                            instruction_form,
+                                            instruction_subforms,
+                                        ) in enumerate(count_operand_form_trees):
+                                            is_avx512 = is_avx512_instruction_form(
+                                                instruction_form
+                                            )
                                             operand_checks = map(
-                                                lambda o: generate_operand_check(o[0], o[1], evex_form=is_avx512),
-                                                enumerate(instruction_form.operands))
-                                            code.line("%s %s:" % ("if" if form_index == 0 else "elif", " and ".join(operand_checks)))
+                                                lambda o: generate_operand_check(
+                                                    o[0], o[1], evex_form=is_avx512
+                                                ),
+                                                enumerate(instruction_form.operands),
+                                            )
+                                            code.line(
+                                                "%s %s:"
+                                                % (
+                                                    "if" if form_index == 0 else "elif",
+                                                    " and ".join(operand_checks),
+                                                )
+                                            )
                                             with CodeBlock():
-                                                instruction_form_init(code, instruction_form, instruction_subforms,
-                                                                      not common_go_name, not common_gas_name,
-                                                                      not common_in_regs, not common_out_regs,
-                                                                      not common_out_operands,
-                                                                      not common_mmx_mode, not common_xmm_mode,
-                                                                      not common_isa_extensions)
+                                                instruction_form_init(
+                                                    code,
+                                                    instruction_form,
+                                                    instruction_subforms,
+                                                    not common_go_name,
+                                                    not common_gas_name,
+                                                    not common_in_regs,
+                                                    not common_out_regs,
+                                                    not common_out_operands,
+                                                    not common_mmx_mode,
+                                                    not common_xmm_mode,
+                                                    not common_isa_extensions,
+                                                )
                                             # For branch instructions with rel32 operand additionally generate label form
                                             if is_label_branch(instruction_form):
-                                                code.line("elif is_label(self.operands[0]):")
+                                                code.line(
+                                                    "elif is_label(self.operands[0]):"
+                                                )
                                                 with CodeBlock():
-                                                    instruction_branch_label_form_init(code,
-                                                        instruction_form, instruction_subforms,
-                                                        not common_gas_name, not common_in_regs)
+                                                    instruction_branch_label_form_init(
+                                                        code,
+                                                        instruction_form,
+                                                        instruction_subforms,
+                                                        not common_gas_name,
+                                                        not common_in_regs,
+                                                    )
                                         code.line("else:")
                                         with CodeBlock():
-                                            code.line("raise SyntaxError(\"Invalid operand types: " + name + " \" + \", \".join(map(format_operand_type, self.operands)))")
+                                            code.line(
+                                                'raise SyntaxError("Invalid operand types: '
+                                                + name
+                                                + ' " + ", ".join(map(format_operand_type, self.operands)))'
+                                            )
                                     else:
                                         # Instruction form with no operands
-                                        instruction_form_init(code, count_operand_forms[0], count_operand_form_trees[0][1],
-                                                              not common_go_name, not common_gas_name,
-                                                              not common_in_regs, not common_out_regs,
-                                                              not common_out_operands,
-                                                              not common_mmx_mode, not common_xmm_mode,
-                                                              not common_isa_extensions)
+                                        instruction_form_init(
+                                            code,
+                                            count_operand_forms[0],
+                                            count_operand_form_trees[0][1],
+                                            not common_go_name,
+                                            not common_gas_name,
+                                            not common_in_regs,
+                                            not common_out_regs,
+                                            not common_out_operands,
+                                            not common_mmx_mode,
+                                            not common_xmm_mode,
+                                            not common_isa_extensions,
+                                        )
                             if consider_operand_count:
                                 code.line("else:")
-                                code.indent_line("raise SyntaxError(\"Invalid number of operands for instruction \\\"" + name + "\\\"\")")
+                                code.indent_line(
+                                    'raise SyntaxError("Invalid number of operands for instruction \\"'
+                                    + name
+                                    + '\\"")'
+                                )
                             code.line("if nervapy.stream.active_stream is not None:")
-                            code.line("nervapy.stream.active_stream.add_instruction(self)", indent=1)
+                            code.line(
+                                "nervapy.stream.active_stream.add_instruction(self)",
+                                indent=1,
+                            )
                             code.line()
                             code.line()
 

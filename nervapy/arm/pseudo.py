@@ -328,8 +328,7 @@ class LOAD:
     def ARGUMENTS():
         from nervapy import Yep32f, Yep64f
         from nervapy.arm.function import active_function
-        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
-                                           SRegister)
+        from nervapy.arm.registers import DRegister, GeneralPurposeRegister, SRegister
 
         registers = list()
         for argument in active_function.arguments:
@@ -380,8 +379,12 @@ class LOAD:
         from nervapy.arm.function import active_function
         from nervapy.arm.generic import ADD, LDR, LDRB, LDRH, LDRSB, LDRSH
         from nervapy.arm.instructions import Operand
-        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
-                                           Register, SRegister)
+        from nervapy.arm.registers import (
+            DRegister,
+            GeneralPurposeRegister,
+            Register,
+            SRegister,
+        )
         from nervapy.arm.vfpneon import VLDR
 
         if not isinstance(ctype, Type):
@@ -470,8 +473,7 @@ class STORE:
         from nervapy.arm.function import active_function
         from nervapy.arm.generic import ADD, STR, STRB, STRH
         from nervapy.arm.instructions import Operand
-        from nervapy.arm.registers import (DRegister, GeneralPurposeRegister,
-                                           SRegister)
+        from nervapy.arm.registers import DRegister, GeneralPurposeRegister, SRegister
         from nervapy.arm.vfpneon import VSTR
 
         if isinstance(ctype, nervapy.c.Type):

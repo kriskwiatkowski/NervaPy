@@ -2,9 +2,9 @@ name: Code Quality
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
 
 jobs:
   security-scan:
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -58,7 +58,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -66,7 +66,7 @@ jobs:
           pip install mypy
           pip install -r requirements.txt
           pip install -e .
-      
+
       - name: Run type checking
         run: mypy nervapy/ --ignore-missing-imports --no-strict-optional
         continue-on-error: true
@@ -79,20 +79,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install black isort
-      
+
       - name: Check code formatting with black
         run: black --check --diff nervapy/
-        continue-on-error: true
 
       - name: Check import sorting with isort
         run: isort --check-only --diff nervapy/
-        continue-on-error: true
 
   complexity-analysis:
     runs-on: ubuntu-latest
@@ -102,13 +100,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install radon xenon
-      
+
       - name: Analyze code complexity
         run: |
           echo "=== Cyclomatic Complexity ==="

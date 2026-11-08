@@ -23,7 +23,7 @@ class CodeWriter:
 
     def line(self, line="", indent=0):
         if line != "":
-            self.lines.append("    "*(self.indent+int(indent)) + str(line))
+            self.lines.append("    " * (self.indent + int(indent)) + str(line))
         else:
             self.lines.append(line)
 

@@ -14,7 +14,9 @@ from codegen.code import CodeBlock, CodeWriter
 
 instruction_set = read_instruction_set()
 
-instruction_groups = json.load(open(os.path.join(os.path.dirname(__file__), "x86_64.json")))
+instruction_groups = json.load(
+    open(os.path.join(os.path.dirname(__file__), "x86_64.json"))
+)
 
 
 def filter_instruction_forms(instruction_forms):
@@ -22,22 +24,35 @@ def filter_instruction_forms(instruction_forms):
 
     new_instruction_forms = list()
     for instruction_form in instruction_forms:
-        if all([operand.type not in {"r8l", "r16l", "r32l", "moffs32", "moffs64"} for operand in instruction_form.operands]):
+        if all(
+            [
+                operand.type not in {"r8l", "r16l", "r32l", "moffs32", "moffs64"}
+                for operand in instruction_form.operands
+            ]
+        ):
             new_instruction_forms.append(instruction_form)
     return new_instruction_forms
 
 
 def is_avx512_instruction_form(instruction_form):
-    return instruction_form.isa_extensions and instruction_form.isa_extensions[0].name.startswith("AVX512")
+    return instruction_form.isa_extensions and instruction_form.isa_extensions[
+        0
+    ].name.startswith("AVX512")
 
 
 def objcopy(*args):
     objdump_path = os.environ.get("OBJCOPY_FOR_X86", os.environ.get("OBJCOPY"))
-    assert objdump_path, "objcopy not found, please set the environment variable OBJCOPY_FOR_X86"
-    objdump_process = subprocess.Popen([objdump_path] + list(args),
-                                       shell=False,
-                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (stdoutdata, stderrdata) = objdump_process.communicate()
+    assert (
+        objdump_path
+    ), "objcopy not found, please set the environment variable OBJCOPY_FOR_X86"
+    objdump_process = subprocess.Popen(
+        [objdump_path] + list(args),
+        shell=False,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdoutdata, stderrdata = objdump_process.communicate()
     if objdump_process.returncode != 0:
         print(stdoutdata)
         print(stderrdata)
@@ -45,19 +60,25 @@ def objcopy(*args):
 
 def gas(*args):
     gas_path = os.environ.get("AS_FOR_X86", os.environ.get("GAS"))
-    assert gas_path, "GNU assembler not found, please set the environment variable AS_FOR_X86"
-    gas_process = subprocess.Popen([gas_path] + list(args),
-                                   shell=False,
-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (stdoutdata, stderrdata) = gas_process.communicate()
+    assert (
+        gas_path
+    ), "GNU assembler not found, please set the environment variable AS_FOR_X86"
+    gas_process = subprocess.Popen(
+        [gas_path] + list(args),
+        shell=False,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdoutdata, stderrdata = gas_process.communicate()
     if gas_process.returncode != 0:
         print(stdoutdata)
         print(stderrdata)
-    return stdoutdata.decode ('ascii', errors='replace')
+    return stdoutdata.decode("ascii", errors="replace")
 
 
 def binutils_encode(assembly):
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as asm_file:
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as asm_file:
         print(".text", file=asm_file)
         print(".intel_syntax noprefix", file=asm_file)
         print(assembly, file=asm_file)
@@ -178,15 +199,16 @@ def generate_operand(operand, operand_number, peachpy=True, evex=False):
     if isinstance(operand, list):
         operand = operand[operand_number]
     if operand is not None and not peachpy:
-        operand = operand.\
-            replace("byte", "BYTE PTR ").\
-            replace("dword", "DWORD PTR").\
-            replace("qword", "QWORD PTR").\
-            replace("oword", "XMMWORD PTR").\
-            replace("hword", "YMMWORD PTR").\
-            replace("zword", "ZMMWORD PTR").\
-            replace("word", "WORD PTR").\
-            replace("rip", "$+2")
+        operand = (
+            operand.replace("byte", "BYTE PTR ")
+            .replace("dword", "DWORD PTR")
+            .replace("qword", "QWORD PTR")
+            .replace("oword", "XMMWORD PTR")
+            .replace("hword", "YMMWORD PTR")
+            .replace("zword", "ZMMWORD PTR")
+            .replace("word", "WORD PTR")
+            .replace("rip", "$+2")
+        )
     if operand is not None and peachpy:
         for kn in range(1, 8):
             kreg = "k" + str(kn)
@@ -201,11 +223,19 @@ def generate_operand(operand, operand_number, peachpy=True, evex=False):
 
 tab = " " * 4
 
+
 def main(package_root="."):
     for group, instruction_names in instruction_groups.items():
-        with open(os.path.join (package_root, "test", "x86_64", "encoding", "test_%s.py" % group), "w") as out:
+        with open(
+            os.path.join(
+                package_root, "test", "x86_64", "encoding", "test_%s.py" % group
+            ),
+            "w",
+        ) as out:
             with CodeWriter() as code:
-                code.line("# This file is auto-generated by /codegen/x86_64_test_encoding.py")
+                code.line(
+                    "# This file is auto-generated by /codegen/x86_64_test_encoding.py"
+                )
                 code.line("# Reference opcodes are generated by:")
                 code.line("#     " + gas("--version").splitlines()[0])
                 code.line()
@@ -219,7 +249,9 @@ def main(package_root="."):
                         code.line("def runTest(self):")
                         with CodeBlock():
                             # Instructions with `name` name
-                            name_instructions = list(filter(lambda i: i.name == name, instruction_set))
+                            name_instructions = list(
+                                filter(lambda i: i.name == name, instruction_set)
+                            )
                             if not name_instructions:
                                 print("No forms for instruction: " + name)
                                 continue
@@ -227,18 +259,34 @@ def main(package_root="."):
                             name_instruction = name_instructions[0]
 
                             has_assertions = False
-                            for instruction_form in filter_instruction_forms(name_instruction.forms):
+                            for instruction_form in filter_instruction_forms(
+                                name_instruction.forms
+                            ):
                                 is_avx512 = is_avx512_instruction_form(instruction_form)
-                                peachpy_operands = [generate_operand(o, i, peachpy=True, evex=is_avx512) for (i, o)
-                                                    in enumerate(instruction_form.operands)]
-                                gas_operands = [generate_operand(o, i, peachpy=False, evex=is_avx512) for (i, o)
-                                                in enumerate(instruction_form.operands)]
+                                peachpy_operands = [
+                                    generate_operand(o, i, peachpy=True, evex=is_avx512)
+                                    for (i, o) in enumerate(instruction_form.operands)
+                                ]
+                                gas_operands = [
+                                    generate_operand(
+                                        o, i, peachpy=False, evex=is_avx512
+                                    )
+                                    for (i, o) in enumerate(instruction_form.operands)
+                                ]
                                 if not any(map(lambda op: op is None, gas_operands)):
-                                    gas_assembly = "%s %s" % (instruction_form.name, ", ".join(gas_operands))
-                                    peachpy_assembly = "%s(%s)" % (instruction_form.name, ", ".join(peachpy_operands))
+                                    gas_assembly = "%s %s" % (
+                                        instruction_form.name,
+                                        ", ".join(gas_operands),
+                                    )
+                                    peachpy_assembly = "%s(%s)" % (
+                                        instruction_form.name,
+                                        ", ".join(peachpy_operands),
+                                    )
                                     reference_bytecode = binutils_encode(gas_assembly)
-                                    code.line("self.assertEqual(%s, %s.encode())" %
-                                              (reference_bytecode, peachpy_assembly))
+                                    code.line(
+                                        "self.assertEqual(%s, %s.encode())"
+                                        % (reference_bytecode, peachpy_assembly)
+                                    )
                                     has_assertions = True
                             if not has_assertions:
                                 code.line("pass")
@@ -247,6 +295,6 @@ def main(package_root="."):
 
             print(str(code), file=out)
 
-if __name__ == '__main__':
-    main()
 
+if __name__ == "__main__":
+    main()

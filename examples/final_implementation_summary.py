@@ -29,7 +29,7 @@ def final_summary():
         ("CortexM1", "ARMv6-M, Thumb2"),
         ("CortexM3", "ARMv7-M, Thumb2"),
         ("CortexM4", "ARMv7-M, Thumb2, DSP, VFP4"),
-        ("CortexM7", "ARMv7-M, Thumb2, DSP, VFP4, VFPd32")
+        ("CortexM7", "ARMv7-M, Thumb2, DSP, VFP4, VFPd32"),
     ]
 
     for name, features in microarchs:
@@ -38,7 +38,7 @@ def final_summary():
     print("\n**3. Assembly Format Support:**")
     formats = [
         ("GAS", "GNU Assembler", ".arch armv7-m, .fpu directives"),
-        ("ARMCC", "ARM Compiler", "AREA, PROC/ENDP, REQUIRE directives")
+        ("ARMCC", "ARM Compiler", "AREA, PROC/ENDP, REQUIRE directives"),
     ]
 
     for fmt, desc, syntax in formats:
@@ -49,7 +49,7 @@ def final_summary():
     strategies = [
         ("PUSH_W", "Use PUSH.W/POP.W for r8-r15", "Modern Thumb-2, efficient"),
         ("STMDB", "Use STMDB sp!/LDMIA sp! for r8-r15", "Maximum compatibility"),
-        ("AUTO", "Automatic selection based on format", "GAS→PUSH.W, ARMCC→STMDB")
+        ("AUTO", "Automatic selection based on format", "GAS→PUSH.W, ARMCC→STMDB"),
     ]
 
     for strategy, desc, use_case in strategies:
@@ -64,7 +64,7 @@ def final_summary():
         ("STMDB(base, regs)", "Store Multiple Decrement Before"),
         ("LDMIA(base, regs)", "Load Multiple Increment After"),
         ("STMIA(base, regs)", "Store Multiple Increment After"),
-        ("LDMDB(base, regs)", "Load Multiple Decrement Before")
+        ("LDMDB(base, regs)", "Load Multiple Decrement Before"),
     ]
 
     for inst, desc in instructions:
@@ -84,14 +84,17 @@ def demonstrate_working_examples():
     input_arg = Argument(ptr(const_uint32_t))
     output_arg = Argument(ptr(uint32_t))
 
-    with Function("cortex_m3_example", (input_arg, output_arg),
-                 target=Microarchitecture.CortexM3,
-                 abi=arm_gnueabihf,
-                 assembly_format=AssemblyFormat.GAS,
-                 high_register_strategy=HighRegisterStrategy.PUSH_W,
-                 report_generation=False) as func:
+    with Function(
+        "cortex_m3_example",
+        (input_arg, output_arg),
+        target=Microarchitecture.CortexM3,
+        abi=arm_gnueabihf,
+        assembly_format=AssemblyFormat.GAS,
+        high_register_strategy=HighRegisterStrategy.PUSH_W,
+        report_generation=False,
+    ) as func:
 
-        (input_ptr, output_ptr) = LOAD.ARGUMENTS()
+        input_ptr, output_ptr = LOAD.ARGUMENTS()
         value = GeneralPurposeRegister()
         LDR(value, [input_ptr])
         ADD(value, value, 1)
@@ -103,14 +106,17 @@ def demonstrate_working_examples():
     # Example 2: Cortex-M4 with ARMCC format
     print("🔧 **Example 2: Cortex-M4 with ARMCC format**")
 
-    with Function("cortex_m4_example", (input_arg, output_arg),
-                 target=Microarchitecture.CortexM4,
-                 abi=arm_gnueabihf,
-                 assembly_format=AssemblyFormat.ARMCC,
-                 high_register_strategy=HighRegisterStrategy.STMDB,
-                 report_generation=False) as func:
+    with Function(
+        "cortex_m4_example",
+        (input_arg, output_arg),
+        target=Microarchitecture.CortexM4,
+        abi=arm_gnueabihf,
+        assembly_format=AssemblyFormat.ARMCC,
+        high_register_strategy=HighRegisterStrategy.STMDB,
+        report_generation=False,
+    ) as func:
 
-        (input_ptr, output_ptr) = LOAD.ARGUMENTS()
+        input_ptr, output_ptr = LOAD.ARGUMENTS()
         value = GeneralPurposeRegister()
         LDR(value, [input_ptr])
         LSL(value, value, 1)  # DSP-style operation
@@ -202,4 +208,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n**FINAL ERROR:** {e}")
         import traceback
+
         traceback.print_exc()

@@ -6,8 +6,7 @@ import inspect
 import nervapy.stream
 import nervapy.x86_64.isa
 import nervapy.x86_64.options
-from nervapy.parse import (parse_assigned_variable_name,
-                           parse_with_variable_name)
+from nervapy.parse import parse_assigned_variable_name, parse_with_variable_name
 from nervapy.x86_64.instructions import Instruction
 from nervapy.x86_64.operand import check_operand, format_operand_type
 
@@ -210,9 +209,12 @@ class ALIGN(Instruction):
 class RETURN(Instruction):
     def __init__(self, *args, **kwargs):
         from nervapy.common.function import active_function
-        from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                              MMXRegister, XMMRegister,
-                                              YMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister,
+            MMXRegister,
+            XMMRegister,
+            YMMRegister,
+        )
 
         origin = kwargs.get("origin")
         prototype = kwargs.get("prototype")
@@ -327,8 +329,11 @@ class LOAD:
         def __init__(self, *args, **kwargs):
             from nervapy.common.function import active_function
             from nervapy.x86_64 import m64
-            from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                                  XMMRegister, YMMRegister)
+            from nervapy.x86_64.registers import (
+                GeneralPurposeRegister,
+                XMMRegister,
+                YMMRegister,
+            )
 
             origin = kwargs.get("origin")
             prototype = kwargs.get("prototype")
@@ -389,13 +394,16 @@ class LOAD:
 
             text = "\t" if indent else ""
             if assembly_format == "go":
-                from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                                      GeneralPurposeRegister8,
-                                                      GeneralPurposeRegister16,
-                                                      GeneralPurposeRegister32,
-                                                      GeneralPurposeRegister64,
-                                                      MMXRegister, XMMRegister,
-                                                      YMMRegister)
+                from nervapy.x86_64.registers import (
+                    GeneralPurposeRegister,
+                    GeneralPurposeRegister8,
+                    GeneralPurposeRegister16,
+                    GeneralPurposeRegister32,
+                    GeneralPurposeRegister64,
+                    MMXRegister,
+                    XMMRegister,
+                    YMMRegister,
+                )
 
                 assert isinstance(
                     self.operands[0], (GeneralPurposeRegister, MMXRegister, XMMRegister)
@@ -477,9 +485,12 @@ class STORE:
             from nervapy.common.function import active_function
             from nervapy.util import is_int16, is_int32
             from nervapy.x86_64.abi import goasm_amd64_abi, goasm_amd64p32_abi
-            from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                                  MMXRegister, XMMRegister,
-                                                  YMMRegister)
+            from nervapy.x86_64.registers import (
+                GeneralPurposeRegister,
+                MMXRegister,
+                XMMRegister,
+                YMMRegister,
+            )
 
             origin = kwargs.get("origin")
             prototype = kwargs.get("prototype")

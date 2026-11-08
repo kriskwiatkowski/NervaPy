@@ -56,6 +56,12 @@ packages = ["nervapy"]
 module = "dynacl"
 ignore_missing_imports = true
 
+[tool.isort]
+# Without this, isort's default import-wrapping style disagrees with
+# black's, so running one after the other undoes the other's changes.
+# "black" profile makes isort produce output black already accepts.
+profile = "black"
+
 [tool.bandit]
 # B101 (assert_used): this codebase uses `assert` throughout as internal
 # precondition/invariant checks on its own API (e.g. argument type checks in

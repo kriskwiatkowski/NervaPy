@@ -15,20 +15,23 @@ class TestMultiplyInstructions(unittest.TestCase):
         a_arg = Argument(uint32_t)
         b_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_mul", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_mul",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             # MUL: r4 = a * b
             MUL(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MUL", assembly)
         self.assertIn(".arch", assembly)
@@ -39,20 +42,23 @@ class TestMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         c_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_mla", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_mla",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # MLA: r4 = (a * b) + c
             MLA(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MLA", assembly)
 
@@ -62,22 +68,25 @@ class TestMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_umull", (a_arg, b_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_umull",
+            (a_arg, b_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             # UMULL: r5:r4 = a * b (unsigned, 64-bit result)
             UMULL(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("UMULL", assembly)
         # Verify both low and high registers
@@ -92,27 +101,29 @@ class TestMultiplyInstructions(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_umlal",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_umlal",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             # Initialize accumulators
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # UMLAL: r5:r4 += a * b (unsigned, 64-bit accumulate)
             UMLAL(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("UMLAL", assembly)
 
@@ -124,27 +135,29 @@ class TestMultiplyInstructions(unittest.TestCase):
         acc2_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_umaal",
-                     (a_arg, b_arg, acc1_arg, acc2_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc1, acc2, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_umaal",
+            (a_arg, b_arg, acc1_arg, acc2_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc1, acc2, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             # Initialize accumulators
             MOV(r4, acc1)
             MOV(r5, acc2)
-            
+
             # UMAAL: r5:r4 = (a * b) + r4 + r5
             UMAAL(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("UMAAL", assembly)
 
@@ -157,30 +170,32 @@ class TestMultiplyInstructions(unittest.TestCase):
         acc2_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_umaalge",
-                     (a_arg, b_arg, c_arg, acc1_arg, acc2_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, acc1, acc2, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_umaalge",
+            (a_arg, b_arg, c_arg, acc1_arg, acc2_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, acc1, acc2, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             # Initialize accumulators
             MOV(r4, acc1)
             MOV(r5, acc2)
-            
+
             # Compare a with c to set condition flags
             CMP(a, c)
-            
+
             # UMAALGE: if (a >= c) then r5:r4 = (a * b) + r4 + r5
             UMAALGE(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("UMAALGE", assembly)
         self.assertIn("CMP", assembly)
@@ -191,30 +206,32 @@ class TestMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         c_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_combined",
-                     (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_combined",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # Basic multiply
             MUL(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             # Multiply-accumulate
             MLA(r5, a, b, c)
             STR(r5, [result_ptr, 4])
-            
+
             # Long multiply
             UMULL(r6, r7, a, b)
             STR(r6, [result_ptr, 8])
             STR(r7, [result_ptr, 12])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MUL", assembly)
         self.assertIn("MLA", assembly)
@@ -225,19 +242,22 @@ class TestMultiplyInstructions(unittest.TestCase):
         a_arg = Argument(uint32_t)
         b_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_mul_m4", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.CortexM4,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_mul_m4",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.CortexM4,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             MUL(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MUL", assembly)
         self.assertIn(".arch armv7-m", assembly)
@@ -250,27 +270,29 @@ class TestMultiplyInstructions(unittest.TestCase):
         d_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_multiply_chain",
-                     (a_arg, b_arg, c_arg, d_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, d, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_multiply_chain",
+            (a_arg, b_arg, c_arg, d_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, d, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             # Compute (a*b) + (c*d) using UMULL and UMLAL
             # First: r5:r4 = a * b
             UMULL(r4, r5, a, b)
-            
+
             # Then: r5:r4 += c * d
             UMLAL(r4, r5, c, d)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("UMULL", assembly)
         self.assertIn("UMLAL", assembly)
@@ -284,19 +306,22 @@ class TestMultiplyInstructionsARMCC(unittest.TestCase):
         a_arg = Argument(uint32_t)
         b_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_mul_armcc", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.ARMCC,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_mul_armcc",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.ARMCC,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             MUL(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MUL", assembly)
         self.assertIn("AREA", assembly)
@@ -308,21 +333,24 @@ class TestMultiplyInstructionsARMCC(unittest.TestCase):
         b_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_umull_armcc", (a_arg, b_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.ARMCC,
-                     report_generation=False) as function:
-            (a, b, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_umull_armcc",
+            (a_arg, b_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.ARMCC,
+            report_generation=False,
+        ) as function:
+            a, b, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             UMULL(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("UMULL", assembly)
         self.assertIn("ENDP", assembly)
@@ -337,22 +365,25 @@ class TestSignedMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(int32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smull", (a_arg, b_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smull",
+            (a_arg, b_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             # SMULL: r5:r4 = a * b (signed, 64-bit result)
             SMULL(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMULL", assembly)
 
@@ -364,27 +395,29 @@ class TestSignedMultiplyInstructions(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlal",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlal",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             # Initialize accumulators
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # SMLAL: r5:r4 += a * b (signed, 64-bit accumulate)
             SMLAL(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLAL", assembly)
 
@@ -398,20 +431,23 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         c_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_mls", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_mls",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # MLS: r4 = c - (a * b)
             MLS(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MLS", assembly)
 
@@ -421,23 +457,26 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         c_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smultbeq", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smultbeq",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # Set condition with CMP
             CMP(a, c)
-            
+
             # SMULTBEQ: if EQ, r4 = a[31:16] * b[15:0]
             SMULTBEQ(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMULTBEQ", assembly)
         self.assertIn("CMP", assembly)
@@ -449,23 +488,26 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         c_arg = Argument(uint32_t)
         d_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlabbne", (a_arg, b_arg, c_arg, d_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, d, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlabbne",
+            (a_arg, b_arg, c_arg, d_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, d, result_ptr = LOAD.ARGUMENTS()
+
             # Set condition
             CMP(a, d)
-            
+
             # SMLABBNE: if NE, r4 = (a[15:0] * b[15:0]) + c
             SMLABBNE(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLABBNE", assembly)
 
@@ -475,20 +517,23 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         c_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlabt", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlabt",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # SMLABT: r4 = (a[15:0] * b[31:16]) + c
             SMLABT(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLABT", assembly)
 
@@ -498,20 +543,23 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(int32_t)
         c_arg = Argument(int32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlawb", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlawb",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # SMLAWB: r4 = ((a * b[15:0]) >> 16) + c
             SMLAWB(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLAWB", assembly)
 
@@ -521,20 +569,23 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(int32_t)
         c_arg = Argument(int32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlawt", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlawt",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # SMLAWT: r4 = ((a * b[31:16]) >> 16) + c
             SMLAWT(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLAWT", assembly)
 
@@ -543,20 +594,23 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         a_arg = Argument(int32_t)
         b_arg = Argument(int32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smulwb", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smulwb",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             # SMULWB: r4 = (a * b[15:0]) >> 16
             SMULWB(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMULWB", assembly)
 
@@ -565,20 +619,23 @@ class TestDSPMultiplyInstructions(unittest.TestCase):
         a_arg = Argument(int32_t)
         b_arg = Argument(int32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smulwt", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smulwt",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             # SMULWT: r4 = (a * b[31:16]) >> 16
             SMULWT(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMULWT", assembly)
 
@@ -591,20 +648,23 @@ class TestMSWMultiplyInstructions(unittest.TestCase):
         a_arg = Argument(int32_t)
         b_arg = Argument(int32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smmul", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smmul",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             # SMMUL: r4 = (a * b)[63:32]
             SMMUL(r4, a, b)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMMUL", assembly)
 
@@ -614,20 +674,23 @@ class TestMSWMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(int32_t)
         c_arg = Argument(int32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smmla", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smmla",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # SMMLA: r4 = ((a * b)[63:32]) + c
             SMMLA(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMMLA", assembly)
 
@@ -637,20 +700,23 @@ class TestMSWMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(int32_t)
         c_arg = Argument(int32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smmls", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smmls",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # SMMLS: r4 = c - ((a * b)[63:32])
             SMMLS(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMMLS", assembly)
 
@@ -664,20 +730,23 @@ class TestSIMDMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         c_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlad", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlad",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # SMLAD: r4 = (a[15:0]*b[15:0]) + (a[31:16]*b[31:16]) + c
             SMLAD(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLAD", assembly)
 
@@ -687,20 +756,23 @@ class TestSIMDMultiplyInstructions(unittest.TestCase):
         b_arg = Argument(uint32_t)
         c_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlsd", (a_arg, b_arg, c_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, c, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlsd",
+            (a_arg, b_arg, c_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, c, result_ptr = LOAD.ARGUMENTS()
+
             # SMLSD: r4 = (a[15:0]*b[15:0]) - (a[31:16]*b[31:16]) + c
             SMLSD(r4, a, b, c)
             STR(r4, [result_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLSD", assembly)
 
@@ -712,26 +784,28 @@ class TestSIMDMultiplyInstructions(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlald",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlald",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # SMLALD: r5:r4 += (a[15:0]*b[15:0]) + (a[31:16]*b[31:16])
             SMLALD(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLALD", assembly)
 
@@ -743,26 +817,28 @@ class TestSIMDMultiplyInstructions(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlsld",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlsld",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # SMLSLD: r5:r4 += (a[15:0]*b[15:0]) - (a[31:16]*b[31:16])
             SMLSLD(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLSLD", assembly)
 
@@ -778,26 +854,28 @@ class TestSMLALVariants(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlalbb",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlalbb",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # SMLALBB: r5:r4 += a[15:0] * b[15:0]
             SMLALBB(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLALBB", assembly)
 
@@ -809,26 +887,28 @@ class TestSMLALVariants(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlalbt",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlalbt",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # SMLALBT: r5:r4 += a[15:0] * b[31:16]
             SMLALBT(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLALBT", assembly)
 
@@ -840,26 +920,28 @@ class TestSMLALVariants(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlaltb",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlaltb",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # SMLALTB: r5:r4 += a[31:16] * b[15:0]
             SMLALTB(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLALTB", assembly)
 
@@ -871,26 +953,28 @@ class TestSMLALVariants(unittest.TestCase):
         acc_high_arg = Argument(uint32_t)
         result_low_arg = Argument(ptr(uint32_t))
         result_high_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_smlaltt",
-                     (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, acc_low, acc_high, result_low_ptr, result_high_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_smlaltt",
+            (a_arg, b_arg, acc_low_arg, acc_high_arg, result_low_arg, result_high_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, acc_low, acc_high, result_low_ptr, result_high_ptr = LOAD.ARGUMENTS()
+
             MOV(r4, acc_low)
             MOV(r5, acc_high)
-            
+
             # SMLALTT: r5:r4 += a[31:16] * b[31:16]
             SMLALTT(r4, r5, a, b)
-            
+
             STR(r4, [result_low_ptr])
             STR(r5, [result_high_ptr])
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("SMLALTT", assembly)
 
@@ -903,19 +987,22 @@ class TestWMMXMultiplyInstructions(unittest.TestCase):
         a_arg = Argument(uint32_t)
         b_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_mia", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_mia",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             # MIA: wcgr0 += a * b
             MIA("wcgr0", a, b)
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MIA", assembly)
 
@@ -924,22 +1011,25 @@ class TestWMMXMultiplyInstructions(unittest.TestCase):
         a_arg = Argument(uint32_t)
         b_arg = Argument(uint32_t)
         result_arg = Argument(ptr(uint32_t))
-        
-        with Function("test_miaph", (a_arg, b_arg, result_arg),
-                     target=Microarchitecture.ARM11,
-                     abi=arm_gnueabihf,
-                     assembly_format=AssemblyFormat.GAS,
-                     report_generation=False) as function:
-            (a, b, result_ptr) = LOAD.ARGUMENTS()
-            
+
+        with Function(
+            "test_miaph",
+            (a_arg, b_arg, result_arg),
+            target=Microarchitecture.ARM11,
+            abi=arm_gnueabihf,
+            assembly_format=AssemblyFormat.GAS,
+            report_generation=False,
+        ) as function:
+            a, b, result_ptr = LOAD.ARGUMENTS()
+
             # MIAPH: wcgr0 += (a[15:0]*b[15:0]) + (a[31:16]*b[31:16])
             MIAPH("wcgr0", a, b)
-            
+
             RETURN()
-        
+
         assembly = function.assembly
         self.assertIn("MIAPH", assembly)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

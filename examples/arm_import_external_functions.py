@@ -7,8 +7,7 @@ This example demonstrates how to declare external functions for ARMCC assembly
 using the IMPORT directive.
 """
 
-from nervapy.arm import (BEQ, BL, BX, CMP, IMPORT, MOV, Function, Label, lr,
-                         r0, r1, r2)
+from nervapy.arm import BEQ, BL, BX, CMP, IMPORT, MOV, Function, Label, lr, r0, r1, r2
 from nervapy.arm.abi import arm_gnueabi
 from nervapy.arm.formats import AssemblyFormat
 from nervapy.arm.microarchitecture import Microarchitecture
@@ -20,22 +19,26 @@ def example_simple_external_call():
     """
     print("\n1. Simple External Function Call")
     print("=" * 70)
-    
-    with Function("my_function", (), None,
-                  target=Microarchitecture.CortexM4,
-                  abi=arm_gnueabi,
-                  assembly_format=AssemblyFormat.ARMCC) as func:
-        
+
+    with Function(
+        "my_function",
+        (),
+        None,
+        target=Microarchitecture.CortexM4,
+        abi=arm_gnueabi,
+        assembly_format=AssemblyFormat.ARMCC,
+    ) as func:
+
         # Declare external function
         external_func = IMPORT.FUNCTION("printf")
-        
+
         # Set up argument and call
         MOV(r0, 0x100)
         BL(external_func)
-        
+
         # Return
         BX(lr)
-    
+
     print("Generated ARMCC Assembly:")
     print("-" * 70)
     print(func.assembly)
@@ -47,35 +50,39 @@ def example_multiple_external_calls():
     """
     print("\n2. Multiple External Function Calls")
     print("=" * 70)
-    
-    with Function("process_data", (), None,
-                  target=Microarchitecture.CortexM4,
-                  abi=arm_gnueabi,
-                  assembly_format=AssemblyFormat.ARMCC) as func:
-        
+
+    with Function(
+        "process_data",
+        (),
+        None,
+        target=Microarchitecture.CortexM4,
+        abi=arm_gnueabi,
+        assembly_format=AssemblyFormat.ARMCC,
+    ) as func:
+
         # Declare external functions
         malloc_func = IMPORT.FUNCTION("malloc")
         memcpy_func = IMPORT.FUNCTION("memcpy")
         free_func = IMPORT.FUNCTION("free")
-        
+
         # Call malloc
         MOV(r0, 256)
         BL(malloc_func)
         MOV(r1, r0)  # Save pointer
-        
+
         # Call memcpy
         MOV(r0, r1)
         MOV(r1, r2)
         MOV(r2, 256)
         BL(memcpy_func)
-        
+
         # Call free
         MOV(r0, r1)
         BL(free_func)
-        
+
         # Return
         BX(lr)
-    
+
     print("Generated ARMCC Assembly:")
     print("-" * 70)
     print(func.assembly)
@@ -87,30 +94,35 @@ def example_conditional_external_call():
     """
     print("\n3. Conditional External Function Call")
     print("=" * 70)
-    
-    with Function("conditional_call", (), None,
-                  target=Microarchitecture.CortexM4,
-                  abi=arm_gnueabi,
-                  assembly_format=AssemblyFormat.ARMCC) as func:
-        
+
+    with Function(
+        "conditional_call",
+        (),
+        None,
+        target=Microarchitecture.CortexM4,
+        abi=arm_gnueabi,
+        assembly_format=AssemblyFormat.ARMCC,
+    ) as func:
+
         # Declare external function
         error_handler = IMPORT.FUNCTION("handle_error")
-        
+
         # Check condition
         CMP(r0, 0)
         skip_label = Label("skip_error")
         BEQ(skip_label)
-        
+
         # Call error handler if r0 != 0
         BL(error_handler)
-        
+
         # Skip label
         from nervapy.arm.pseudo import LABEL
+
         LABEL(skip_label)
-        
+
         # Return
         BX(lr)
-    
+
     print("Generated ARMCC Assembly:")
     print("-" * 70)
     print(func.assembly)
@@ -122,33 +134,41 @@ def example_comparison_gas_vs_armcc():
     """
     print("\n4. Comparison: GAS vs ARMCC Format")
     print("=" * 70)
-    
+
     # Generate with GAS format
-    with Function("call_external", (), None,
-                  target=Microarchitecture.CortexM4,
-                  abi=arm_gnueabi,
-                  assembly_format=AssemblyFormat.GAS) as func_gas:
-        
+    with Function(
+        "call_external",
+        (),
+        None,
+        target=Microarchitecture.CortexM4,
+        abi=arm_gnueabi,
+        assembly_format=AssemblyFormat.GAS,
+    ) as func_gas:
+
         external_func = IMPORT.FUNCTION("external_function")
         MOV(r0, 42)
         BL(external_func)
         BX(lr)
-    
+
     # Generate with ARMCC format
-    with Function("call_external", (), None,
-                  target=Microarchitecture.CortexM4,
-                  abi=arm_gnueabi,
-                  assembly_format=AssemblyFormat.ARMCC) as func_armcc:
-        
+    with Function(
+        "call_external",
+        (),
+        None,
+        target=Microarchitecture.CortexM4,
+        abi=arm_gnueabi,
+        assembly_format=AssemblyFormat.ARMCC,
+    ) as func_armcc:
+
         external_func = IMPORT.FUNCTION("external_function")
         MOV(r0, 42)
         BL(external_func)
         BX(lr)
-    
+
     print("\nGAS Format:")
     print("-" * 70)
     print(func_gas.assembly)
-    
+
     print("\nARMCC Format:")
     print("-" * 70)
     print(func_armcc.assembly)
@@ -210,18 +230,19 @@ if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("ARMCC External Function Import Examples")
     print("=" * 70)
-    
+
     try:
         example_simple_external_call()
         example_multiple_external_calls()
         example_conditional_external_call()
         example_comparison_gas_vs_armcc()
         print_usage_summary()
-        
+
         print("\n" + "=" * 70)
         print("✓ All examples completed successfully!")
         print("=" * 70)
     except Exception as e:
         print(f"\n✗ Error: {e}")
         import traceback
+
         traceback.print_exc()

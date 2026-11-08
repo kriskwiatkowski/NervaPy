@@ -16,13 +16,15 @@ class TestExplicitRegisterInputConflict(unittest.TestCase):
         listing = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_listing = """
 // func explicit_reg_input() uint64
-TEXT \xc2\xB7explicit_reg_input(SB),4,$0-8
+TEXT \xc2\xb7explicit_reg_input(SB),4,$0-8
    	MOVQ $42, BX
    	MOVQ AX, 0(BX)
    	MOVQ BX, ret+0(FP)
    	RET
 """
-        assert equal_codes(listing, ref_listing), "Unexpected PeachPy listing:\n" + listing
+        assert equal_codes(listing, ref_listing), (
+            "Unexpected PeachPy listing:\n" + listing
+        )
 
 
 class TestExplicitRegisterConflict2(unittest.TestCase):
@@ -40,7 +42,7 @@ class TestExplicitRegisterConflict2(unittest.TestCase):
         listing = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_listing = """
 // func explicit_reg_input_2()
-TEXT \xc2\xB7explicit_reg_input_2(SB),4,$0
+TEXT \xc2\xb7explicit_reg_input_2(SB),4,$0
         MOVQ $0, BX
         MOVQ $0, CX
         MOVQ $0, AX
@@ -48,7 +50,9 @@ TEXT \xc2\xB7explicit_reg_input_2(SB),4,$0
         MOVB $0, 0(CX)
         RET
 """
-        assert equal_codes(listing, ref_listing), "Unexpected PeachPy listing:\n" + listing
+        assert equal_codes(listing, ref_listing), (
+            "Unexpected PeachPy listing:\n" + listing
+        )
 
 
 class TestExplicitRegisterOutputConflict(unittest.TestCase):
@@ -62,13 +66,15 @@ class TestExplicitRegisterOutputConflict(unittest.TestCase):
         listing = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_listing = """
 // func explicit_reg_output() uint64
-TEXT \xc2\xB7explicit_reg_output(SB),4,$0-8
+TEXT \xc2\xb7explicit_reg_output(SB),4,$0-8
    	MOVQ $1, BX
    	MOVQ $2, AX
    	MOVQ BX, ret+0(FP)
    	RET
 """
-        assert equal_codes(listing, ref_listing), "Unexpected PeachPy listing:\n" + listing
+        assert equal_codes(listing, ref_listing), (
+            "Unexpected PeachPy listing:\n" + listing
+        )
 
 
 class TestImplicitRegisterConflict(unittest.TestCase):
@@ -82,13 +88,15 @@ class TestImplicitRegisterConflict(unittest.TestCase):
         listing = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_listing = """
 // func implicit_reg() uint64
-TEXT \xc2\xB7implicit_reg(SB),4,$0-8
+TEXT \xc2\xb7implicit_reg(SB),4,$0-8
 	MOVQ $42, DI
 	CPUID
 	MOVQ DI, ret+0(FP)
 	RET
 """
-        assert equal_codes(listing, ref_listing), "Unexpected PeachPy listing:\n" + listing
+        assert equal_codes(listing, ref_listing), (
+            "Unexpected PeachPy listing:\n" + listing
+        )
 
 
 class TestIssue65(unittest.TestCase):
@@ -101,12 +109,15 @@ class TestIssue65(unittest.TestCase):
         listing = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_listing = """
 // func crash() int64
-TEXT \xc2\xB7crash(SB),4,$0-8
+TEXT \xc2\xb7crash(SB),4,$0-8
 	MOVQ $999, BX
 	MOVQ AX, ret+0(FP)
 	RET
 """
-        assert equal_codes(listing, ref_listing), "Unexpected PeachPy listing:\n" + listing
+        assert equal_codes(listing, ref_listing), (
+            "Unexpected PeachPy listing:\n" + listing
+        )
+
 
 class TestIssue65SecondComment(unittest.TestCase):
     def runTest(self):
@@ -119,9 +130,11 @@ class TestIssue65SecondComment(unittest.TestCase):
         listing = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_listing = """
 // func crash() int64
-TEXT \xc2\xB7crash(SB),4,$0-8
+TEXT \xc2\xb7crash(SB),4,$0-8
 MOVQ $1, BX
 MOVQ 0(AX), BX
 RET
 """
-        assert equal_codes(listing, ref_listing), "Unexpected PeachPy listing:\n" + listing
+        assert equal_codes(listing, ref_listing), (
+            "Unexpected PeachPy listing:\n" + listing
+        )

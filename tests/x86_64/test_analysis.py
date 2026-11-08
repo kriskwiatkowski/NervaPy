@@ -52,7 +52,9 @@ RETURN
     Live regs:
     Avail regs: gp64-vreg<1>, gp64-vreg<2>, rax
 """
-        assert equal_codes(listing, ref_listing), "Unexpected PeachPy listing:\n" + listing
+        assert equal_codes(listing, ref_listing), (
+            "Unexpected PeachPy listing:\n" + listing
+        )
 
 
 class TestSimpleLoopAnalysis(unittest.TestCase):
@@ -151,9 +153,18 @@ class TestBFSAnalysis(unittest.TestCase):
         levels = Argument(ptr(uint32_t))
         current_level = Argument(uint32_t)
 
-        with Function("bfs",
-                      (vertex_edges, neighbors, input_queue, input_vertices,
-                       output_queue, levels, current_level)) as function:
+        with Function(
+            "bfs",
+            (
+                vertex_edges,
+                neighbors,
+                input_queue,
+                input_vertices,
+                output_queue,
+                levels,
+                current_level,
+            ),
+        ) as function:
             reg_vertex_edges = GeneralPurposeRegister64()
             LOAD.ARGUMENT(reg_vertex_edges, vertex_edges)
 
@@ -187,10 +198,15 @@ class TestBFSAnalysis(unittest.TestCase):
                 ADD(reg_input_queue, 4)
 
                 reg_start_edge = GeneralPurposeRegister64()
-                MOV(reg_start_edge.as_dword, [reg_vertex_edges + reg_current_vertex * 4])
+                MOV(
+                    reg_start_edge.as_dword, [reg_vertex_edges + reg_current_vertex * 4]
+                )
 
                 reg_end_edge = GeneralPurposeRegister64()
-                MOV(reg_end_edge.as_dword, [reg_vertex_edges + reg_current_vertex * 4 + 4])
+                MOV(
+                    reg_end_edge.as_dword,
+                    [reg_vertex_edges + reg_current_vertex * 4 + 4],
+                )
 
                 CMP(reg_start_edge, reg_end_edge)
                 JE(per_edge_loop.end)

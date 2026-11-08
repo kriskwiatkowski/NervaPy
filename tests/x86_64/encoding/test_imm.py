@@ -12,11 +12,22 @@ class TestImm8(unittest.TestCase):
         self.assertEqual(bytearray([0x49, 0x83, 0xF8, 0x00]), CMP(r8, 0).encode())
         self.assertEqual(bytearray([0x48, 0x83, 0xC1, 0x7F]), ADD(rcx, 127).encode())
         self.assertEqual(bytearray([0x41, 0x83, 0xEE, 0x80]), SUB(r14d, -128).encode())
-        self.assertEqual(bytearray([0x48, 0x83, 0xCE, 0x80]), OR(rsi, 0xFFFFFFFFFFFFFF80).encode())
+        self.assertEqual(
+            bytearray([0x48, 0x83, 0xCE, 0x80]), OR(rsi, 0xFFFFFFFFFFFFFF80).encode()
+        )
 
 
 class TestImm32(unittest.TestCase):
     def runTest(self):
-        self.assertEqual(bytearray([0x48, 0x81, 0xC1, 0x80, 0x00, 0x00, 0x00]), ADD(rcx, 128).encode())
-        self.assertEqual(bytearray([0x41, 0x81, 0xEE, 0x7F, 0xFF, 0xFF, 0xFF]), SUB(r14d, -129).encode())
-        self.assertEqual(bytearray([0x48, 0x81, 0xCE, 0x7F, 0xFF, 0xFF, 0xFF]), OR(rsi, 0xFFFFFFFFFFFFFF7F).encode())
+        self.assertEqual(
+            bytearray([0x48, 0x81, 0xC1, 0x80, 0x00, 0x00, 0x00]),
+            ADD(rcx, 128).encode(),
+        )
+        self.assertEqual(
+            bytearray([0x41, 0x81, 0xEE, 0x7F, 0xFF, 0xFF, 0xFF]),
+            SUB(r14d, -129).encode(),
+        )
+        self.assertEqual(
+            bytearray([0x48, 0x81, 0xCE, 0x7F, 0xFF, 0xFF, 0xFF]),
+            OR(rsi, 0xFFFFFFFFFFFFFF7F).encode(),
+        )

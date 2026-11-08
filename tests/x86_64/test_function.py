@@ -131,6 +131,7 @@ uint32_t integer_sum(uint32_t x, uint32_t y)
 """
         assert equal_codes(code, ref_code), "Unexpected PeachPy code:\n" + code
 
+
 class ComputeIntegerSumWithLocalVariable(unittest.TestCase):
     def runTest(self):
 
@@ -165,6 +166,7 @@ uint32_t integer_sum(uint32_t x, uint32_t y)
     RETURN
 """
         assert equal_codes(code, ref_code), "Unexpected PeachPy code:\n" + code
+
 
 class SimpleLoop(unittest.TestCase):
     def runTest(self):
@@ -206,6 +208,7 @@ loop.begin:
     RETURN
 """
         assert equal_codes(code, ref_code), "Unexpected PeachPy code:\n" + code
+
 
 # class SSEArgument(unittest.TestCase):
 #     def runTest(self):

@@ -9,15 +9,15 @@ This module provides ConstantData class that automatically:
 
 Usage:
     from nervapy.constant_data import ConstantData
-    
+
     with Function("my_func", ...) as func:
         # Create constant data - automatically added to function
         magic = ConstantData.uint32(0x11111111, name="magic_number")
-        
+
         # Use with LDR (label will be generated)
         # Note: You'll need to use raw assembly for LDR =label
         # Or manually construct the address loading
-        
+
     # Assembly will include .data section automatically
     print(func.assembly)
 """
@@ -50,7 +50,7 @@ class ConstantData(Constant):
     def get_label(self):
         """Return the label name for this constant"""
         if self.name and len(self.name) > 0:
-            if hasattr(self.name[0], 'name'):
+            if hasattr(self.name[0], "name"):
                 return self.name[0].name
             return str(self.name[0])
         return f"const_{id(self)}"
@@ -139,11 +139,15 @@ class ConstantData(Constant):
             name_obj = Name(name=name)
         else:
             import inspect
+
             name_obj = Name(
-                prename=parse_assigned_variable_name(inspect.stack(), "ConstantData.uint32")
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "ConstantData.uint32"
+                )
             )
 
         from nervapy.c.types import uint32_t
+
         return ConstantData(4, 1, (number,), uint32_t, name_obj)
 
     @staticmethod
@@ -176,8 +180,11 @@ class ConstantData(Constant):
             name_obj = Name(name=name)
         else:
             import inspect
+
             name_obj = Name(
-                prename=parse_assigned_variable_name(inspect.stack(), "ConstantData.uint32x4")
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "ConstantData.uint32x4"
+                )
             )
 
         return ConstantData(16, 4, tuple(args), uint32_t, name_obj)
@@ -203,8 +210,11 @@ class ConstantData(Constant):
             name_obj = Name(name=name)
         else:
             import inspect
+
             name_obj = Name(
-                prename=parse_assigned_variable_name(inspect.stack(), "ConstantData.uint64")
+                prename=parse_assigned_variable_name(
+                    inspect.stack(), "ConstantData.uint64"
+                )
             )
 
         return ConstantData(8, 1, (number,), uint64_t, name_obj)
@@ -216,17 +226,17 @@ class ConstantData(Constant):
 
 def install_constant_data_support():
     """Install ConstantData support by patching the Function class
-    
+
     This enables automatic .data section generation for ConstantData objects.
     Call this after importing Function but before creating any functions.
-    
+
     Example:
         from nervapy import *
         from nervapy.arm import *
         from nervapy.constant_data import ConstantData, install_constant_data_support
-        
+
         install_constant_data_support()  # Enable automatic .data sections
-        
+
         with Function(...) as func:
             const = ConstantData.uint32(111, name="my_const")
             ...
@@ -234,7 +244,7 @@ def install_constant_data_support():
     from nervapy.arm.function import Function
 
     # Check if already patched
-    if hasattr(Function, '_constant_data_patched'):
+    if hasattr(Function, "_constant_data_patched"):
         return
 
     # Save original methods
@@ -249,7 +259,7 @@ def install_constant_data_support():
         # Append .data section if there are constants
         # Note: We check for constants stored on the function instance
         # because they may have been cleared from the global registry
-        if hasattr(self, '_constant_data_list'):
+        if hasattr(self, "_constant_data_list"):
             constants = self._constant_data_list
         else:
             constants = ConstantData.get_function_constants(self)
@@ -279,4 +289,3 @@ def install_constant_data_support():
     Function.assembly = property(patched_assembly)
     Function.__exit__ = patched_exit
     Function._constant_data_patched = True
-

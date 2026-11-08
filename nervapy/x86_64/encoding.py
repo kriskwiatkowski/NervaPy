@@ -151,8 +151,7 @@ def evex(mm, w____1pp, ll, rr, rm, Vvvvv=0, aaa=0, z=0, b=0):
     assert aaa & ~0b111 == 0, "EVEX.aaa must be a 3-bit mask"
     assert z & ~0b1 == 0, "EVEX.z must be a single-bit mask"
     from nervapy.x86_64.operand import MemoryAddress, RIPRelativeOffset
-    from nervapy.x86_64.registers import (Register, XMMRegister, YMMRegister,
-                                          ZMMRegister)
+    from nervapy.x86_64.registers import Register, XMMRegister, YMMRegister, ZMMRegister
 
     assert rm is None or isinstance(
         rm, (Register, MemoryAddress, RIPRelativeOffset)

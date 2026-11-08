@@ -14,7 +14,7 @@ class Empty(unittest.TestCase):
         code = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_code = """
 // func empty()
-TEXT \xc2\xB7empty(SB),4,$0
+TEXT \xc2\xb7empty(SB),4,$0
     RET
 """
         assert equal_codes(code, ref_code), "Unexpected Golang code:\n" + code
@@ -35,7 +35,7 @@ class ReturnIntegerArgument(unittest.TestCase):
         code = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_code = """
 // func return_int_arg(n uint32) uint32
-TEXT \xc2\xB7return_int_arg(SB),4,$0-8
+TEXT \xc2\xb7return_int_arg(SB),4,$0-8
     MOVL n+0(FP), BX
     MOVL BX, ret+4(FP)
     RET
@@ -63,7 +63,7 @@ class ComputeIntegerSum(unittest.TestCase):
         code = function.finalize(abi.goasm_amd64_abi).format("go")
         ref_code = """
 // func integer_sum(x uint32, y uint32) uint32
-TEXT \xc2\xB7integer_sum(SB),4,$0-12
+TEXT \xc2\xb7integer_sum(SB),4,$0-12
     MOVL x+0(FP), CX
     MOVL y+4(FP), R8
     ADDL R8, CX

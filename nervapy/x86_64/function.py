@@ -111,9 +111,12 @@ class Function:
         self._avx_prolog = None
 
         from nervapy.common import RegisterAllocator
-        from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                              KRegister, MMXRegister,
-                                              XMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister,
+            KRegister,
+            MMXRegister,
+            XMMRegister,
+        )
 
         self._register_allocators = {
             GeneralPurposeRegister._kind: RegisterAllocator(),
@@ -888,9 +891,12 @@ class Function:
 
     def _check_live_registers(self):
         """Checks that the number of live registers does not exceed the number of physical registers for each insruction"""
-        from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                              KRegister, MMXRegister,
-                                              XMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister,
+            KRegister,
+            MMXRegister,
+            XMMRegister,
+        )
 
         max_live_registers = {
             GeneralPurposeRegister._kind: 15,
@@ -946,9 +952,13 @@ class Function:
         """
 
         from nervapy import RegisterAllocationError
-        from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                              GeneralPurposeRegister8,
-                                              XMMRegister, cl, xmm0)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister,
+            GeneralPurposeRegister8,
+            XMMRegister,
+            cl,
+            xmm0,
+        )
 
         cl_binded_registers = set()
         xmm0_binded_registers = set()
@@ -1220,12 +1230,17 @@ class ABIFunction:
     def __init__(self, function, abi):
         from copy import deepcopy
 
-        from nervapy.x86_64.abi import (ABI, goasm_amd64_abi,
-                                        goasm_amd64p32_abi, gosyso_amd64_abi,
-                                        gosyso_amd64p32_abi, linux_x32_abi,
-                                        microsoft_x64_abi,
-                                        native_client_x86_64_abi,
-                                        system_v_x86_64_abi)
+        from nervapy.x86_64.abi import (
+            ABI,
+            goasm_amd64_abi,
+            goasm_amd64p32_abi,
+            gosyso_amd64_abi,
+            gosyso_amd64p32_abi,
+            linux_x32_abi,
+            microsoft_x64_abi,
+            native_client_x86_64_abi,
+            system_v_x86_64_abi,
+        )
 
         assert isinstance(function, Function), "Function object expected"
         assert isinstance(abi, ABI), "ABI object expected"
@@ -1307,8 +1322,7 @@ class ABIFunction:
         # On-stack space is also reserved, but not initialized, for parameters passed in registers.
         # Arguments are NOT extended to 8 bytes, and high bytes of registers/stack cells may contain garbage.
         from nervapy.x86_64 import m64
-        from nervapy.x86_64.registers import (r8, r9, rcx, rdx, xmm0, xmm1,
-                                              xmm2, xmm3)
+        from nervapy.x86_64.registers import r8, r9, rcx, rdx, xmm0, xmm1, xmm2, xmm3
 
         floating_point_argument_registers = (xmm0, xmm1, xmm2, xmm3)
         integer_argument_registers = (rcx, rdx, r8, r9)
@@ -1339,9 +1353,11 @@ class ABIFunction:
             argument.stack_offset = index * 8
 
     def _setup_unix_arguments(self):
-        from nervapy.x86_64.abi import (linux_x32_abi,
-                                        native_client_x86_64_abi,
-                                        system_v_x86_64_abi)
+        from nervapy.x86_64.abi import (
+            linux_x32_abi,
+            native_client_x86_64_abi,
+            system_v_x86_64_abi,
+        )
 
         assert self.abi in {
             system_v_x86_64_abi,
@@ -1349,9 +1365,22 @@ class ABIFunction:
             native_client_x86_64_abi,
         }, "This function must only be used with System V x86-64, Linux x32 or Native Client x86-64 SFI ABI"
 
-        from nervapy.x86_64.registers import (r8, r9, rcx, rdi, rdx, rsi, xmm0,
-                                              xmm1, xmm2, xmm3, xmm4, xmm5,
-                                              xmm6, xmm7)
+        from nervapy.x86_64.registers import (
+            r8,
+            r9,
+            rcx,
+            rdi,
+            rdx,
+            rsi,
+            xmm0,
+            xmm1,
+            xmm2,
+            xmm3,
+            xmm4,
+            xmm5,
+            xmm6,
+            xmm7,
+        )
 
         # The first 6 integer/pointer arguments are passed in general-purpose registers.
         # The first 8 floating-point arguments are passed in SSE registers.
@@ -1405,8 +1434,12 @@ class ABIFunction:
                 stack_offset += 8
 
     def _setup_golang_arguments(self):
-        from nervapy.x86_64.abi import (goasm_amd64_abi, goasm_amd64p32_abi,
-                                        gosyso_amd64_abi, gosyso_amd64p32_abi)
+        from nervapy.x86_64.abi import (
+            goasm_amd64_abi,
+            goasm_amd64p32_abi,
+            gosyso_amd64_abi,
+            gosyso_amd64p32_abi,
+        )
 
         assert self.abi in {
             gosyso_amd64_abi,
@@ -1474,9 +1507,13 @@ class ABIFunction:
             register_allocator.set_allocation_options(self.abi, register_kind)
 
         from nervapy.x86_64.pseudo import LOAD
-        from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                              KRegister, MMXRegister, Register,
-                                              XMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister,
+            KRegister,
+            MMXRegister,
+            Register,
+            XMMRegister,
+        )
 
         for instruction in self._instructions:
             if isinstance(instruction, LOAD.ARGUMENT):
@@ -1496,9 +1533,12 @@ class ABIFunction:
         from nervapy.x86_64.abi import goasm_amd64_abi, goasm_amd64p32_abi
         from nervapy.x86_64.lower import load_memory, load_register
         from nervapy.x86_64.pseudo import LOAD
-        from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                              MMXRegister, XMMRegister,
-                                              YMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister,
+            MMXRegister,
+            XMMRegister,
+            YMMRegister,
+        )
 
         if self.abi == goasm_amd64_abi or self.abi == goasm_amd64p32_abi:
             # Like PeachPy, Go assembler uses pseudo-instructions for argument loads
@@ -1536,19 +1576,32 @@ class ABIFunction:
     def _lower_pseudoinstructions(self):
         from nervapy.stream import InstructionStream
         from nervapy.util import is_int, is_sint32, is_uint32
-        from nervapy.x86_64.abi import (goasm_amd64_abi, goasm_amd64p32_abi,
-                                        gosyso_amd64_abi, gosyso_amd64p32_abi,
-                                        native_client_x86_64_abi)
+        from nervapy.x86_64.abi import (
+            goasm_amd64_abi,
+            goasm_amd64p32_abi,
+            gosyso_amd64_abi,
+            gosyso_amd64p32_abi,
+            native_client_x86_64_abi,
+        )
         from nervapy.x86_64.avx import VMOVAPS, VZEROUPPER
-        from nervapy.x86_64.generic import (ADD, AND, LEA, MOV, POP, PUSH, RET,
-                                            SUB, XOR)
+        from nervapy.x86_64.generic import ADD, AND, LEA, MOV, POP, PUSH, RET, SUB, XOR
         from nervapy.x86_64.lower import load_register
         from nervapy.x86_64.mmxsse import MOVAPS
-        from nervapy.x86_64.nacl import (NACLASP, NACLJMP, NACLRESTBP,
-                                         NACLRESTSP, NACLSSP)
+        from nervapy.x86_64.nacl import (
+            NACLASP,
+            NACLJMP,
+            NACLRESTBP,
+            NACLRESTSP,
+            NACLSSP,
+        )
         from nervapy.x86_64.pseudo import RETURN, STORE
-        from nervapy.x86_64.registers import (GeneralPurposeRegister64,
-                                              XMMRegister, eax, rbp, rsp)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister64,
+            XMMRegister,
+            eax,
+            rbp,
+            rsp,
+        )
 
         # The new list with lowered instructions
         instructions = list()
@@ -1605,11 +1658,21 @@ class ABIFunction:
 
         for instruction in self._instructions:
             if isinstance(instruction, RETURN):
-                from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                                      MMXRegister, XMMRegister,
-                                                      YMMRegister, al, ax, eax,
-                                                      ecx, mm0, rax, rcx, xmm0,
-                                                      ymm0)
+                from nervapy.x86_64.registers import (
+                    GeneralPurposeRegister,
+                    MMXRegister,
+                    XMMRegister,
+                    YMMRegister,
+                    al,
+                    ax,
+                    eax,
+                    ecx,
+                    mm0,
+                    rax,
+                    rcx,
+                    xmm0,
+                    ymm0,
+                )
 
                 is_goasm_abi = self.abi in {goasm_amd64_abi, goasm_amd64p32_abi}
                 is_gosyso_abi = self.abi in {gosyso_amd64_abi, gosyso_amd64p32_abi}
@@ -1828,9 +1891,12 @@ class ABIFunction:
                 argument.address = self._argument_stack_base + argument.stack_offset
 
     def _analyze_clobbered_registers(self):
-        from nervapy.x86_64.registers import (GeneralPurposeRegister,
-                                              XMMRegister, YMMRegister,
-                                              ZMMRegister)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister,
+            XMMRegister,
+            YMMRegister,
+            ZMMRegister,
+        )
 
         output_subregisters = set()
         for instruction in self._instructions:
@@ -1851,8 +1917,12 @@ class ABIFunction:
         )
 
     def _update_stack_frame(self):
-        from nervapy.x86_64.registers import (GeneralPurposeRegister64,
-                                              XMMRegister, rbp, rsp)
+        from nervapy.x86_64.registers import (
+            GeneralPurposeRegister64,
+            XMMRegister,
+            rbp,
+            rsp,
+        )
 
         clobbered_general_purpose_registers = 0
         clobbered_xmm_registers = 0
@@ -2478,8 +2548,11 @@ class EncodedFunction:
             return nop(8) + nop(8) + nop(15)
 
     def _encode_abort(self, length):
-        from nervapy.x86_64.abi import (goasm_amd64_abi, goasm_amd64p32_abi,
-                                        native_client_x86_64_abi)
+        from nervapy.x86_64.abi import (
+            goasm_amd64_abi,
+            goasm_amd64p32_abi,
+            native_client_x86_64_abi,
+        )
 
         if self.abi == native_client_x86_64_abi:
             # Use HLT instructions
