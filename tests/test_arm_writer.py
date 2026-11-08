@@ -5,6 +5,7 @@ from nervapy.arm import *
 from nervapy.arm.abi import arm_gnueabihf
 from nervapy.arm.formats import AssemblyFormat
 from nervapy.arm.microarchitecture import Microarchitecture
+from nervapy.constant_data import ConstantData
 from nervapy.writer import ArmAssemblyWriter
 
 
@@ -21,6 +22,24 @@ def _make_function(name, assembly_format, target=Microarchitecture.CortexM33, **
         POP((r4,))
         BX(lr)
     return f
+
+
+def _add_dummy_constant_bucket(function, label='dummy_const', value=0xdeadbeef):
+    """Directly populate function.constants (the bucket-based constants path
+    in _generate_*_assembly), bypassing generate_constant_loads()/get_constant()
+    -- there is no currently-working public instruction that exercises this
+    path (LOAD.CONSTANT raises NotImplementedError), so this reaches the exact
+    code under test without depending on that separate, unrelated gap."""
+    from nervapy.c.types import uint32_t
+    from nervapy.literal import Constant
+    from nervapy.name import Name
+
+    bucket = ConstantBucket(4)
+    constant = Constant(32, 1, (value,), uint32_t, Name(name=label))
+    constant.label = label
+    bucket.add(constant)
+    function.constants.append(bucket)
+    return function
 
 
 class TestArmAssemblyWriterGas(unittest.TestCase):
@@ -81,6 +100,32 @@ class TestArmAssemblyWriterGas(unittest.TestCase):
         w.add_function(_make_function('first', AssemblyFormat.GAS, target=Microarchitecture.CortexM33))
         with self.assertRaises(ValueError):
             w.add_function(_make_function('second', AssemblyFormat.GAS, target=Microarchitecture.CortexM4))
+
+    def test_constant_data_does_not_leave_packed_function_in_data_section(self):
+        # ConstantData's own ".data" section switch must not leak into a
+        # packed function's body: _generate_gas_assembly only switches back
+        # to ".text" unconditionally when emit_file_preamble=True, which the
+        # writer never passes.
+        w = ArmAssemblyWriter(None, assembly_format=AssemblyFormat.GAS)
+        with Function('withconst', (), None,
+                      target=Microarchitecture.CortexM33, abi=arm_gnueabihf,
+                      assembly_format=AssemblyFormat.GAS,
+                      is_thumb=True, report_generation=False) as f:
+            ConstantData.uint32(0x11111111, name='magic_number')
+            BX(lr)
+        w.add_function(f)
+        w.add_function(_make_function('second', AssemblyFormat.GAS))
+        out = w.serialize()
+
+        lines = out.splitlines()
+        data_idx = lines.index('\t.data')
+        text_idxs = [i for i, l in enumerate(lines) if l.strip() == '.text']
+        body_idx = lines.index('withconst:')
+        self.assertTrue(
+            any(data_idx < i < body_idx for i in text_idxs),
+            "no .text switch-back between .data (constants) and the "
+            "function body -- withconst's code would be placed in .data",
+        )
 
 
 class TestArmAssemblyWriterArmcc(unittest.TestCase):
@@ -157,6 +202,41 @@ class TestArmAssemblyWriterArmcc(unittest.TestCase):
 
         self.assertIn('first    PROC', out)
         self.assertIn('second    PROC', out)
+
+    def test_none_output_path_does_not_support_context_manager_use(self):
+        # output_path=None only supports the serialize()-only, in-memory
+        # workflow exercised above. The `with` form inherited from
+        # TextWriter.__enter__ calls open(self.output_path, "w") unconditionally,
+        # so it is not supported with output_path=None and fails clearly
+        # (TypeError from open(), not a silent writer-side feature) rather
+        # than being silently accepted.
+        w = ArmAssemblyWriter(None, assembly_format=AssemblyFormat.ARMCC)
+        with self.assertRaises(TypeError):
+            with w:
+                w.add_function(_make_function('first', AssemblyFormat.ARMCC))
+
+    def test_constants_bucket_does_not_leave_packed_function_in_data_area(self):
+        # The ARMCC constants block switches to the ||.constdata|| DATA AREA;
+        # _generate_armcc_assembly only switches back to ||.text|| CODE
+        # unconditionally when emit_file_preamble=True, which the writer
+        # never passes, so a packed function's PROC/body would otherwise be
+        # left inside the DATA area.
+        w = ArmAssemblyWriter(None, assembly_format=AssemblyFormat.ARMCC)
+        first = _make_function('first', AssemblyFormat.ARMCC)
+        _add_dummy_constant_bucket(first)
+        w.add_function(first)
+        w.add_function(_make_function('second', AssemblyFormat.ARMCC))
+        out = w.serialize()
+
+        lines = out.splitlines()
+        constdata_idx = next(i for i, l in enumerate(lines) if '||.constdata||' in l)
+        proc_idx = next(i for i, l in enumerate(lines) if l.startswith('first    PROC'))
+        text_area_idxs = [i for i, l in enumerate(lines) if '||.text||' in l]
+        self.assertTrue(
+            any(constdata_idx < i < proc_idx for i in text_area_idxs),
+            "no ||.text|| AREA switch-back between ||.constdata|| and "
+            "first's PROC -- first's code would be placed in the DATA area",
+        )
 
 
 if __name__ == '__main__':

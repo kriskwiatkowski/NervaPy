@@ -475,6 +475,11 @@ class Function(object):
 
         if emit_file_preamble:
             assembly += "\n\t.text\n" + os.linesep
+        elif constant_data_section or len(self.constants) > 0:
+            # Packed into a shared file (emit_file_preamble=False), but the
+            # constants above switched to .data -- switch back to .text or
+            # this function's own code ends up placed in the data section.
+            assembly += "\t.text" + os.linesep
         if self.code_prelude:
             assembly += self.code_prelude + os.linesep
         assembly += ".global {Function}".format(Function=function_label) + os.linesep
@@ -564,6 +569,12 @@ class Function(object):
                 assembly += "        PRESERVE8" + os.linesep
             if self.armcc_fpu_spec:
                 assembly += "        " + self.armcc_fpu_spec + os.linesep
+            assembly += os.linesep
+        elif len(self.constants) > 0:
+            # Packed into a shared file (emit_file_preamble=False), but the
+            # constants block above switched to ||.constdata|| -- switch back
+            # to ||.text|| or PROC/body below ends up placed in the data AREA.
+            assembly += "        AREA    ||.text||, CODE, READONLY" + os.linesep
             assembly += os.linesep
 
         if self.code_prelude:
